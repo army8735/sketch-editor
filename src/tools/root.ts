@@ -250,7 +250,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
   }
 }
 
-export function getArtBoardByPoint(root: Root, x: number, y: number) {
+export function getArtBoardByPoint(root: Root, x: number, y: number): ArtBoard | undefined {
   if (root.isDestroyed) {
     return;
   }

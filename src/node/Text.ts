@@ -1375,7 +1375,7 @@ class Text extends Node {
 
   /**
    * 改变内容影响定位尺寸前防止中心对齐导致位移，一般情况是left%+translateX:-50%（水平方向，垂直同理），
-   * 先记录此时style，再将left换算成translateX为0的值，为了兼容translateX是任意非零%值。
+   * 先记录此时style，再将left换算成translateX为0的值，为了兼容translateX的任意非零%值。
    * 一般状态下左对齐，将left变为px绝对值，这样内容改变重新排版的时候x坐标就不变，结束后还原回来。
    * 首要考虑textAlign，它的优先级高于对应方位的布局信息（比如居右对齐即便left是px都忽略，强制右侧对齐，视觉不懂css布局）。
    */

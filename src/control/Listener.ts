@@ -7,19 +7,25 @@ import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
+import Polyline from '../node/geom/Polyline';
+import ShapeGroup from '../node/geom/ShapeGroup';
 import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
+import AddGeom from './AddGeom';
 import Select, { Rect } from './Select';
 import Input from './Input';
+import Guides from './Guides';
+import Gradient from './Gradient';
+import Geometry from './Geometry';
 import state from './state';
+import picker from './picker';
+import contextMenu from './contextMenu';
 import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle, Point } from '../format';
 import { getArtBoardByPoint, getFrameNodes, getNodeByPoint, getOverlayArtBoardByPoint } from '../tools/root';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
-import picker from './picker';
-import contextMenu from './contextMenu';
 import History from '../history/History';
 import AbstractCommand from '../history/AbstractCommand';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
@@ -43,17 +49,12 @@ import RenameCommand from '../history/RenameCommand';
 import LockCommand from '../history/LockCommand';
 import VisibleCommand from '../history/VisibleCommand';
 import { toPrecision } from '../math';
-import Guides from './Guides';
-import { appendWithPosAndSize } from '../tools/container';
 import AddCommand, { AddData } from '../history/AddCommand';
-import Gradient from './Gradient';
-import Geometry from './Geometry';
-import Polyline from '../node/geom/Polyline';
-import { getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
 import PointCommand, { PointData } from '../history/PointCommand';
-import ShapeGroup from '../node/geom/ShapeGroup';
 import BoolGroupCommand from '../history/BoolGroupCommand';
 import FlattenCommand from '../history/FlattenCommand';
+import { appendWithPosAndSize } from '../tools/container';
+import { getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
 
 export type ListenerOptions = {
   enabled?: {
@@ -117,7 +118,8 @@ export default class Listener extends Event {
   cssStyle: JStyle[]; // 同上
   input: Input; // 输入文字dom和文本光标
   gradient: Gradient; // 渐变编辑控制
-  geometry: Geometry;
+  geometry: Geometry; // 矢量编辑
+  addGeom: AddGeom; // 矢量添加
   mouseDownArtBoard?: ArtBoard;
   mouseDown2ArtBoard?: Node;
   isWin = isWin;
@@ -170,6 +172,7 @@ export default class Listener extends Event {
     this.guides = new Guides(root, dom, this);
     this.gradient = new Gradient(root, dom, this);
     this.geometry = new Geometry(root, dom, this);
+    this.addGeom = new AddGeom(root, dom);
     this.clones = [];
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
@@ -505,6 +508,11 @@ export default class Listener extends Event {
       this.emit(Listener.ADD_NODE, [text]);
       this.state = state.EDIT_TEXT;
       this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
+    }
+    else if (this.state === state.ADD_RECT) {
+      this.startX = (e.clientX - this.originX);
+      this.startY = (e.clientY - this.originY);
+      this.addGeom.showRect(this.startX, this.startY);
     }
     // 点到canvas上，也有可能在canvas外，逻辑一样
     else {
@@ -853,6 +861,11 @@ export default class Listener extends Event {
           this.emit(Listener.CURSOR_NODE, selected.slice(0));
         }
       }
+      else if (this.state === state.ADD_RECT) {
+        const w = (e.clientX - this.originX - this.startX);
+        const h = (e.clientY - this.originY - this.startY);
+        this.addGeom.updateRect(w, h);
+      }
       else {
         if (this.options.disabled?.move) {
           return;
@@ -1161,6 +1174,40 @@ export default class Listener extends Event {
             this.history.addCommand(new ResizeCommand(selected.slice(0), data));
           }
         }
+      }
+    }
+    else if (this.state === state.ADD_RECT) {
+      this.state = state.NORMAL;
+      this.dom.classList.remove('add-rect');
+      let { x, y, width, height } = this.addGeom.hideRect();
+      const dpi = this.root.dpi;
+      x *= dpi;
+      y *= dpi;
+      width *= dpi;
+      height *= dpi;
+      console.log(x, y, width, height);
+      // 已选节点第0个作为兄弟节点参考
+      if (this.selected.length) {}
+      // 无已选看是否是画板内
+      else {
+        let artBoard: ArtBoard | undefined;
+        const pts = [
+          { x, y },
+          { x, y: y + height },
+          { x: x + width, y },
+          { x: x + width, y: y + height },
+        ];
+        for (let i = 0, len = pts.length; i < len; i++) {
+          const pt = pts[i];
+          artBoard = getArtBoardByPoint(this.root, pt.x, pt.y);
+          if (artBoard) {
+            break;
+          }
+        }
+        // 画板内
+        if (artBoard) {}
+        // 直接page上
+        else {}
       }
     }
     else if (this.isMouseMove) {
