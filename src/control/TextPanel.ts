@@ -17,6 +17,7 @@ import fontInfo, { FontData } from '../style/font';
 import font from '../style/font';
 import inject from '../util/inject';
 import { color2rgbaStr } from '../style/css';
+import { RefreshLevel } from '../refresh/level';
 
 const html = `
   <h4 class="panel-title">字符<b class="btn arrow"></b></h4>
@@ -107,6 +108,7 @@ class TextPanel extends Panel {
     let nodes: Text[] = [];
     let prevs: Rich[][] = [];
     let nexts: Rich[][] = [];
+    let lvs: RefreshLevel[] = [];
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = () => {
@@ -173,9 +175,10 @@ class TextPanel extends Panel {
             });
           }
           else {
-            node.updateRangeStyle(start, end - start, {
+            const lv = node.updateRangeStyle(start, end - start, {
               [key]: value,
-            });
+            }, false);
+            lvs.push(lv);
           }
           nexts.push(node.getRich());
           node.setCursorByIndex(start);
@@ -222,35 +225,43 @@ class TextPanel extends Panel {
           }
           // 输入统一改为单个值比较简单
           else {
-            node.updateRangeStyle(0, node._content.length, {
+            const lv = node.updateRangeStyle(0, node._content.length, {
               [key]: value,
-            });
+            }, false);
+            lvs.push(lv);
           }
           nexts.push(node.getRich());
         });
       }
-      if (nodes.length) {
-        listener.select.updateSelect(nodes);
-        if (key === 'fontSize') {
-          listener.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
-        }
-        else if (key === 'letterSpacing') {
-          listener.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
-        }
-        else if (key === 'paragraphSpacing') {
-          listener.emit(Listener.PARAGRAPH_SPACING_NODE, nodes.slice(0));
-        }
-        else if (key === 'lineHeight') {
-          listener.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
-        }
-        this.show(this.nodes);
-      }
+      // if (nodes.length) {
+      //   listener.select.updateSelect(nodes);
+      //   if (key === 'fontSize') {
+      //     listener.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
+      //   }
+      //   else if (key === 'letterSpacing') {
+      //     listener.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
+      //   }
+      //   else if (key === 'paragraphSpacing') {
+      //     listener.emit(Listener.PARAGRAPH_SPACING_NODE, nodes.slice(0));
+      //   }
+      //   else if (key === 'lineHeight') {
+      //     listener.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
+      //   }
+      //   this.show(this.nodes);
+      // }
       this.silence = false;
     };
 
     const onChange = (e: Event, key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
-      onInput(e, key);
       if (nodes.length) {
+        // 输入fontSize等如果只触发input，不会刷新，需等change才会；按箭头则直接change事件
+        if (lvs.length) {
+          nodes.forEach((node, i) => {
+            if (lvs[i]) {
+              node.refresh(lvs[i]);
+            }
+          });
+        }
         let type = '';
         if (key == 'fontSize') {
           type = RichCommand.FONT_SIZE;
@@ -267,9 +278,24 @@ class TextPanel extends Panel {
         listener.history.addCommand(new RichCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         }), type));
+        listener.select.updateSelect(nodes);
+        if (key === 'fontSize') {
+          listener.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
+        }
+        else if (key === 'letterSpacing') {
+          listener.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
+        }
+        else if (key === 'paragraphSpacing') {
+          listener.emit(Listener.PARAGRAPH_SPACING_NODE, nodes.slice(0));
+        }
+        else if (key === 'lineHeight') {
+          listener.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
+        }
+        this.show(this.nodes);
         nodes = [];
         prevs = [];
         nexts = [];
+        lvs = [];
       }
     };
 
@@ -279,18 +305,18 @@ class TextPanel extends Panel {
       }
     };
 
-    // fs.addEventListener('input', (e) => {
-    //   onInput(e, 'fontSize');
-    // });
-    // ls.addEventListener('input', (e) => {
-    //   onInput(e, 'letterSpacing');
-    // });
-    // lh.addEventListener('input', (e) => {
-    //   onInput(e, 'lineHeight');
-    // });
-    // ps.addEventListener('input', (e) => {
-    //   onInput(e, 'paragraphSpacing');
-    // });
+    fs.addEventListener('input', (e) => {
+      onInput(e, 'fontSize');
+    });
+    ls.addEventListener('input', (e) => {
+      onInput(e, 'letterSpacing');
+    });
+    lh.addEventListener('input', (e) => {
+      onInput(e, 'lineHeight');
+    });
+    ps.addEventListener('input', (e) => {
+      onInput(e, 'paragraphSpacing');
+    });
     fs.addEventListener('change', (e) => {
       onChange(e, 'fontSize');
     });
