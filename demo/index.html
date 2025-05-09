@@ -118,11 +118,21 @@
         });
 
         const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
-        sketchEditor.control.initPageList(root, document.querySelector('#page'), listener);
-        sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
-        sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
-        sketchEditor.control.initZoom(root, document.querySelector('#zoom'), listener);
-        sketchEditor.control.initToolbar(root, document.querySelector('#toolbar'), listener);
+        const $page = document.querySelector('#page');
+        const $tree = document.querySelector('#tree');
+        const $side = document.querySelector('#side');
+        const $zoom = document.querySelector('#zoom');
+        const $toolbar = document.querySelector('#toolbar');
+        $page.innerHTML = '';
+        $tree.innerHTML = '';
+        $side.innerHTML = '';
+        $zoom.innerHTML = '';
+        $toolbar.innerHTML = '';
+        sketchEditor.control.initPageList(root, $page, listener);
+        sketchEditor.control.initTree(root, $tree, listener);
+        sketchEditor.control.initPanel(root, $side, listener);
+        sketchEditor.control.initZoom(root, $zoom, listener);
+        sketchEditor.control.initToolbar(root, $toolbar, listener);
       });
     }
   };

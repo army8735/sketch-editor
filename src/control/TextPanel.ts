@@ -248,7 +248,8 @@ class TextPanel extends Panel {
       this.silence = false;
     };
 
-    const onChange = (key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
+    const onChange = (e: Event, key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
+      onInput(e, key);
       if (nodes.length) {
         let type = '';
         if (key == 'fontSize') {
@@ -278,29 +279,29 @@ class TextPanel extends Panel {
       }
     };
 
-    fs.addEventListener('input', (e) => {
-      onInput(e, 'fontSize');
-    });
-    ls.addEventListener('input', (e) => {
-      onInput(e, 'letterSpacing');
-    });
-    lh.addEventListener('input', (e) => {
-      onInput(e, 'lineHeight');
-    });
-    ps.addEventListener('input', (e) => {
-      onInput(e, 'paragraphSpacing');
-    });
+    // fs.addEventListener('input', (e) => {
+    //   onInput(e, 'fontSize');
+    // });
+    // ls.addEventListener('input', (e) => {
+    //   onInput(e, 'letterSpacing');
+    // });
+    // lh.addEventListener('input', (e) => {
+    //   onInput(e, 'lineHeight');
+    // });
+    // ps.addEventListener('input', (e) => {
+    //   onInput(e, 'paragraphSpacing');
+    // });
     fs.addEventListener('change', (e) => {
-      onChange('fontSize');
+      onChange(e, 'fontSize');
     });
     ls.addEventListener('change', (e) => {
-      onChange('letterSpacing');
+      onChange(e, 'letterSpacing');
     });
     lh.addEventListener('change', (e) => {
-      onChange('lineHeight');
+      onChange(e, 'lineHeight');
     });
     ps.addEventListener('change', (e) => {
-      onChange('paragraphSpacing');
+      onChange(e, 'paragraphSpacing');
     });
     fs.addEventListener('blur', onBlur);
     ls.addEventListener('blur', onBlur);
