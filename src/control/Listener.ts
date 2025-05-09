@@ -1195,7 +1195,6 @@ export default class Listener extends Event {
       y *= dpi;
       width *= dpi;
       height *= dpi;
-      console.log(x, y, width, height);
       const rect = new Polyline({
         uuid: uuid.v4(),
         name: '矩形',
@@ -1221,8 +1220,21 @@ export default class Listener extends Event {
         fixedRadius: 0,
         pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR.DISABLED,
       });
+      const page = this.root.getCurPage()!;
+      const zoom = page.getZoom();
       // 已选节点第0个作为兄弟节点参考
-      if (this.selected.length) {}
+      if (this.selected.length) {
+        const prev = this.selected[0];
+        const container = prev.parent!;
+        const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
+        rect.updateStyle({
+          left: left * 100 / container.width + '%',
+          top: top * 100 / container.height + '%',
+          right: (right - width / zoom) * 100 / container.width + '%',
+          bottom: (bottom - height / zoom) * 100 / container.height + '%',
+        });
+        prev.insertAfter(rect);
+      }
       // 无已选看是否是画板内
       else {
         let artBoard: ArtBoard | undefined;
@@ -1239,21 +1251,15 @@ export default class Listener extends Event {
             break;
           }
         }
-        // 画板内
-        if (artBoard) {}
-        // 直接page上
-        else {
-          const page = this.root.getCurPage()!;
-          const zoom = page.getZoom();
-          const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y);
-          rect.updateStyle({
-            left: left * 100 / page.width + '%',
-            top: top * 100 / page.height + '%',
-            right: (right - width / zoom) * 100 / page.width + '%',
-            bottom: (bottom - height / zoom) * 100 / page.height + '%',
-          });
-          page.appendChild(rect);
-        }
+        const container = artBoard || page;
+        const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
+        rect.updateStyle({
+          left: left * 100 / container.width + '%',
+          top: top * 100 / container.height + '%',
+          right: (right - width / zoom) * 100 / container.width + '%',
+          bottom: (bottom - height / zoom) * 100 / container.height + '%',
+        });
+        container.appendChild(rect);
       }
       this.selected.splice(0);
       this.selected.push(rect);

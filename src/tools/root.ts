@@ -530,10 +530,10 @@ export function getGuidesNodes(root: Root, ignore?: Node[]) {
   return res;
 }
 
-export function getOffsetByPoint(root: Root, x: number, y: number) {
+export function getOffsetByPoint(root: Root, x: number, y: number, node?: Container) {
   const page = root.getCurPage()!;
   const zoom = page.getZoom();
-  const bcr = page.getBoundingClientRect();
+  const bcr = (node || page).getBoundingClientRect();
   const left = (x - bcr.left) / zoom;
   const top = (y - bcr.top) / zoom;
   const right = (bcr.right - x) / zoom;
