@@ -530,6 +530,17 @@ export function getGuidesNodes(root: Root, ignore?: Node[]) {
   return res;
 }
 
+export function getOffsetByPoint(root: Root, x: number, y: number) {
+  const page = root.getCurPage()!;
+  const zoom = page.getZoom();
+  const bcr = page.getBoundingClientRect();
+  const left = (x - bcr.left) / zoom;
+  const top = (y - bcr.top) / zoom;
+  const right = (bcr.right - x) / zoom;
+  const bottom = (bcr.bottom - y) / zoom;
+  return { left, top, right, bottom };
+}
+
 export default {
   getNodeByPoint,
   getArtBoardByPoint,
@@ -538,4 +549,5 @@ export default {
   getFrameNodes,
   getGuidesNodes,
   search2,
+  getOffsetByPoint,
 };

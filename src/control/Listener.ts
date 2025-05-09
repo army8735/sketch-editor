@@ -9,7 +9,15 @@ import Group from '../node/Group';
 import Slice from '../node/Slice';
 import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
-import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
+import {
+  ComputedStyle,
+  CORNER_STYLE,
+  CURVE_MODE,
+  POINTS_RADIUS_BEHAVIOUR,
+  Style,
+  StyleUnit,
+  VISIBILITY
+} from '../style/define';
 import Event from '../util/Event';
 import AddGeom from './AddGeom';
 import Select, { Rect } from './Select';
@@ -22,7 +30,13 @@ import picker from './picker';
 import contextMenu from './contextMenu';
 import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle, Point } from '../format';
-import { getArtBoardByPoint, getFrameNodes, getNodeByPoint, getOverlayArtBoardByPoint } from '../tools/root';
+import {
+  getArtBoardByPoint,
+  getFrameNodes,
+  getNodeByPoint,
+  getOffsetByPoint,
+  getOverlayArtBoardByPoint
+} from '../tools/root';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
@@ -474,12 +488,10 @@ export default class Listener extends Event {
         });
       }
       else {
-        const br = page.getBoundingClientRect();
-        const dx = (x - br.left) / zoom;
-        const dy = (y - br.top) / zoom;
+        const { left, top } = getOffsetByPoint(root, x, y);
         text.updateStyle({
-          left: dx * 100 / page.width + '%',
-          top: dy * 100 / page.height + '%',
+          left: left * 100 / page.width + '%',
+          top: top * 100 / page.height + '%',
         });
         page.appendChild(text);
         // 默认左对齐，垂直已居中，调整translateX
@@ -1177,8 +1189,6 @@ export default class Listener extends Event {
       }
     }
     else if (this.state === state.ADD_RECT) {
-      this.state = state.NORMAL;
-      this.dom.classList.remove('add-rect');
       let { x, y, width, height } = this.addGeom.hideRect();
       const dpi = this.root.dpi;
       x *= dpi;
@@ -1186,6 +1196,31 @@ export default class Listener extends Event {
       width *= dpi;
       height *= dpi;
       console.log(x, y, width, height);
+      const rect = new Polyline({
+        uuid: uuid.v4(),
+        name: '矩形',
+        index: 0,
+        style: {
+          fill: ['#D8D8D8'],
+          fillEnable: [true],
+          fillOpacity: [1],
+          stroke: ['#979797'],
+          strokeEnable: [true],
+          strokeWidth: [1],
+          strokePosition: ['center'],
+          strokeMode: ['normal'],
+        },
+        points: [
+          { x: 0, y: 0, cornerRadius: 0, cornerStyle: CORNER_STYLE.ROUNDED, curveMode: CURVE_MODE.STRAIGHT, hasCurveFrom: false, hasCurveTo: false, fx: 0, fy: 0, tx: 0, ty: 0 },
+          { x: 1, y: 0, cornerRadius: 0, cornerStyle: CORNER_STYLE.ROUNDED, curveMode: CURVE_MODE.STRAIGHT, hasCurveFrom: false, hasCurveTo: false, fx: 1, fy: 0, tx: 1, ty: 0 },
+          { x: 1, y: 1, cornerRadius: 0, cornerStyle: CORNER_STYLE.ROUNDED, curveMode: CURVE_MODE.STRAIGHT, hasCurveFrom: false, hasCurveTo: false, fx: 1, fy: 1, tx: 1, ty: 1 },
+          { x: 0, y: 1, cornerRadius: 0, cornerStyle: CORNER_STYLE.ROUNDED, curveMode: CURVE_MODE.STRAIGHT, hasCurveFrom: false, hasCurveTo: false, fx: 0, fy: 1, tx: 0, ty: 1 },
+        ],
+        isClosed: true,
+        isRectangle: true,
+        fixedRadius: 0,
+        pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR.DISABLED,
+      });
       // 已选节点第0个作为兄弟节点参考
       if (this.selected.length) {}
       // 无已选看是否是画板内
@@ -1207,8 +1242,31 @@ export default class Listener extends Event {
         // 画板内
         if (artBoard) {}
         // 直接page上
-        else {}
+        else {
+          const page = this.root.getCurPage()!;
+          const zoom = page.getZoom();
+          const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y);
+          rect.updateStyle({
+            left: left * 100 / page.width + '%',
+            top: top * 100 / page.height + '%',
+            right: (right - width / zoom) * 100 / page.width + '%',
+            bottom: (bottom - height / zoom) * 100 / page.height + '%',
+          });
+          page.appendChild(rect);
+        }
       }
+      this.selected.splice(0);
+      this.selected.push(rect);
+      this.select.showSelect(this.selected);
+      this.dom.classList.remove('add-rect');
+      this.history.addCommand(new AddCommand([rect], [{
+        x: rect.computedStyle.left,
+        y: rect.computedStyle.top,
+        parent: rect.parent!,
+      }]));
+      this.emit(Listener.ADD_NODE, [rect]);
+      this.state = state.NORMAL;
+      this.emit(Listener.STATE_CHANGE, state.ADD_RECT, this.state);
     }
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
