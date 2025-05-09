@@ -678,7 +678,6 @@ export default class Tree {
   }
 
   init() {
-    this.dom.innerHTML = '';
     const dl = document.createElement('dl');
     this.dom.appendChild(dl);
     const page = this.root.getCurPage();

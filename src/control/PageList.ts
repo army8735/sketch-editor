@@ -25,7 +25,6 @@ export default class PageList {
       }
       ul.appendChild(li);
     });
-    dom.innerHTML = '';
     dom.appendChild(ul);
 
     dom.addEventListener('click', e => {
