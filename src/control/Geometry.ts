@@ -3,9 +3,9 @@ import Root from '../node/Root';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Listener from './Listener';
 import { getPointWithDByApprox, sliceBezier } from '../math/bezier';
-import { CORNER_STYLE, CURVE_MODE } from '../style/define';
+import { CURVE_MODE } from '../style/define';
 import { r2d } from '../math/geom';
-import { Point } from '../format';
+import { ComputedPoint } from '../format';
 import { clone, equal } from '../util/type';
 import PointCommand, { PointData } from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
@@ -19,7 +19,7 @@ export default class Geometry {
   keepVertPath?: boolean; // 按下顶点或边时特殊标识，后续外部冒泡侦听按下识别
   nodes: Polyline[];
   idxes: number[][]; // 当前激活点索引，多个编辑节点下的多个顶点，一维是node索引
-  clonePoints: Point[][]; // 同上，编辑前的point数据
+  clonePoints: ComputedPoint[][]; // 同上，编辑前的point数据
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -118,22 +118,21 @@ export default class Geometry {
             const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
             const w = div.clientWidth;
             const h = div.clientHeight;
-            const prevPoints = clone(node.props.points);
+            const prevPoints = clone(node.points);
             const a = sliceBezier(pts, 0, p.t).map(item => ({ x: item.x / w, y: item.y / h }));
             const b = sliceBezier(pts, p.t, 1).map(item => ({ x: item.x / w, y: item.y / h }));
             const i = parseInt(/\d+/.exec(title)![0]);
-            const points = node.props.points;
+            const points = node.points;
             const prev = points[i];
             const next = points[i + 1] || points[0];
             const mx = p.x / w;
             const my = p.y / h;
-            const mid: Point = {
+            const mid: ComputedPoint = {
               x: mx,
               y: my,
               absX: p.x,
               absY: p.y,
               cornerRadius: 0,
-              cornerStyle: CORNER_STYLE.ROUNDED,
               curveMode: a.length === 2 ? CURVE_MODE.STRAIGHT : CURVE_MODE.ASYMMETRIC,
               fx: mx,
               fy: my,
@@ -145,6 +144,12 @@ export default class Geometry {
               absTy: p.y,
               hasCurveFrom: false,
               hasCurveTo: false,
+              dspX: 0,
+              dspY: 0,
+              dspFx: 0,
+              dspFy: 0,
+              dspTx: 0,
+              dspTy: 0,
             };
             if (a.length === 4) {
               prev.fx = a[1].x;
@@ -235,7 +240,7 @@ export default class Geometry {
               if (item === node) {
                 return {
                   prev: prevPoints,
-                  next: clone(node.props.points),
+                  next: clone(node.points),
                 };
               }
             });
@@ -271,7 +276,7 @@ export default class Geometry {
         idx = parseInt(div.title);
         idxes.splice(0);
         idxes.push(idx);
-        const p = node.props.points[idx];
+        const p = node.points[idx];
         if (target.classList.contains('f')) {
           isControlF = true;
         }
@@ -316,10 +321,10 @@ export default class Geometry {
       // 拖动顶点，多个顶点的话其它的也随之变动
       if (isDrag) {
         const nodes: Polyline[] = [];
-        const data: Point[][] = [];
+        const data: ComputedPoint[][] = [];
         this.nodes.forEach((item, i) => {
           const pts = this.idxes[i].map(j => {
-            const p = item.props.points[j];
+            const p = item.points[j];
             const c = this.clonePoints[i][j];
             p.dspX = c.dspX! + dx2;
             p.dspY = c.dspY! + dy2;
@@ -346,7 +351,7 @@ export default class Geometry {
       }
       // 拖控制点
       else if (isControlF || isControlT) {
-        const p = node.props.points[idx];
+        const p = node.points[idx];
         if (isControlF) {
           p.dspFx = this.clonePoints[nodeIdx][idx].dspFx! + dx2;
           p.dspFy = this.clonePoints[nodeIdx][idx].dspFy! + dy2;
@@ -432,9 +437,9 @@ export default class Geometry {
         const data: PointData[] = [];
         this.nodes.forEach((item, i) => {
           const a = this.clonePoints[i];
-          const b = item.props.points;
+          const b = item.points;
           nodes.push(item);
-          if (!equal(a, b, ['x', 'y', 'cornerRadius', 'cornerStyle', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
+          if (!equal(a, b, ['x', 'y', 'cornerRadius', 'curveMode', 'fx', 'fy', 'tx', 'ty', 'hasCurveTo', 'hasCurveFrom'])) {
             data.push({
               prev: a,
               next: clone(b),
@@ -607,7 +612,7 @@ export default class Geometry {
       return;
     }
     const panel = this.panel;
-    const points = node.props.points;
+    const points = node.points;
     const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
     div.innerHTML = `<svg class="stroke"></svg><svg class="interactive"></svg>`;
     const svg1 = div.querySelector('svg.stroke') as SVGElement;
@@ -654,7 +659,7 @@ export default class Geometry {
     const panel = this.panel;
     const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
     const zoom = node.root!.getCurPageZoom(true);
-    const points = node.props.points;
+    const points = node.points;
     const coords = node.coords!;
     const vts = div.querySelectorAll('.vt');
     const paths1 = div.querySelectorAll('svg.stroke path');
@@ -662,7 +667,7 @@ export default class Geometry {
     points.forEach((item, i) => {
       const div = vts[i] as HTMLElement;
       if (div) {
-        div.style.transform = `translate(${item.absX! * zoom}px, ${item.absY! * zoom}px)`;
+        div.style.transform = `translate(${item.absX * zoom}px, ${item.absY * zoom}px)`;
         const spans = div.querySelectorAll('span');
         const [prev, next] = spans;
         prev.classList.add('hide');
@@ -673,22 +678,22 @@ export default class Geometry {
             prev.classList.remove('hide');
             list.push({
               el: prev,
-              cx: item.absTx!,
-              cy: item.absTy!,
+              cx: item.absTx,
+              cy: item.absTy,
             });
           }
           if (item.hasCurveFrom && next) {
             next.classList.remove('hide');
             list.push({
               el: next,
-              cx: item.absFx!,
-              cy: item.absFy!,
+              cx: item.absFx,
+              cy: item.absFy,
             });
           }
           list.forEach((item2) => {
             const { el, cx, cy } = item2;
-            const x = (cx - item.absX!) * zoom;
-            const y = (cy - item.absY!) * zoom;
+            const x = (cx - item.absX) * zoom;
+            const y = (cy - item.absY) * zoom;
             el.style.transform = `translate(${x}px, ${y}px)`;
             const d = Math.sqrt(x * x + y * y);
             const b = el.firstElementChild as HTMLElement;
@@ -707,7 +712,7 @@ export default class Geometry {
         if (isNaN(idx)) {
           d += 'L';
           const j = parseInt(/\d+/.exec(title)![0]);
-          d += points[j].absX! * zoom + ',' + points[j].absY! * zoom;
+          d += points[j].absX * zoom + ',' + points[j].absY * zoom;
           d += 'L';
           d += next.slice(-2).map(n => n * zoom).join(',');
         }
@@ -772,17 +777,17 @@ export default class Geometry {
       nodes.push(item);
       const idxes = this.idxes[i];
       if (idxes.length) {
-        const prev = clone(item.props.points);
+        const prev = clone(item.points);
         idxes.sort((a, b) => b - a);
         idxes.forEach(i => {
-          item.props.points.splice(i, 1);
+          item.points.splice(i, 1);
         });
         item.refresh();
         item.checkPointsChange();
         this.update(item, true);
         data.push({
           prev,
-          next: clone(item.props.points),
+          next: clone(item.points),
         });
       }
       else {
@@ -796,19 +801,19 @@ export default class Geometry {
 
   setClonePoints() {
     this.clonePoints = this.nodes.map(item => {
-      return clone(item.props.points);
+      return clone(item.points);
     });
   }
 
   emitSelectPoint() {
     const nodes: Polyline[] = [];
-    const points: Point[][] = [];
+    const points: ComputedPoint[][] = [];
     this.nodes.map((item, i) => {
       const idxes = this.idxes[i];
       if (idxes.length) {
-        const list: Point[] = [];
+        const list: ComputedPoint[] = [];
         idxes.forEach(i => {
-          list.push(item.props.points[i]);
+          list.push(item.points[i]);
         });
         points.push(list);
       }

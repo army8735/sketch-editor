@@ -5,7 +5,7 @@ import { sortTempIndex } from './node';
 import { group } from './group';
 import Polyline from '../node/geom/Polyline';
 import { JStyle, Point } from '../format';
-import { CORNER_STYLE, CURVE_MODE, POINTS_RADIUS_BEHAVIOUR } from '../style/define';
+import { CURVE_MODE } from '../style/define';
 import inject from '../util/inject';
 
 // 和group操作类似，但多了设置bool样式步骤
@@ -120,7 +120,6 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
         isClosed: true,
         points,
         fixedRadius: 0,
-        pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR.DISABLED,
         // 初始化相对于shapeGroup满尺寸（和coords一致），didMount()后自适应计算
         style: Object.assign({}, style, {
           left: '0%',
@@ -146,7 +145,6 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
       isClosed: true,
       points,
       fixedRadius: 0,
-      pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR.DISABLED,
       style,
     });
   }
@@ -169,8 +167,7 @@ function coords2Points(cs: number[][], width: number, height: number) {
       x,
       y,
       cornerRadius: 0,
-      cornerStyle: CORNER_STYLE.ROUNDED,
-      curveMode: CURVE_MODE.STRAIGHT,
+      curveMode: 'straight',
       fx: hasCurveFrom ? next[0] / width : x,
       fy: hasCurveFrom ? next[1] / height : y,
       tx: hasCurveTo ? prev[2] / width : x,

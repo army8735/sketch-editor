@@ -1,4 +1,4 @@
-import { GeomProps } from '../../format';
+import { ComputedPoint, GeomProps } from '../../format';
 import { RefreshLevel } from '../../refresh/level';
 import { svgPolygon } from '../../refresh/paint';
 import { FILL_RULE, STROKE_POSITION } from '../../style/define';
@@ -19,11 +19,13 @@ export type Loader = {
 class Geom extends Node {
   coords?: number[][];
   loaders: Loader[];
+  points: ComputedPoint[];
 
   constructor(props: GeomProps) {
     super(props);
     this.isGeom = true;
     this.loaders = [];
+    this.points = [];
   }
 
   override lay(data: LayoutData) {

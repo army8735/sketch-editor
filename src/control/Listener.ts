@@ -11,9 +11,6 @@ import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import {
   ComputedStyle,
-  CORNER_STYLE,
-  CURVE_MODE,
-  POINTS_RADIUS_BEHAVIOUR,
   Style,
   StyleUnit,
   VISIBILITY
@@ -29,7 +26,7 @@ import state from './state';
 import picker from './picker';
 import contextMenu from './contextMenu';
 import { clone } from '../util/type';
-import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle, Point } from '../format';
+import { ArtBoardProps, BreakMaskStyle, ComputedPoint, JStyle, MaskModeStyle, Point } from '../format';
 import {
   getArtBoardByPoint,
   getFrameNodes,
@@ -68,7 +65,7 @@ import PointCommand, { PointData } from '../history/PointCommand';
 import BoolGroupCommand from '../history/BoolGroupCommand';
 import FlattenCommand from '../history/FlattenCommand';
 import { appendWithPosAndSize } from '../tools/container';
-import { getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
+import { createRect, getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1195,31 +1192,7 @@ export default class Listener extends Event {
       y *= dpi;
       width *= dpi;
       height *= dpi;
-      const rect = new Polyline({
-        uuid: uuid.v4(),
-        name: '矩形',
-        index: 0,
-        style: {
-          fill: ['#D8D8D8'],
-          fillEnable: [true],
-          fillOpacity: [1],
-          stroke: ['#979797'],
-          strokeEnable: [true],
-          strokeWidth: [1],
-          strokePosition: ['center'],
-          strokeMode: ['normal'],
-        },
-        points: [
-          { x: 0, y: 0, cornerRadius: 0, cornerStyle: CORNER_STYLE.ROUNDED, curveMode: CURVE_MODE.STRAIGHT, hasCurveFrom: false, hasCurveTo: false, fx: 0, fy: 0, tx: 0, ty: 0 },
-          { x: 1, y: 0, cornerRadius: 0, cornerStyle: CORNER_STYLE.ROUNDED, curveMode: CURVE_MODE.STRAIGHT, hasCurveFrom: false, hasCurveTo: false, fx: 1, fy: 0, tx: 1, ty: 0 },
-          { x: 1, y: 1, cornerRadius: 0, cornerStyle: CORNER_STYLE.ROUNDED, curveMode: CURVE_MODE.STRAIGHT, hasCurveFrom: false, hasCurveTo: false, fx: 1, fy: 1, tx: 1, ty: 1 },
-          { x: 0, y: 1, cornerRadius: 0, cornerStyle: CORNER_STYLE.ROUNDED, curveMode: CURVE_MODE.STRAIGHT, hasCurveFrom: false, hasCurveTo: false, fx: 0, fy: 1, tx: 0, ty: 1 },
-        ],
-        isClosed: true,
-        isRectangle: true,
-        fixedRadius: 0,
-        pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR.DISABLED,
-      });
+      const rect = createRect();
       const page = this.root.getCurPage()!;
       const zoom = page.getZoom();
       // 已选节点第0个作为兄弟节点参考
@@ -2073,21 +2046,21 @@ export default class Listener extends Event {
           const geometry = this.geometry;
           const nodes: Polyline[] = [];
           const data: PointData[] = [];
-          const points: Point[][] = [];
+          const points: ComputedPoint[][] = [];
           geometry.nodes.forEach((node, i) => {
             const idxes = geometry.idxes[i];
             // 应该肯定有
             if (idxes.length) {
               nodes.push(node);
-              const prev = clone(node.props.points);
-              const pts = idxes.map(i => node.props.points[i]);
+              const prev = clone(node.points);
+              const pts = idxes.map(i => node.points[i]);
               pts.forEach(item => {
-                item.dspX! += x;
-                item.dspY! += y;
-                item.dspFx! += x;
-                item.dspFy! += y;
-                item.dspTx! += x;
-                item.dspTy! += y;
+                item.dspX += x;
+                item.dspY += y;
+                item.dspFx += x;
+                item.dspFy += y;
+                item.dspTx += x;
+                item.dspTy += y;
               });
               getPointsAbsByDsp(node, pts);
               node.reflectPoints(pts);

@@ -1246,12 +1246,12 @@ export function getBasicInfo(node: Node) {
   //   const points = node.props.points;
   //   if (res.isLine) {
   //     res.length = Math.sqrt(
-  //       Math.pow(points[1].absX! - points[0].absX!, 2) +
-  //       Math.pow(points[1].absY! - points[0].absY!, 2),
+  //       Math.pow(points[1].absX - points[0].absX, 2) +
+  //       Math.pow(points[1].absY - points[0].absY, 2),
   //     );
-  //     const dx = points[1].absX! - points[0].absX!;
+  //     const dx = points[1].absX - points[0].absX;
   //     if (dx === 0) {
-  //       if (points[1].absY! >= points[0].absY!) {
+  //       if (points[1].absY >= points[0].absY) {
   //         res.angle = 90;
   //       }
   //       else {
@@ -1259,7 +1259,7 @@ export function getBasicInfo(node: Node) {
   //       }
   //     }
   //     else {
-  //       const tan = (points[1].absY! - points[0].absY!) / dx;
+  //       const tan = (points[1].absY - points[0].absY) / dx;
   //       res.angle = r2d(Math.atan(tan));
   //     }
   //   }

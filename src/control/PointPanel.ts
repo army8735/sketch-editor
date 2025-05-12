@@ -4,7 +4,7 @@ import Listener from './Listener';
 import state from './state';
 import Polyline from '../node/geom/Polyline';
 import { CURVE_MODE } from '../style/define';
-import { Point } from '../format';
+import { ComputedPoint } from '../format';
 import { clone } from '../util/type';
 import PointCommand from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
@@ -53,7 +53,7 @@ class PointPanel extends Panel {
     dom.appendChild(panel);
 
     const nodes: Polyline[] = [];
-    const prevPoint: Point[][] = [];
+    const prevPoint: ComputedPoint[][] = [];
 
     panel.addEventListener('click', (e) => {
       this.silence = true;
@@ -65,7 +65,7 @@ class PointPanel extends Panel {
         const is = idxes[i];
         if (is.length) {
           nodes.push(node);
-          prevPoint.push(clone(node.props.points));
+          prevPoint.push(clone(node.points));
         }
       });
       if (tagName === 'LI' && !classList.contains('cur')) {
@@ -77,8 +77,8 @@ class PointPanel extends Panel {
           const is = idxes[i];
           if (is.length) {
             nodes.push(node);
-            prevPoint.push(clone(node.props.points));
-            const points = is.map(i => node.props.points[i]);
+            prevPoint.push(clone(node.points));
+            const points = is.map(i => node.points[i]);
             points.forEach(p => {
               p.hasCurveTo = p.hasCurveFrom = true;
               if (classList.contains('mirrored')) {
@@ -155,7 +155,7 @@ class PointPanel extends Panel {
         listener.history.addCommand(new PointCommand(nodes.slice(0), nodes.map((item, i) => {
           return {
             prev: prevPoint[i],
-            next: clone(item.props.points),
+            next: clone(item.points),
           };
         })));
         nodes.splice(0);
@@ -172,15 +172,15 @@ class PointPanel extends Panel {
       const value = parseFloat(isX ? x.value : y.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
-      const data: Point[][] = [];
+      const data: ComputedPoint[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
-            prevPoint.push(clone(node.props.points));
+            prevPoint.push(clone(node.points));
           }
-          const points = is.map(i => node.props.points[i]);
+          const points = is.map(i => node.points[i]);
           points.forEach((item, j) => {
             if (isInput) {
               if (isX) {
@@ -293,15 +293,15 @@ class PointPanel extends Panel {
       const value = parseFloat(range.value) || 0;
       rangeAlt = false;
       const isFirst = !nodes.length;
-      const data: Point[][] = [];
+      const data: ComputedPoint[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
-            prevPoint.push(clone(node.props.points));
+            prevPoint.push(clone(node.points));
           }
-          const points = is.map(i => node.props.points[i]);
+          const points = is.map(i => node.points[i]);
           points.forEach(item => {
             if (item.cornerRadius && !value || !item.cornerRadius && value) {
               rangeAlt = true;
@@ -326,15 +326,15 @@ class PointPanel extends Panel {
       const value = parseFloat(number.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
-      const data: Point[][] = [];
+      const data: ComputedPoint[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
-            prevPoint.push(clone(node.props.points));
+            prevPoint.push(clone(node.points));
           }
-          const points = is.map(i => node.props.points[i]);
+          const points = is.map(i => node.points[i]);
           points.forEach((item, j) => {
             if (isInput) {
               item.cornerRadius = value;
@@ -435,7 +435,7 @@ class PointPanel extends Panel {
     nodes.forEach((node, i) => {
       const is = idxes[i];
       if (is.length) {
-        const points = is.map(i => node.props.points[i]);
+        const points = is.map(i => node.points[i]);
         getPointsDspByAbs(node, points);
         points.forEach(item => {
           if (!xs.includes(item.dspX!)) {
@@ -477,7 +477,7 @@ class PointPanel extends Panel {
     nodes.forEach((node, i) => {
       const is = idxes[i];
       if (is.length) {
-        const points = is.map(i => node.props.points[i]);
+        const points = is.map(i => node.points[i]);
         points.forEach(item => {
           let { curveMode } = item;
           if (curveMode === CURVE_MODE.NONE) {
@@ -519,7 +519,7 @@ class PointPanel extends Panel {
     nodes.forEach((node, i) => {
       const is = idxes[i];
       if (is.length) {
-        const points = is.map(i => node.props.points[i]);
+        const points = is.map(i => node.points[i]);
         points.forEach(item => {
           if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
             const r = item.cornerRadius;

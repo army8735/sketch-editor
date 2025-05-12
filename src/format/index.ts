@@ -1,9 +1,7 @@
 import {
-  CORNER_STYLE,
   CURVE_MODE,
   TEXT_ALIGN,
   TEXT_DECORATION,
-  POINTS_RADIUS_BEHAVIOUR,
   TEXT_BEHAVIOUR,
 } from '../style/define';
 import { DEFAULT_STYLE } from './dft';
@@ -262,7 +260,6 @@ export type Rich = {
 export type PolylineProps = GeomProps & {
   points: Point[];
   fixedRadius: number;
-  pointRadiusBehaviour: POINTS_RADIUS_BEHAVIOUR;
   isRectangle?: boolean;
   isOval?: boolean;
 };
@@ -274,26 +271,41 @@ export type Point = {
   x: number;
   y: number;
   cornerRadius: number;
-  cornerStyle: CORNER_STYLE;
-  curveMode: CURVE_MODE;
+  curveMode: 'none' | 'straight' | 'mirrored' | 'asymmetric' | 'disconnected';
   fx: number; // from控制点
   fy: number;
   tx: number; // to控制点
   ty: number;
   hasCurveFrom: boolean;
   hasCurveTo: boolean;
-  absX?: number; // 算上宽高的绝对像素值
-  absY?: number;
-  absFx?: number;
-  absFy?: number;
-  absTx?: number;
-  absTy?: number;
-  dspX?: number; // 绝对值和相对于AP的matrix的值，展示在面板上
-  dspY?: number;
-  dspFx?: number;
-  dspFy?: number;
-  dspTx?: number;
-  dspTy?: number;
+  // absX?: number; // 算上宽高的绝对像素值
+  // absY?: number;
+  // absFx?: number;
+  // absFy?: number;
+  // absTx?: number;
+  // absTy?: number;
+  // dspX?: number; // 绝对值和相对于AP的matrix的值，展示在面板上
+  // dspY?: number;
+  // dspFx?: number;
+  // dspFy?: number;
+  // dspTx?: number;
+  // dspTy?: number;
+};
+
+export type ComputedPoint = Omit<Point, 'curveMode'> & {
+  curveMode: CURVE_MODE;
+  absX: number; // 算上宽高的绝对像素值
+  absY: number;
+  absFx: number;
+  absFy: number;
+  absTx: number;
+  absTy: number;
+  dspX: number; // 绝对值和相对于AP的matrix的值，展示在面板上
+  dspY: number;
+  dspFx: number;
+  dspFy: number;
+  dspTx: number;
+  dspTy: number;
 };
 
 export enum TAG_NAME {

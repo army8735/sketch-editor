@@ -17,7 +17,6 @@ import {
   TAG_NAME,
 } from './';
 import { PAGE_H as H, PAGE_W as W } from './dft';
-import { CORNER_STYLE, CURVE_MODE } from '../style/define';
 import inject, { OffScreen } from '../util/inject';
 import { d2r } from '../math/geom';
 import { color2rgbaInt, color2rgbaStr, normalizeColor } from '../style/css';
@@ -643,8 +642,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           x: ((keyOriginShapeBoundingBox.left.value || left) - left) / w2,
           y: ((keyOriginShapeBoundingBox.top.value || top) - top) / h2,
           cornerRadius: keyOriginRRectRadii?.topLeft.value || 0,
-          curveMode: CURVE_MODE.STRAIGHT,
-          cornerStyle: CORNER_STYLE.ROUNDED,
+          curveMode: 'straight',
           hasCurveFrom: false,
           hasCurveTo: false,
           fx: 0,
@@ -656,8 +654,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           x: ((keyOriginShapeBoundingBox?.right.value || right) - left) / w2,
           y: ((keyOriginShapeBoundingBox?.top.value || top) - top) / h2,
           cornerRadius: keyOriginRRectRadii?.topRight.value || 0,
-          curveMode: CURVE_MODE.STRAIGHT,
-          cornerStyle: CORNER_STYLE.ROUNDED,
+          curveMode: 'straight',
           hasCurveFrom: false,
           hasCurveTo: false,
           fx: 0,
@@ -669,8 +666,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           x: ((keyOriginShapeBoundingBox?.right.value || right) - left) / w2,
           y: ((keyOriginShapeBoundingBox?.bottom.value || bottom) - top) / h2,
           cornerRadius: keyOriginRRectRadii?.bottomLeft.value || 0,
-          curveMode: CURVE_MODE.STRAIGHT,
-          cornerStyle: CORNER_STYLE.ROUNDED,
+          curveMode: 'straight',
           hasCurveFrom: false,
           hasCurveTo: false,
           fx: 0,
@@ -682,8 +678,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
           x: ((keyOriginShapeBoundingBox?.left.value || left) - left) / w2,
           y: ((keyOriginShapeBoundingBox?.bottom.value || bottom) - top) / h2,
           cornerRadius: keyOriginRRectRadii?.bottomRight.value || 0,
-          curveMode: CURVE_MODE.STRAIGHT,
-          cornerStyle: CORNER_STYLE.ROUNDED,
+          curveMode: 'straight',
           hasCurveFrom: false,
           hasCurveTo: false,
           fx: 0,

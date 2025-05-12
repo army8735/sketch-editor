@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, Point, PolylineProps, TAG_NAME } from '../../format';
+import { ComputedPoint, JNode, Override, Point, PolylineProps, TAG_NAME } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
 import { calSize, color2rgbaInt, color2rgbaStr } from '../../style/css';
@@ -37,6 +37,29 @@ class Polyline extends Geom {
   constructor(props: PolylineProps) {
     super(props);
     this.props = props;
+    props.points.forEach(item => {
+      this.points.push(Object.assign({}, item, {
+        curveMode: {
+          'none': CURVE_MODE.NONE,
+          'straight': CURVE_MODE.STRAIGHT,
+          'mirrored': CURVE_MODE.MIRRORED,
+          'asymmetric': CURVE_MODE.ASYMMETRIC,
+          'disconnected': CURVE_MODE.DISCONNECTED,
+        }[item.curveMode] || CURVE_MODE.NONE,
+        absX: 0,
+        absY: 0,
+        absFx: 0,
+        absFy: 0,
+        absTx: 0,
+        absTy: 0,
+        dspX: 0,
+        dspY: 0,
+        dspFx: 0,
+        dspFy: 0,
+        dspTx: 0,
+        dspTy: 0,
+      }) as ComputedPoint);
+    });
     this.isPolyline = true;
   }
 
@@ -53,7 +76,7 @@ class Polyline extends Geom {
     this.textureOutline.forEach((item) => item?.release());
     this.coords = [];
     const { width, height } = this;
-    const points = this.props.points;
+    const points = this.points;
     if (!points.length) {
       return;
     }
@@ -120,12 +143,11 @@ class Polyline extends Geom {
       const c = cache[i];
       if (c) {
         const { prevTangent, prevHandle, nextTangent, nextHandle } = c;
-        const p: Point = {
+        const p: ComputedPoint = {
           x: 0,
           y: 0,
           cornerRadius: 0,
-          cornerStyle: 0,
-          curveMode: 0,
+          curveMode: CURVE_MODE.NONE,
           hasCurveFrom: true,
           fx: 0,
           fy: 0,
@@ -138,13 +160,18 @@ class Polyline extends Geom {
           absFy: prevHandle.y,
           absTx: 0,
           absTy: 0,
+          dspX: 0,
+          dspY: 0,
+          dspFx: 0,
+          dspFy: 0,
+          dspTx: 0,
+          dspTy: 0,
         };
-        const n: Point = {
+        const n: ComputedPoint = {
           x: 0,
           y: 0,
           cornerRadius: 0,
-          cornerStyle: 0,
-          curveMode: 0,
+          curveMode: CURVE_MODE.NONE,
           hasCurveFrom: false,
           fx: 0,
           fy: 0,
@@ -157,14 +184,20 @@ class Polyline extends Geom {
           absFy: 0,
           absTx: nextHandle.x,
           absTy: nextHandle.y,
+          dspX: 0,
+          dspY: 0,
+          dspFx: 0,
+          dspFy: 0,
+          dspTx: 0,
+          dspTy: 0,
         };
         // 前后如果是曲线，需用t计算截取，改变控制点即可
         if (c.t1) {
           const prev = temp[(i + len - 1) % len];
           const curve = sliceBezier([
-            { x: prev.absX!, y: prev.absY! },
-            { x: prev.absFx!, y: prev.absFy! },
-            { x: temp[i].absX!, y: temp[i].absY! },
+            { x: prev.absX, y: prev.absY },
+            { x: prev.absFx, y: prev.absFy },
+            { x: temp[i].absX, y: temp[i].absY },
           ], 0, c.t1);
           prev.absFx = curve[1].x;
           prev.absFy = curve[1].y;
@@ -172,9 +205,9 @@ class Polyline extends Geom {
         if (c.t2) {
           const next = temp[(i + 1) % len];
           const curve = sliceBezier([
-            { x: next.absX!, y: next.absY! },
-            { x: next.absTx!, y: next.absTy! },
-            { x: temp[i].absX!, y: temp[i].absY! },
+            { x: next.absX, y: next.absY },
+            { x: next.absTx, y: next.absTy },
+            { x: temp[i].absX, y: temp[i].absY },
           ], 0, 1 - c.t2);
           next.absTx = curve[1].x;
           next.absTy = curve[1].y;
@@ -189,8 +222,8 @@ class Polyline extends Geom {
     // 换算为容易渲染的方式，[cx1?, cy1?, cx2?, cy2?, x, y]，贝塞尔控制点是前面的到当前的
     const first = temp[0];
     const p: number[] = [
-      first.absX!,
-      first.absY!,
+      first.absX,
+      first.absY,
     ];
     this.coords.push(p);
     const len = temp.length;
@@ -198,14 +231,14 @@ class Polyline extends Geom {
       const item = temp[i];
       const prev = temp[i - 1];
       const p: number[] = [
-        item.absX!,
-        item.absY!,
+        item.absX,
+        item.absY,
       ];
       if (item.hasCurveTo) {
-        p.unshift(item.absTx!, item.absTy!);
+        p.unshift(item.absTx, item.absTy);
       }
       if (prev.hasCurveFrom) {
-        p.unshift(prev.absFx!, prev.absFy!);
+        p.unshift(prev.absFx, prev.absFy);
       }
       this.coords.push(p);
     }
@@ -213,30 +246,30 @@ class Polyline extends Geom {
     if (this.props.isClosed) {
       const last = temp[len - 1];
       const p: number[] = [
-        first.absX!,
-        first.absY!,
+        first.absX,
+        first.absY,
       ];
       if (first.hasCurveTo) {
-        p.unshift(first.absTx!, first.absTy!);
+        p.unshift(first.absTx, first.absTy);
       }
       if (last.hasCurveFrom) {
-        p.unshift(last.absFx!, last.absFy!);
+        p.unshift(last.absFx, last.absFy);
       }
       this.coords.push(p);
     }
   }
 
   // 根据abs值反向计算相对值
-  reflectPoints(points: Point | Point[] = this.props.points) {
+  reflectPoints(points: ComputedPoint | ComputedPoint[] = this.points) {
     const { width, height } = this;
     const pts = Array.isArray(points) ? points : [points];
     pts.forEach(item => {
-      item.x = item.absX! / width;
-      item.y = item.absY! / height;
-      item.tx = item.absTx! / width;
-      item.ty = item.absTy! / height;
-      item.fx = item.absFx! / width;
-      item.fy = item.absFy! / height;
+      item.x = item.absX / width;
+      item.y = item.absY / height;
+      item.tx = item.absTx / width;
+      item.ty = item.absTy / height;
+      item.fx = item.absFx / width;
+      item.fy = item.absFy / height;
     });
   }
 
@@ -789,20 +822,20 @@ class Polyline extends Geom {
 
   private adjustPoints(dx: number, dy: number) {
     const { width, height } = this;
-    const points = this.props.points;
+    const points = this.points;
     points.forEach((point) => {
-      point.absX! += dx;
-      point.absY! += dy;
-      point.absFx! += dx;
-      point.absFy! += dy;
-      point.absTx! += dx;
-      point.absTy! += dy;
-      point.x = point.absX! / width;
-      point.y = point.absY! / height;
-      point.fx = point.absFx! / width;
-      point.fy = point.absFy! / height;
-      point.tx = point.absTx! / width;
-      point.ty = point.absTy! / height;
+      point.absX += dx;
+      point.absY += dy;
+      point.absFx += dx;
+      point.absFy += dy;
+      point.absTx += dx;
+      point.absTy += dy;
+      point.x = point.absX / width;
+      point.y = point.absY / height;
+      point.fx = point.absFx / width;
+      point.fy = point.absFy / height;
+      point.tx = point.absTx / width;
+      point.ty = point.absTy / height;
     });
   }
 
@@ -841,16 +874,10 @@ class Polyline extends Geom {
     const json = await super.toSketchJson(zip) as SketchFormat.ShapePath;
     json._class = SketchFormat.ClassValue.ShapePath;
     json.isClosed = this.props.isClosed;
-    json.points = this.props.points.map(item => {
+    json.points = this.points.map(item => {
       return {
         _class: 'curvePoint',
         cornerRadius: item.cornerRadius,
-        cornerStyle: [
-          SketchFormat.CornerStyle.Rounded,
-          SketchFormat.CornerStyle.RoundedInverted,
-          SketchFormat.CornerStyle.Angled,
-          SketchFormat.CornerStyle.Squared,
-        ][item.cornerStyle || 0],
         curveMode: [
           SketchFormat.CurveMode.None,
           SketchFormat.CurveMode.Straight,
@@ -863,6 +890,7 @@ class Polyline extends Geom {
         curveFrom: '{' + item.fx + ', ' + item.fy + '}',
         curveTo: '{' + item.tx + ', ' + item.ty + '}',
         point: '{' + item.x + ', ' + item.y + '}',
+        cornerStyle: 0, // 疑似无用但不写报错
       };
     });
     return json;

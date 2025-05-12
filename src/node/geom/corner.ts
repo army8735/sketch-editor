@@ -1,4 +1,4 @@
-import { Point } from '../../format';
+import { ComputedPoint, Point } from '../../format';
 import { CURVE_MODE } from '../../style/define';
 import { bezierLength, bezierSlope, getPointT, getPointByT } from '../../math/bezier';
 import { getRoots } from '../../math/equation';
@@ -30,30 +30,30 @@ type Seg = {
   isDeleted: boolean;
 };
 
-export function isCornerPoint(point: Point) {
+export function isCornerPoint(point: ComputedPoint) {
   return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
 }
 
-export function getStraight(prevPoint: Point, point: Point, nextPoint: Point,
+export function getStraight(prevPoint: ComputedPoint, point: ComputedPoint, nextPoint: ComputedPoint,
                             isPrevCorner: boolean, isNextCorner: boolean, radius: number) {
   // 2直线边长，ABC3个点，A是prev，B是curr，C是next
   const lenAB = pointsDistance(
-    prevPoint.absX!,
-    prevPoint.absY!,
-    point.absX!,
-    point.absY!,
+    prevPoint.absX,
+    prevPoint.absY,
+    point.absX,
+    point.absY,
   );
   const lenBC = pointsDistance(
-    point.absX!,
-    point.absY!,
-    nextPoint.absX!,
-    nextPoint.absY!,
+    point.absX,
+    point.absY,
+    nextPoint.absX,
+    nextPoint.absY,
   );
   const lenAC = pointsDistance(
-    prevPoint.absX!,
-    prevPoint.absY!,
-    nextPoint.absX!,
-    nextPoint.absY!,
+    prevPoint.absX,
+    prevPoint.absY,
+    nextPoint.absX,
+    nextPoint.absY,
   );
   // 三点之间的夹角
   const radian = angleBySides(lenAC, lenAB, lenBC);
@@ -71,19 +71,19 @@ export function getStraight(prevPoint: Point, point: Point, nextPoint: Point,
     radius = dist * tangent;
   }
   // 方向向量
-  const px = prevPoint.absX! - point.absX!,
-    py = prevPoint.absY! - point.absY!;
+  const px = prevPoint.absX - point.absX,
+    py = prevPoint.absY - point.absY;
   const pv = unitize(px, py);
-  const nx = nextPoint.absX! - point.absX!,
-    ny = nextPoint.absY! - point.absY!;
+  const nx = nextPoint.absX - point.absX,
+    ny = nextPoint.absY - point.absY;
   const nv = unitize(nx, ny);
   // 相切的点
   const prevTangent = { x: pv.x * dist, y: pv.y * dist };
-  prevTangent.x += point.absX!;
-  prevTangent.y += point.absY!;
+  prevTangent.x += point.absX;
+  prevTangent.y += point.absY;
   const nextTangent = { x: nv.x * dist, y: nv.y * dist };
-  nextTangent.x += point.absX!;
-  nextTangent.y += point.absY!;
+  nextTangent.x += point.absX;
+  nextTangent.y += point.absY;
   // 计算 cubic handler 位置
   const kappa = (4 / 3) * Math.tan((Math.PI - radian) / 4);
   const prevHandle = {
@@ -106,15 +106,15 @@ export function getStraight(prevPoint: Point, point: Point, nextPoint: Point,
   };
 }
 
-export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
+export function getCurve(prevPoint: ComputedPoint, point: ComputedPoint, nextPoint: ComputedPoint,
                          isPrevCorner: boolean, isNextCorner: boolean, radius: number) {
   // 半径限制，如果相邻也是圆角，则最大为两点距离的一半
   if (isPrevCorner) {
-    const d = Math.sqrt(Math.pow(point.absX! - prevPoint.absX!, 2) + Math.pow(point.absY! - prevPoint.absY!, 2));
+    const d = Math.sqrt(Math.pow(point.absX - prevPoint.absX, 2) + Math.pow(point.absY - prevPoint.absY, 2));
     radius = Math.min(radius, d * 0.5);
   }
   if (isNextCorner) {
-    const d = Math.sqrt(Math.pow(point.absX! - nextPoint.absX!, 2) + Math.pow(point.absY! - nextPoint.absY!, 2));
+    const d = Math.sqrt(Math.pow(point.absX - nextPoint.absX, 2) + Math.pow(point.absY - nextPoint.absY, 2));
     radius = Math.min(radius, d * 0.5);
   }
   /**
@@ -124,14 +124,14 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
    * 但是当2个控制点连线超过中顶点上方时，会变成反向，这种情况也需记录识别记录。
    * 然后再记录前控制点-当前顶点-前顶点的时钟序clockPrev，后控制点相同，辨别控制点是否越过自身边线。
    */
-  const x1 = prevPoint.absFx! - point.absX!;
-  const y1 = prevPoint.absFy! - point.absY!;
-  const x2 = nextPoint.absTx! - point.absX!;
-  const y2 = nextPoint.absTy! - point.absY!;
-  const x3 = prevPoint.absX! - point.absX!;
-  const y3 = prevPoint.absY! - point.absY!;
-  const x4 = nextPoint.absX! - point.absX!;
-  const y4 = nextPoint.absY! - point.absY!;
+  const x1 = prevPoint.absFx - point.absX;
+  const y1 = prevPoint.absFy - point.absY;
+  const x2 = nextPoint.absTx - point.absX;
+  const y2 = nextPoint.absTy - point.absY;
+  const x3 = prevPoint.absX - point.absX;
+  const y3 = prevPoint.absY - point.absY;
+  const x4 = nextPoint.absX - point.absX;
+  const y4 = nextPoint.absY - point.absY;
   const clockCtrl = crossProduct(x1, y1, x2, y2);
   const clockVert = crossProduct(x3, y3, x4, y4);
   const clockPrev = crossProduct(x1, y1, x3, y3);
@@ -141,14 +141,14 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
     return;
   }
   const prev = [
-    { x: prevPoint.absX!, y: prevPoint.absY! },
-    { x: prevPoint.absFx ?? prevPoint.absX!, y: prevPoint.absFy ?? prevPoint.absY! },
-    { x: point.absX!, y: point.absY! },
+    { x: prevPoint.absX, y: prevPoint.absY },
+    { x: prevPoint.absFx ?? prevPoint.absX, y: prevPoint.absFy ?? prevPoint.absY },
+    { x: point.absX, y: point.absY },
   ];
   const next = [
-    { x: point.absX!, y: point.absY! },
-    { x: nextPoint.absTx ?? nextPoint.absX!, y: nextPoint.absTy ?? nextPoint.absY! },
-    { x: nextPoint.absX!, y: nextPoint.absY! },
+    { x: point.absX, y: point.absY },
+    { x: nextPoint.absTx ?? nextPoint.absX, y: nextPoint.absTy ?? nextPoint.absY },
+    { x: nextPoint.absX, y: nextPoint.absY },
   ];
   // 2曲线交点数，需排除顶点
   const its = isec.intersectBezier2Bezier2(
@@ -196,7 +196,7 @@ export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
 
 // 限定(t1, t2]范围内，求出法线交点为圆心，切点为曲线拟合端点
 function getNormalLineIsec(
-  prev: XY[], next: XY[], point: Point,
+  prev: XY[], next: XY[], point: ComputedPoint,
   count: number, isReversed: boolean,
   clockCtrl: number, clockVert: number, clockPrev: number, clockNext: number,
   radius: number, t1: number, t2: number, t3: number, t4: number,
@@ -217,10 +217,10 @@ function getNormalLineIsec(
   if (res.length) {
     let center = res[0];
     if (res.length > 1) {
-      let d = Math.pow(point.absX! - center.x, 2) + Math.pow(point.absY! - center.y, 2);
+      let d = Math.pow(point.absX - center.x, 2) + Math.pow(point.absY - center.y, 2);
       for (let i = 1, len = res.length; i < len; i++) {
         const item = res[i];
-        const di = Math.pow(point.absX! - item.x, 2) + Math.pow(point.absY! - item.y, 2);
+        const di = Math.pow(point.absX - item.x, 2) + Math.pow(point.absY - item.y, 2);
         if (di < d) {
           center = item;
           d = di;

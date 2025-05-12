@@ -1,13 +1,13 @@
 import AbstractCommand from './AbstractCommand';
 import Polyline from '../node/geom/Polyline';
-import { Point } from '../format';
+import { ComputedPoint } from '../format';
 import { clone } from '../util/type';
 import { getPointsAbsByDsp } from '../tools/polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 
 export type PointData = {
-  prev: Point[],
-  next: Point[],
+  prev: ComputedPoint[],
+  next: ComputedPoint[],
 } | undefined; // 没变化就是undefined
 
 class PointCommand extends AbstractCommand {

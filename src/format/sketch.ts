@@ -19,7 +19,7 @@ import {
   TAG_NAME,
 } from './';
 import { PAGE_H, PAGE_W } from './dft';
-import { POINTS_RADIUS_BEHAVIOUR, TEXT_BEHAVIOUR } from '../style/define';
+import { TEXT_BEHAVIOUR } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';
@@ -936,7 +936,6 @@ async function convertItem(
         x: point.x,
         y: point.y,
         cornerRadius: item.cornerRadius,
-        cornerStyle: item.cornerStyle,
         curveMode: item.curveMode,
         hasCurveFrom: item.hasCurveFrom,
         hasCurveTo: item.hasCurveTo,
@@ -963,16 +962,6 @@ async function convertItem(
       strokeMiterlimit,
       styleId,
     } = await geomStyle(layer, opt);
-    let pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.DISABLED;
-    if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Legacy) {
-      pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.LEGACY;
-    }
-    else if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Rounded) {
-      pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.ROUNDED;
-    }
-    else if (layer.pointRadiusBehaviour === SketchFormat.PointsRadiusBehaviour.Smooth) {
-      pointRadiusBehaviour = POINTS_RADIUS_BEHAVIOUR.SMOOTH;
-    }
     return {
       tagName: TAG_NAME.POLYLINE,
       props: {
@@ -985,7 +974,6 @@ async function convertItem(
         isClosed: layer.isClosed,
         // @ts-ignore
         fixedRadius: layer.fixedRadius || 0,
-        pointRadiusBehaviour,
         isRectangle: layer._class === 'rectangle',
         isOval: layer._class === 'oval',
         styleId,

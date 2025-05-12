@@ -410,13 +410,6 @@ export enum CURVE_MODE {
   DISCONNECTED = 4,
 }
 
-export enum CORNER_STYLE {
-  ROUNDED = 0,
-  ROUNDED_INVERTED = 1,
-  ANGLED = 2,
-  SQUARED = 3,
-}
-
 export enum FILL_RULE {
   NON_ZERO = 0,
   EVEN_ODD = 1,
@@ -467,6 +460,12 @@ export enum TEXT_BEHAVIOUR {
   FIXED_W_H = 2,
 }
 
+export enum TEXT_DECORATION {
+  NONE = 0,
+  UNDERLINE = 1,
+  LINE_THROUGH = 2,
+}
+
 export default {
   StyleUnit,
   calUnit,
@@ -478,7 +477,6 @@ export default {
   BLUR,
   BOOLEAN_OPERATION,
   CURVE_MODE,
-  CORNER_STYLE,
   FILL_RULE,
   MASK,
   STROKE_LINE_CAP,
@@ -487,17 +485,5 @@ export default {
   PATTERN_FILL_TYPE,
   TEXT_BEHAVIOUR,
   VISIBILITY,
+  TEXT_DECORATION,
 };
-
-export enum TEXT_DECORATION {
-  NONE = 0,
-  UNDERLINE = 1,
-  LINE_THROUGH = 2,
-}
-
-export enum POINTS_RADIUS_BEHAVIOUR {
-  DISABLED = -1,
-  LEGACY = 0,
-  ROUNDED = 1,
-  SMOOTH = 2,
-}
