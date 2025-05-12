@@ -188,6 +188,7 @@ export type Props = {
 
 export type GeomProps = Props & {
   isClosed: boolean;
+  fixedRadius: number;
 };
 
 export type RootProps = Props & {
@@ -259,7 +260,6 @@ export type Rich = {
 
 export type PolylineProps = GeomProps & {
   points: Point[];
-  fixedRadius: number;
   isRectangle?: boolean;
   isOval?: boolean;
 };

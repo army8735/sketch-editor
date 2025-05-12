@@ -629,16 +629,16 @@ export default class Geometry {
       s2 += '</div>';
       if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
         // 最后一个判断是否闭合
-        if (item.cornerRadius && (i < len || node.props.isClosed)) {
+        if (item.cornerRadius && (i < len || node.isClosed)) {
           s += `<path title="cr${i}" idx="${count++}" d=""></path>`;
         }
-        if (i < len || node.props.isClosed) {
+        if (i < len || node.isClosed) {
           s += `<path title="${i}" idx="${count++}" d=""></path>`;
         }
       }
       else {
         // 最后一个判断是否闭合
-        if (i < len || node.props.isClosed) {
+        if (i < len || node.isClosed) {
           s += `<path title="${i}" idx="${count++}" d=""></path>`;
         }
       }

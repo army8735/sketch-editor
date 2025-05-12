@@ -243,7 +243,7 @@ class Polyline extends Geom {
       this.coords.push(p);
     }
     // 闭合
-    if (this.props.isClosed) {
+    if (this.isClosed) {
       const last = temp[len - 1];
       const p: number[] = [
         first.absX,
@@ -320,7 +320,7 @@ class Polyline extends Geom {
       }
       ctx.beginPath();
       canvasPolygon(ctx, coords, scale, dx2, dy2);
-      if (this.props.isClosed) {
+      if (this.isClosed) {
         ctx.closePath();
       }
       // 先下层的fill
@@ -369,7 +369,7 @@ class Polyline extends Geom {
                   const ctx2 = os.ctx;
                   ctx2.beginPath();
                   canvasPolygon(ctx2, coords, scale, dx2, dy2);
-                  if (this.props.isClosed) {
+                  if (this.isClosed) {
                     ctx2.closePath();
                   }
                   ctx2.save();
@@ -494,7 +494,7 @@ class Polyline extends Geom {
                 const ctx2 = ellipse.ctx;
                 ctx2.beginPath();
                 canvasPolygon(ctx2, coords, scale, dx2, dy2);
-                if (this.props.isClosed) {
+                if (this.isClosed) {
                   ctx2.closePath();
                 }
                 ctx2.clip();
@@ -553,7 +553,7 @@ class Polyline extends Geom {
           ctx.save();
           ctx.beginPath();
           canvasPolygon(ctx, coords, scale, dx2, dy2);
-          if (this.props.isClosed) {
+          if (this.isClosed) {
             ctx.closePath();
           }
           ctx.clip();
@@ -589,7 +589,7 @@ class Polyline extends Geom {
           // 还原给stroke用
           ctx.beginPath();
           canvasPolygon(ctx, coords, scale, dx2, dy2);
-          if (this.props.isClosed) {
+          if (this.isClosed) {
             ctx.closePath();
           }
         }
@@ -662,17 +662,17 @@ class Polyline extends Geom {
               ctx2.strokeStyle = '#FFF';
               ctx2.beginPath();
               canvasPolygon(ctx2, coords, scale, dx2, dy2);
-              if (this.props.isClosed) {
+              if (this.isClosed) {
                 ctx2.closePath();
               }
-              if (p === STROKE_POSITION.INSIDE && this.props.isClosed) {
+              if (p === STROKE_POSITION.INSIDE && this.isClosed) {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.save();
                 ctx2.clip();
                 ctx2.stroke();
                 ctx2.restore();
               }
-              else if (p === STROKE_POSITION.OUTSIDE && this.props.isClosed) {
+              else if (p === STROKE_POSITION.OUTSIDE && this.isClosed) {
                 ctx2.lineWidth = strokeWidth[i] * 2 * scale;
                 ctx2.stroke();
                 ctx2.save();
@@ -708,10 +708,10 @@ class Polyline extends Geom {
         }
         // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
         let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
-        if (p === STROKE_POSITION.INSIDE && this.props.isClosed) {
+        if (p === STROKE_POSITION.INSIDE && this.isClosed) {
           ctx.lineWidth = strokeWidth[i] * 2 * scale;
         }
-        else if (p === STROKE_POSITION.OUTSIDE && this.props.isClosed) {
+        else if (p === STROKE_POSITION.OUTSIDE && this.isClosed) {
           os = inject.getOffscreenCanvas(w, h);
           ctx2 = os.ctx;
           ctx2.setLineDash(ctx.getLineDash());
@@ -726,18 +726,18 @@ class Polyline extends Geom {
         else {
           ctx.lineWidth = strokeWidth[i] * scale;
         }
-        if (this.props.isClosed) {
+        if (this.isClosed) {
           if (ctx2) {
             ctx2.closePath();
           }
         }
-        if (p === STROKE_POSITION.INSIDE && this.props.isClosed) {
+        if (p === STROKE_POSITION.INSIDE && this.isClosed) {
           ctx.save();
           ctx.clip();
           ctx.stroke();
           ctx.restore();
         }
-        else if (p === STROKE_POSITION.OUTSIDE && this.props.isClosed) {
+        else if (p === STROKE_POSITION.OUTSIDE && this.isClosed) {
           ctx2!.stroke();
           ctx2!.save();
           ctx2!.clip();
@@ -840,7 +840,7 @@ class Polyline extends Geom {
   }
 
   toSvg(scale: number) {
-    return super.toSvg(scale, this.props.isClosed);
+    return super.toSvg(scale, this.isClosed);
   }
 
   override clone(override?: Record<string, Override[]>) {
@@ -873,7 +873,7 @@ class Polyline extends Geom {
   override async toSketchJson(zip: JSZip): Promise<SketchFormat.ShapePath> {
     const json = await super.toSketchJson(zip) as SketchFormat.ShapePath;
     json._class = SketchFormat.ClassValue.ShapePath;
-    json.isClosed = this.props.isClosed;
+    json.isClosed = this.isClosed;
     json.points = this.points.map(item => {
       return {
         _class: 'curvePoint',

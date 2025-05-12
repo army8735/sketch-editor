@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { ComputedPoint, Point } from '../format';
+import { ComputedPoint } from '../format';
 import Polyline from '../node/geom/Polyline';
 import { calPoint, inverse4 } from '../math/matrix';
 import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';

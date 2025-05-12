@@ -20,12 +20,16 @@ class Geom extends Node {
   coords?: number[][];
   loaders: Loader[];
   points: ComputedPoint[];
+  isClosed: boolean;
+  fixedRadius: number;
 
   constructor(props: GeomProps) {
     super(props);
     this.isGeom = true;
     this.loaders = [];
     this.points = [];
+    this.isClosed = props.isClosed || false;
+    this.fixedRadius = props.fixedRadius || 0;
   }
 
   override lay(data: LayoutData) {
@@ -196,7 +200,7 @@ class Geom extends Node {
         strokeLinejoin,
         strokeMiterlimit,
       } = this.computedStyle;
-      const isClosed = (this.props as GeomProps).isClosed;
+      const isClosed = this.isClosed;
       // 所有描边最大值，影响bbox，可能链接点会超过原本的线粗范围
       let border = 0;
       strokeWidth.forEach((item, i) => {
