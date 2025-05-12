@@ -932,11 +932,24 @@ async function convertItem(
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
       const curveTo = parseStrPoint(item.curveTo);
+      let curveMode = 'none' as Point['curveMode'];
+      if (item.curveMode === SketchFormat.CurveMode.Straight) {
+        curveMode = 'straight';
+      }
+      else if (item.curveMode === SketchFormat.CurveMode.Mirrored) {
+        curveMode = 'mirrored';
+      }
+      else if (item.curveMode === SketchFormat.CurveMode.Asymmetric) {
+        curveMode = 'asymmetric';
+      }
+      else if (item.curveMode === SketchFormat.CurveMode.Disconnected) {
+        curveMode = 'disconnected';
+      }
       return {
         x: point.x,
         y: point.y,
         cornerRadius: item.cornerRadius,
-        curveMode: item.curveMode,
+        curveMode,
         hasCurveFrom: item.hasCurveFrom,
         hasCurveTo: item.hasCurveTo,
         fx: curveFrom.x,
