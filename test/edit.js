@@ -153,11 +153,10 @@ function toPoint() {
     input.value = JSON.stringify(nodes.map(node => {
       return [
         count,
-        node.props.points.map(item => ({
+        node.points.map(item => ({
           x: item.x,
           y: item.y,
           cornerRadius: item.cornerRadius,
-          cornerStyle: item.cornerStyle,
           curveMode: item.curveMode,
           hasCurveFrom: item.hasCurveFrom,
           hasCurveTo: item.hasCurveTo,
@@ -183,11 +182,10 @@ function toPoint() {
     }
     input.value = JSON.stringify([
       count++,
-      node.props.points.map(item => ({
+      node.points.map(item => ({
         x: item.x,
         y: item.y,
         cornerRadius: item.cornerRadius,
-        cornerStyle: item.cornerStyle,
         curveMode: item.curveMode,
         hasCurveFrom: item.hasCurveFrom,
         hasCurveTo: item.hasCurveTo,
