@@ -24,7 +24,7 @@ class PointCommand extends AbstractCommand {
       if (!data[i]) {
         return;
       }
-      (node as Polyline).props.points = clone(data[i].next);
+      (node as Polyline).points = clone(data[i].next);
       getPointsAbsByDsp(node as Polyline);
       // 可能会牵扯到尺寸变更，先用abs值反向计算相对值
       (node as Polyline).reflectPoints();
@@ -43,7 +43,7 @@ class PointCommand extends AbstractCommand {
       if (!data[i]) {
         return;
       }
-      (node as Polyline).props.points = clone(data[i].prev);
+      (node as Polyline).points = clone(data[i].prev);
       getPointsAbsByDsp(node as Polyline);
       (node as Polyline).reflectPoints();
       (node as Polyline).refresh();

@@ -2068,7 +2068,7 @@ export default class Listener extends Event {
               geometry.updateVertex(node);
               data.push({
                 prev,
-                next: clone(node.props.points),
+                next: clone(node.points),
               });
               points.push(pts);
             }
