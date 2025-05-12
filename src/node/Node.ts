@@ -203,6 +203,7 @@ class Node extends Event {
     }
   }
 
+  // layout后触发，渲染之前
   didMount() {
   }
 
@@ -335,7 +336,6 @@ class Node extends Event {
     }
     node.willMount();
     parent.insertStruct(node, i + 1);
-    let didMount = false;
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
       cb && cb(sync);
     });
@@ -369,7 +369,6 @@ class Node extends Event {
     }
     node.willMount();
     parent.insertStruct(node, i);
-    let didMount = false;
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
       cb && cb(sync);
     });

@@ -354,15 +354,9 @@ class Root extends Container implements FrameCallback {
     const res = this.calUpdate(node, lv, addDom, removeDom);
     if (res) {
       this.asyncDraw(cb);
-      if (addDom) {
-        node.didMount();
-      }
     }
     else {
       cb && cb(true);
-      if (addDom) {
-        node.didMount();
-      }
       if (!this.imgLoadingCount && !this.breakMerge && !this.tileRemain) {
         this.emit(Event.REFRESH_COMPLETE, RefreshLevel.NONE);
       }
