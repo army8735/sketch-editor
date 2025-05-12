@@ -181,19 +181,9 @@ class Container<T extends Node = Node> extends Node {
     }
     node.willMount();
     this.insertStruct(node, len);
-    let didMount = false;
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      // 仅sync会提前发生
-      if (!didMount) {
-        didMount = true;
-        node.didMount();
-      }
       cb && cb(sync);
     });
-    if (!didMount) {
-      didMount = true;
-      node.didMount();
-    }
   }
 
   prependChild(node: T, cb?: (sync: boolean) => void) {
@@ -219,19 +209,9 @@ class Container<T extends Node = Node> extends Node {
     }
     node.willMount();
     this.insertStruct(node, 0);
-    let didMount = false;
     root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      // 仅sync会提前发生
-      if (!didMount) {
-        didMount = true;
-        node.didMount();
-      }
       cb && cb(sync);
     });
-    if (!didMount) {
-      didMount = true;
-      node.didMount();
-    }
   }
 
   removeChild(node: Node, cb?: (sync: boolean) => void) {

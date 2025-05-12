@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { ComputedPoint, JNode, Override, Point, PolylineProps, TAG_NAME } from '../../format';
+import { ComputedPoint, JNode, Override, PolylineProps, TAG_NAME } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
 import { calSize, color2rgbaInt, color2rgbaStr } from '../../style/css';

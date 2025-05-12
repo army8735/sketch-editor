@@ -187,7 +187,6 @@ class Root extends Container implements FrameCallback {
     // 刷新动画侦听，目前就一个Root
     frame.addRoot(this);
     this.reLayout();
-    this.didMount();
     // 先设置的page和index，再附加到canvas上，需刷新
     this.addUpdate(this, [], RefreshLevel.REFLOW);
   }
@@ -355,9 +354,15 @@ class Root extends Container implements FrameCallback {
     const res = this.calUpdate(node, lv, addDom, removeDom);
     if (res) {
       this.asyncDraw(cb);
+      if (addDom) {
+        node.didMount();
+      }
     }
     else {
       cb && cb(true);
+      if (addDom) {
+        node.didMount();
+      }
       if (!this.imgLoadingCount && !this.breakMerge && !this.tileRemain) {
         this.emit(Event.REFRESH_COMPLETE, RefreshLevel.NONE);
       }

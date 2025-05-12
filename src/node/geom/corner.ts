@@ -1,9 +1,9 @@
-import { ComputedPoint, Point } from '../../format';
+import { ComputedPoint } from '../../format';
 import { CURVE_MODE } from '../../style/define';
-import { bezierLength, bezierSlope, getPointT, getPointByT } from '../../math/bezier';
+import { bezierLength, bezierSlope, getPointByT, getPointT } from '../../math/bezier';
 import { getRoots } from '../../math/equation';
 import { crossProduct, unitize } from '../../math/vector';
-import { angleBySides, pointsDistance, isRectsOverlap } from '../../math/geom';
+import { angleBySides, isRectsOverlap, pointsDistance } from '../../math/geom';
 import isec from '../../math/isec';
 
 export type XY = {
@@ -31,7 +31,8 @@ type Seg = {
 };
 
 export function isCornerPoint(point: ComputedPoint) {
-  return point.curveMode === CURVE_MODE.STRAIGHT && point.cornerRadius > 0;
+  return (point.curveMode === CURVE_MODE.STRAIGHT || point.curveMode === CURVE_MODE.NONE)
+    && point.cornerRadius > 0;
 }
 
 export function getStraight(prevPoint: ComputedPoint, point: ComputedPoint, nextPoint: ComputedPoint,
