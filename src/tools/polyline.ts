@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { ComputedPoint } from '../format';
+import { Point } from '../format';
 import Polyline from '../node/geom/Polyline';
 import { calPoint, inverse4 } from '../math/matrix';
 import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
@@ -85,7 +85,7 @@ export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: num
   }
   // 所有点依次判断
   const points = node.points;
-  points.forEach((item: ComputedPoint, i) => {
+  points.forEach((item: Point, i) => {
     const p = calPoint({
       x: item.absX,
       y: item.absY,
@@ -98,7 +98,7 @@ export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: num
 }
 
 // 类似node的basicInfo，顶点abs坐标相对于AP的展示坐标
-export function getPointsDspByAbs(node: Polyline, points?: ComputedPoint | ComputedPoint[]) {
+export function getPointsDspByAbs(node: Polyline, points?: Point | Point[]) {
   const m = getBasicMatrix(node);
   if (!points) {
     points = node.points;
@@ -127,7 +127,7 @@ export function getPointsDspByAbs(node: Polyline, points?: ComputedPoint | Compu
   });
 }
 
-export function getPointsAbsByDsp(node: Polyline, points?: ComputedPoint | ComputedPoint[]) {
+export function getPointsAbsByDsp(node: Polyline, points?: Point | Point[]) {
   const m = getBasicMatrix(node);
   if (!points) {
     points = node.points;

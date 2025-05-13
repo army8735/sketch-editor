@@ -5,7 +5,7 @@ import Listener from './Listener';
 import { getPointWithDByApprox, sliceBezier } from '../math/bezier';
 import { CURVE_MODE } from '../style/define';
 import { r2d } from '../math/geom';
-import { ComputedPoint } from '../format';
+import { Point } from '../format';
 import { clone, equal } from '../util/type';
 import PointCommand, { PointData } from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
@@ -19,7 +19,7 @@ export default class Geometry {
   keepVertPath?: boolean; // 按下顶点或边时特殊标识，后续外部冒泡侦听按下识别
   nodes: Polyline[];
   idxes: number[][]; // 当前激活点索引，多个编辑节点下的多个顶点，一维是node索引
-  clonePoints: ComputedPoint[][]; // 同上，编辑前的point数据
+  clonePoints: Point[][]; // 同上，编辑前的point数据
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -127,7 +127,7 @@ export default class Geometry {
             const next = points[i + 1] || points[0];
             const mx = p.x / w;
             const my = p.y / h;
-            const mid: ComputedPoint = {
+            const mid: Point = {
               x: mx,
               y: my,
               absX: p.x,
@@ -321,7 +321,7 @@ export default class Geometry {
       // 拖动顶点，多个顶点的话其它的也随之变动
       if (isDrag) {
         const nodes: Polyline[] = [];
-        const data: ComputedPoint[][] = [];
+        const data: Point[][] = [];
         this.nodes.forEach((item, i) => {
           const pts = this.idxes[i].map(j => {
             const p = item.points[j];
@@ -807,11 +807,11 @@ export default class Geometry {
 
   emitSelectPoint() {
     const nodes: Polyline[] = [];
-    const points: ComputedPoint[][] = [];
+    const points: Point[][] = [];
     this.nodes.map((item, i) => {
       const idxes = this.idxes[i];
       if (idxes.length) {
-        const list: ComputedPoint[] = [];
+        const list: Point[] = [];
         idxes.forEach(i => {
           list.push(item.points[i]);
         });

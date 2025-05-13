@@ -15,7 +15,7 @@ import {
   JSymbolMaster,
   JText,
   Override,
-  Point,
+  JPoint,
   TAG_NAME,
 } from './';
 import { PAGE_H, PAGE_W } from './dft';
@@ -928,11 +928,11 @@ async function convertItem(
     layer._class === SketchFormat.ClassValue.Polygon ||
     layer._class === SketchFormat.ClassValue.ShapePath
   ) {
-    const points: Point[] = layer.points.map((item: any) => {
+    const points: JPoint[] = layer.points.map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
       const curveTo = parseStrPoint(item.curveTo);
-      let curveMode = 'none' as Point['curveMode'];
+      let curveMode = 'none' as JPoint['curveMode'];
       if (item.curveMode === SketchFormat.CurveMode.Straight) {
         curveMode = 'straight';
       }

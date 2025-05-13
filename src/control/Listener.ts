@@ -21,7 +21,7 @@ import state from './state';
 import picker from './picker';
 import contextMenu from './contextMenu';
 import { clone } from '../util/type';
-import { ArtBoardProps, BreakMaskStyle, ComputedPoint, JStyle, MaskModeStyle } from '../format';
+import { ArtBoardProps, BreakMaskStyle, Point, JStyle, MaskModeStyle } from '../format';
 import {
   getArtBoardByPoint,
   getFrameNodes,
@@ -2068,7 +2068,7 @@ export default class Listener extends Event {
           const geometry = this.geometry;
           const nodes: Polyline[] = [];
           const data: PointData[] = [];
-          const points: ComputedPoint[][] = [];
+          const points: Point[][] = [];
           geometry.nodes.forEach((node, i) => {
             const idxes = geometry.idxes[i];
             // 应该肯定有

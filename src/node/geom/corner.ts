@@ -1,4 +1,4 @@
-import { ComputedPoint } from '../../format';
+import { Point } from '../../format';
 import { CURVE_MODE } from '../../style/define';
 import { bezierLength, bezierSlope, getPointByT, getPointT } from '../../math/bezier';
 import { getRoots } from '../../math/equation';
@@ -30,12 +30,12 @@ type Seg = {
   isDeleted: boolean;
 };
 
-export function isCornerPoint(point: ComputedPoint) {
+export function isCornerPoint(point: Point) {
   return (point.curveMode === CURVE_MODE.STRAIGHT || point.curveMode === CURVE_MODE.NONE)
     && point.cornerRadius > 0;
 }
 
-export function getStraight(prevPoint: ComputedPoint, point: ComputedPoint, nextPoint: ComputedPoint,
+export function getStraight(prevPoint: Point, point: Point, nextPoint: Point,
                             isPrevCorner: boolean, isNextCorner: boolean, radius: number) {
   // 2直线边长，ABC3个点，A是prev，B是curr，C是next
   const lenAB = pointsDistance(
@@ -107,7 +107,7 @@ export function getStraight(prevPoint: ComputedPoint, point: ComputedPoint, next
   };
 }
 
-export function getCurve(prevPoint: ComputedPoint, point: ComputedPoint, nextPoint: ComputedPoint,
+export function getCurve(prevPoint: Point, point: Point, nextPoint: Point,
                          isPrevCorner: boolean, isNextCorner: boolean, radius: number) {
   // 半径限制，如果相邻也是圆角，则最大为两点距离的一半
   if (isPrevCorner) {
@@ -197,7 +197,7 @@ export function getCurve(prevPoint: ComputedPoint, point: ComputedPoint, nextPoi
 
 // 限定(t1, t2]范围内，求出法线交点为圆心，切点为曲线拟合端点
 function getNormalLineIsec(
-  prev: XY[], next: XY[], point: ComputedPoint,
+  prev: XY[], next: XY[], point: Point,
   count: number, isReversed: boolean,
   clockCtrl: number, clockVert: number, clockPrev: number, clockNext: number,
   radius: number, t1: number, t2: number, t3: number, t4: number,

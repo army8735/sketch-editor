@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { ComputedPoint, JNode, Override, PolylineProps, TAG_NAME } from '../../format';
+import { Point, JNode, Override, PolylineProps, TAG_NAME } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
 import { calSize, color2rgbaInt, color2rgbaStr } from '../../style/css';
@@ -58,7 +58,7 @@ class Polyline extends Geom {
         dspFy: 0,
         dspTx: 0,
         dspTy: 0,
-      }) as ComputedPoint);
+      }) as Point);
     });
     this.isPolyline = true;
   }
@@ -143,7 +143,7 @@ class Polyline extends Geom {
       const c = cache[i];
       if (c) {
         const { prevTangent, prevHandle, nextTangent, nextHandle } = c;
-        const p: ComputedPoint = {
+        const p: Point = {
           x: 0,
           y: 0,
           cornerRadius: 0,
@@ -167,7 +167,7 @@ class Polyline extends Geom {
           dspTx: 0,
           dspTy: 0,
         };
-        const n: ComputedPoint = {
+        const n: Point = {
           x: 0,
           y: 0,
           cornerRadius: 0,
@@ -260,7 +260,7 @@ class Polyline extends Geom {
   }
 
   // 根据abs值反向计算相对值
-  reflectPoints(points: ComputedPoint | ComputedPoint[] = this.points) {
+  reflectPoints(points: Point | Point[] = this.points) {
     const { width, height } = this;
     const pts = Array.isArray(points) ? points : [points];
     pts.forEach(item => {

@@ -1239,7 +1239,7 @@ export function getBasicInfo(node: Node) {
     // isLine: false,
     // length: 0,
     // angle: 0,
-    // points: [] as Point[],
+    // points: [] as JPoint[],
   };
   // if (node instanceof Polyline) {
   //   res.isLine = node.isLine();

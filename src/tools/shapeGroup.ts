@@ -4,7 +4,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import { sortTempIndex } from './node';
 import { group } from './group';
 import Polyline from '../node/geom/Polyline';
-import { JStyle, Point } from '../format';
+import { JStyle, JPoint } from '../format';
 import { CURVE_MODE } from '../style/define';
 import inject from '../util/inject';
 
@@ -174,7 +174,7 @@ function coords2Points(cs: number[][], width: number, height: number) {
       ty: hasCurveTo ? prev[3] / height : y,
       hasCurveFrom,
       hasCurveTo,
-    } as Point;
+    } as JPoint;
   });
 }
 

@@ -4,7 +4,7 @@ import Listener from './Listener';
 import state from './state';
 import Polyline from '../node/geom/Polyline';
 import { CURVE_MODE } from '../style/define';
-import { ComputedPoint } from '../format';
+import { Point } from '../format';
 import { clone } from '../util/type';
 import PointCommand from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
@@ -53,7 +53,7 @@ class PointPanel extends Panel {
     dom.appendChild(panel);
 
     const nodes: Polyline[] = [];
-    const prevPoint: ComputedPoint[][] = [];
+    const prevPoint: Point[][] = [];
 
     panel.addEventListener('click', (e) => {
       this.silence = true;
@@ -172,7 +172,7 @@ class PointPanel extends Panel {
       const value = parseFloat(isX ? x.value : y.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
-      const data: ComputedPoint[][] = [];
+      const data: Point[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {
@@ -293,7 +293,7 @@ class PointPanel extends Panel {
       const value = parseFloat(range.value) || 0;
       rangeAlt = false;
       const isFirst = !nodes.length;
-      const data: ComputedPoint[][] = [];
+      const data: Point[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {
@@ -326,7 +326,7 @@ class PointPanel extends Panel {
       const value = parseFloat(number.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
-      const data: ComputedPoint[][] = [];
+      const data: Point[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {

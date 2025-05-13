@@ -13,7 +13,7 @@ import {
   JShapeGroup,
   JStyle,
   JText,
-  Point,
+  JPoint,
   TAG_NAME,
 } from './';
 import { PAGE_H as H, PAGE_W as W } from './dft';
@@ -634,7 +634,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     }
     const w2 = right - left;
     const h2 = bottom - top;
-    const points: Point[] = [];
+    const points: JPoint[] = [];
     keyDescriptorList.forEach(item => {
       const { keyOriginRRectRadii, keyOriginShapeBoundingBox } = item;
       if (keyOriginShapeBoundingBox) {

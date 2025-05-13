@@ -259,7 +259,7 @@ export type Rich = {
 };
 
 export type PolylineProps = GeomProps & {
-  points: Point[];
+  points: JPoint[];
   isRectangle?: boolean;
   isOval?: boolean;
 };
@@ -267,7 +267,7 @@ export type PolylineProps = GeomProps & {
 export type ShapeGroupProps = Props & {
 };
 
-export type Point = {
+export type JPoint = {
   x: number;
   y: number;
   cornerRadius: number;
@@ -292,7 +292,7 @@ export type Point = {
   // dspTy?: number;
 };
 
-export type ComputedPoint = Omit<Point, 'curveMode'> & {
+export type Point = Omit<JPoint, 'curveMode'> & {
   curveMode: CURVE_MODE;
   absX: number; // 算上宽高的绝对像素值
   absY: number;
