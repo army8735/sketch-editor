@@ -9,7 +9,6 @@ export function createRect() {
   return new Polyline({
     uuid: uuid.v4(),
     name: '矩形',
-    index: 0,
     style: {
       fill: ['#D8D8D8'],
       fillEnable: [true],
@@ -38,7 +37,6 @@ export function createOval() {
   return new Polyline({
     uuid: uuid.v4(),
     name: '椭圆形',
-    index: 0,
     style: {
       fill: ['#D8D8D8'],
       fillEnable: [true],
@@ -57,6 +55,32 @@ export function createOval() {
     ],
     isClosed: true,
     isOval: true,
+    fixedRadius: 0,
+  });
+}
+
+export function createRound() {
+  return new Polyline({
+    uuid: uuid.v4(),
+    name: '圆角矩形',
+    style: {
+      fill: ['#D8D8D8'],
+      fillEnable: [true],
+      fillOpacity: [1],
+      stroke: ['#979797'],
+      strokeEnable: [true],
+      strokeWidth: [1],
+      strokePosition: ['center'],
+      strokeMode: ['normal'],
+    },
+    points: [
+      { x: 0, y: 0, cornerRadius: 8, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0, fy: 0, tx: 0, ty: 0 },
+      { x: 1, y: 0, cornerRadius: 8, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 1, fy: 0, tx: 1, ty: 0 },
+      { x: 1, y: 1, cornerRadius: 8, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 1, fy: 1, tx: 1, ty: 1 },
+      { x: 0, y: 1, cornerRadius: 8, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0, fy: 1, tx: 0, ty: 1 },
+    ],
+    isClosed: true,
+    isRectangle: true,
     fixedRadius: 0,
   });
 }

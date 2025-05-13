@@ -8,6 +8,7 @@ export enum state {
   ADD_TEXT = 6, // 添加文字状态，按下会变成编辑
   ADD_RECT = 7, // 添加矢量
   ADD_OVAL = 8,
+  ADD_ROUND = 9,
 }
 
 export default state;

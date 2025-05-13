@@ -21,6 +21,7 @@ const geomHtml = `
 <ul class="sub">
   <li title="rect"><b class="rect"></b><span class="name">矩形</span><span class="key">R</span></li>
   <li title="oval"><b class="oval"></b><span class="name">椭圆形</span><span class="key">O</span></li>
+  <li title="round"><b class="round"></b><span class="name">圆角矩形</span><span class="key">U</span></li>
   <li title="line"><b class="line"></b><span class="name">直线</span><span class="key">L</span></li>
   <li title="arrow"><b class="arrow"></b><span class="name">箭头</span></li>
   <li title="triangle"><b class="triangle"></b><span class="name">三角形</span></li>
@@ -200,6 +201,9 @@ class Toolbar {
         listener.select.hideSelect();
       }
       else if (title === 'round') {
+        listener.state = state.ADD_ROUND;
+        listener.dom.classList.add('add-round');
+        listener.select.hideSelect();
       }
       else if (title === 'oval') {
         listener.state = state.ADD_OVAL;

@@ -5,6 +5,7 @@ export default class AddGeom {
   dom: HTMLElement;
   rect: HTMLElement;
   oval: HTMLElement;
+  round: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement) {
     this.root = root;
@@ -19,6 +20,11 @@ export default class AddGeom {
     oval.className = 'oval';
     oval.style.display = 'none';
     dom.appendChild(oval);
+
+    const round = this.round = document.createElement('div');
+    round.className = 'round';
+    round.style.display = 'none';
+    dom.appendChild(round);
   }
 
   show(style: CSSStyleDeclaration, x: number, y: number) {
@@ -94,6 +100,21 @@ export default class AddGeom {
 
   hideOval() {
     const { clientWidth: w, clientHeight: h, style } = this.oval;
+    return this.hide(style, w, h);
+  }
+
+  showRound(x: number, y: number) {
+    const style = this.round.style;
+    this.show(style, x, y);
+  }
+
+  updateRound(w: number, h: number) {
+    const style = this.round.style;
+    this.update(style, w, h);
+  }
+
+  hideRound() {
+    const { clientWidth: w, clientHeight: h, style } = this.round;
     return this.hide(style, w, h);
   }
 }
