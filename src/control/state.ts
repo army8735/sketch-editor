@@ -7,6 +7,7 @@ export enum state {
   EDIT_GEOM = 5, // 编辑矢量
   ADD_TEXT = 6, // 添加文字状态，按下会变成编辑
   ADD_RECT = 7, // 添加矢量
+  ADD_OVAL = 8,
 }
 
 export default state;

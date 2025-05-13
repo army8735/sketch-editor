@@ -199,8 +199,13 @@ class Toolbar {
         listener.dom.classList.add('add-rect');
         listener.select.hideSelect();
       }
-      else if (title === 'round') {}
-      else if (title === 'oval') {}
+      else if (title === 'round') {
+      }
+      else if (title === 'oval') {
+        listener.state = state.ADD_OVAL;
+        listener.dom.classList.add('add-oval');
+        listener.select.hideSelect();
+      }
       else if (title === 'triangle') {}
       else if (title === 'star') {}
       else if (title === 'line') {}

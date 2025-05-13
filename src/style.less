@@ -1016,13 +1016,17 @@
       }
     }
 
-    .rect {
+    .rect, .oval {
       box-sizing: border-box;
       position: absolute;
       border: 1px solid #979797;
       box-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
       transform-origin: 0 0;
       pointer-events: none;
+    }
+
+    .oval {
+      border-radius: 50%;
     }
   }
 

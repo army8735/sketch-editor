@@ -9,12 +9,7 @@ import Group from '../node/Group';
 import Slice from '../node/Slice';
 import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
-import {
-  ComputedStyle,
-  Style,
-  StyleUnit,
-  VISIBILITY
-} from '../style/define';
+import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import AddGeom from './AddGeom';
 import Select, { Rect } from './Select';
@@ -26,13 +21,13 @@ import state from './state';
 import picker from './picker';
 import contextMenu from './contextMenu';
 import { clone } from '../util/type';
-import { ArtBoardProps, BreakMaskStyle, ComputedPoint, JStyle, MaskModeStyle, Point } from '../format';
+import { ArtBoardProps, BreakMaskStyle, ComputedPoint, JStyle, MaskModeStyle } from '../format';
 import {
   getArtBoardByPoint,
   getFrameNodes,
   getNodeByPoint,
   getOffsetByPoint,
-  getOverlayArtBoardByPoint
+  getOverlayArtBoardByPoint,
 } from '../tools/root';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
@@ -65,7 +60,7 @@ import PointCommand, { PointData } from '../history/PointCommand';
 import BoolGroupCommand from '../history/BoolGroupCommand';
 import FlattenCommand from '../history/FlattenCommand';
 import { appendWithPosAndSize } from '../tools/container';
-import { createRect, getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
+import { createOval, createRect, getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
 
 export type ListenerOptions = {
   enabled?: {
@@ -518,10 +513,16 @@ export default class Listener extends Event {
       this.state = state.EDIT_TEXT;
       this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
     }
-    else if (this.state === state.ADD_RECT) {
+    else if (this.state === state.ADD_RECT
+      || this.state === state.ADD_OVAL) {
       this.startX = (e.clientX - this.originX);
       this.startY = (e.clientY - this.originY);
-      this.addGeom.showRect(this.startX, this.startY);
+      if (this.state === state.ADD_RECT) {
+        this.addGeom.showRect(this.startX, this.startY);
+      }
+      else if (this.state === state.ADD_OVAL) {
+        this.addGeom.showOval(this.startX, this.startY);
+      }
     }
     // 点到canvas上，也有可能在canvas外，逻辑一样
     else {
@@ -870,10 +871,16 @@ export default class Listener extends Event {
           this.emit(Listener.CURSOR_NODE, selected.slice(0));
         }
       }
-      else if (this.state === state.ADD_RECT) {
+      else if (this.state === state.ADD_RECT
+        || this.state === state.ADD_OVAL) {
         const w = (e.clientX - this.originX - this.startX);
         const h = (e.clientY - this.originY - this.startY);
-        this.addGeom.updateRect(w, h);
+        if (this.state === state.ADD_RECT) {
+          this.addGeom.updateRect(w, h);
+        }
+        else if (this.state === state.ADD_OVAL) {
+          this.addGeom.updateOval(w, h);
+        }
       }
       else {
         if (this.options.disabled?.move) {
@@ -1185,14 +1192,25 @@ export default class Listener extends Event {
         }
       }
     }
-    else if (this.state === state.ADD_RECT) {
-      let { x, y, width, height } = this.addGeom.hideRect();
+    else if (this.state === state.ADD_RECT
+      || this.state === state.ADD_OVAL) {
+      const old = this.state;
+      const addGeom = this.addGeom;
+      const hide = {
+        [state.ADD_RECT]: addGeom.hideRect,
+        [state.ADD_OVAL]: addGeom.hideOval,
+      }[old] as Function;
+      let { x, y, w, h } = hide.call(addGeom);
       const dpi = this.root.dpi;
       x *= dpi;
       y *= dpi;
-      width *= dpi;
-      height *= dpi;
-      const rect = createRect();
+      w *= dpi;
+      h *= dpi;
+      const create = {
+        [state.ADD_RECT]: createRect,
+        [state.ADD_OVAL]: createOval,
+      }[old] as Function;
+      const node = create();
       const page = this.root.getCurPage()!;
       const zoom = page.getZoom();
       // 已选节点第0个作为兄弟节点参考
@@ -1200,22 +1218,22 @@ export default class Listener extends Event {
         const prev = this.selected[0];
         const container = prev.parent!;
         const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
-        rect.updateStyle({
+        node.updateStyle({
           left: left * 100 / container.width + '%',
           top: top * 100 / container.height + '%',
-          right: (right - width / zoom) * 100 / container.width + '%',
-          bottom: (bottom - height / zoom) * 100 / container.height + '%',
+          right: (right - w / zoom) * 100 / container.width + '%',
+          bottom: (bottom - h / zoom) * 100 / container.height + '%',
         });
-        prev.insertAfter(rect);
+        prev.insertAfter(node);
       }
       // 无已选看是否是画板内
       else {
         let artBoard: ArtBoard | undefined;
         const pts = [
           { x, y },
-          { x, y: y + height },
-          { x: x + width, y },
-          { x: x + width, y: y + height },
+          { x, y: y + h },
+          { x: x + w, y },
+          { x: x + w, y: y + h },
         ];
         for (let i = 0, len = pts.length; i < len; i++) {
           const pt = pts[i];
@@ -1226,26 +1244,30 @@ export default class Listener extends Event {
         }
         const container = artBoard || page;
         const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
-        rect.updateStyle({
+        node.updateStyle({
           left: left * 100 / container.width + '%',
           top: top * 100 / container.height + '%',
-          right: (right - width / zoom) * 100 / container.width + '%',
-          bottom: (bottom - height / zoom) * 100 / container.height + '%',
+          right: (right - w / zoom) * 100 / container.width + '%',
+          bottom: (bottom - h / zoom) * 100 / container.height + '%',
         });
-        container.appendChild(rect);
+        container.appendChild(node);
       }
       this.selected.splice(0);
-      this.selected.push(rect);
+      this.selected.push(node);
       this.select.showSelect(this.selected);
       this.dom.classList.remove('add-rect');
-      this.history.addCommand(new AddCommand([rect], [{
-        x: rect.computedStyle.left,
-        y: rect.computedStyle.top,
-        parent: rect.parent!,
+      this.dom.classList.remove('add-oval');
+      this.dom.classList.remove('add-round');
+      this.dom.classList.remove('add-line');
+      this.dom.classList.remove('add-star');
+      this.history.addCommand(new AddCommand([node], [{
+        x: node.computedStyle.left,
+        y: node.computedStyle.top,
+        parent: node.parent!,
       }]));
-      this.emit(Listener.ADD_NODE, [rect]);
+      this.emit(Listener.ADD_NODE, [node]);
       this.state = state.NORMAL;
-      this.emit(Listener.STATE_CHANGE, state.ADD_RECT, this.state);
+      this.emit(Listener.STATE_CHANGE, old, this.state);
     }
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点

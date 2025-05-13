@@ -32,6 +32,35 @@ export function createRect() {
   });
 }
 
+export function createOval() {
+  const t = 0.2238576251;
+  const f = 0.7761423749;
+  return new Polyline({
+    uuid: uuid.v4(),
+    name: '椭圆形',
+    index: 0,
+    style: {
+      fill: ['#D8D8D8'],
+      fillEnable: [true],
+      fillOpacity: [1],
+      stroke: ['#979797'],
+      strokeEnable: [true],
+      strokeWidth: [1],
+      strokePosition: ['center'],
+      strokeMode: ['normal'],
+    },
+    points: [
+      { x: 0.5, y: 0, cornerRadius: 0, curveMode: 'mirrored', hasCurveFrom: true, hasCurveTo: true, fx: t, fy: 0, tx: f, ty: 0 },
+      { x: 0, y: 0.5, cornerRadius: 0, curveMode: 'mirrored', hasCurveFrom: true, hasCurveTo: true, fx: 0, fy: f, tx: 0, ty: t },
+      { x: 0.5, y: 1, cornerRadius: 0, curveMode: 'mirrored', hasCurveFrom: true, hasCurveTo: true, fx: f, fy: 1, tx: t, ty: 1 },
+      { x: 1, y: 0.5, cornerRadius: 0, curveMode: 'mirrored', hasCurveFrom: true, hasCurveTo: true, fx: 1, fy: t, tx: 1, ty: f },
+    ],
+    isClosed: true,
+    isOval: true,
+    fixedRadius: 0,
+  });
+}
+
 // 框选范围内的顶点
 export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: number, y2: number) {
   const list: number[] = [];
@@ -133,4 +162,5 @@ export default {
   getPointsDspByAbs,
   getPointsAbsByDsp,
   createRect,
+  createOval,
 };
