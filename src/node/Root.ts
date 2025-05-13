@@ -188,7 +188,16 @@ class Root extends Container implements FrameCallback {
     frame.addRoot(this);
     this.reLayout();
     // 先设置的page和index，再附加到canvas上，需刷新
-    this.addUpdate(this, [], RefreshLevel.REFLOW);
+    this.addUpdate(this, [], RefreshLevel.REFLOW, true);
+  }
+
+  // 不渲染为了获取布局数据
+  appendFake() {
+    // 渲染前设置必要的父子兄弟关系和结构
+    this.willMount();
+    this.structs = this.structure(0);
+    this.reLayout();
+    this.didMount();
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
@@ -393,6 +402,9 @@ class Root extends Container implements FrameCallback {
       // 除了特殊如窗口缩放变更canvas画布会影响根节点，其它都只会是变更节点自己
       if (node === this) {
         this.reLayout();
+        if (addDom) {
+          this.didMount();
+        }
       }
       else {
         checkReflow(node, addDom, removeDom);

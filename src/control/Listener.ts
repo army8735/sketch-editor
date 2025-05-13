@@ -200,8 +200,10 @@ export default class Listener extends Event {
     dom.addEventListener('dblclick', this.onDblClick.bind(this));
     dom.addEventListener('wheel', this.onWheel.bind(this));
     dom.addEventListener('contextmenu', this.onContextMenu.bind(this));
-    document.addEventListener('keydown', this.onKeyDown.bind(this));
-    document.addEventListener('keyup', this.onKeyUp.bind(this));
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', this.onKeyDown.bind(this));
+      document.addEventListener('keyup', this.onKeyUp.bind(this));
+    }
   }
 
   // 更新dom的位置做原点坐标，鼠标按下或touch按下时
@@ -1170,8 +1172,7 @@ export default class Listener extends Event {
           text.updateStyle({
             left: (text.computedStyle.left + w * 0.5) * 100 / container.width + '%',
             translateX: '-50%',
-            right: 'auto',
-            bottom: 'auto',
+            translateY: '-50%',
           });
         }
       }
@@ -1213,8 +1214,7 @@ export default class Listener extends Event {
           text.updateStyle({
             left: (text.computedStyle.left + w * 0.5) * 100 / container.width + '%',
             translateX: '-50%',
-            right: 'auto',
-            bottom: 'auto',
+            translateY: '-50%',
           });
         }
       }
@@ -2490,13 +2490,26 @@ export default class Listener extends Event {
       }
     }
     // toolbar上的快捷键
-    else if ((keyCode === 82 || code === 'KeyR') && this.state !== state.EDIT_TEXT) {}
-    else if ((keyCode === 79 || code === 'keyO') && this.state !== state.EDIT_TEXT) {}
-    else if ((keyCode === 85 || code === 'KeyU') && this.state !== state.EDIT_TEXT) {}
-    else if ((keyCode === 76 || code === 'KeyL') && this.state !== state.EDIT_TEXT) {}
-    else if ((keyCode === 86 || code === 'KeyV') && this.state !== state.EDIT_TEXT) {}
-    else if ((keyCode === 72 || code === 'KeyH') && this.state !== state.EDIT_TEXT) {}
-    else if ((keyCode === 84 || code === 'KeyT') && this.state !== state.EDIT_TEXT) {}
+    else if ((keyCode === 86 || code === 'KeyV'
+      || keyCode === 72 || code === 'KeyH'
+      || keyCode === 82 || code === 'KeyR'
+      || keyCode === 79 || code === 'keyO'
+      || keyCode === 85 || code === 'KeyU'
+      || keyCode === 76 || code === 'KeyL'
+      || keyCode === 84 || code === 'KeyT') && this.state !== state.EDIT_TEXT) {
+      // if (picker.isShow()) {
+      //   picker.hide();
+      // }
+      // this.cancelEditGeom();
+      // this.cancelEditGradient();
+      // this.dom.classList.remove('hand');
+      // if (keyCode === 86 || code === 'KeyV') {}
+      // else if (keyCode === 82 || code === 'KeyR') {
+      //   this.state = state.ADD_RECT;
+      //   this.dom.classList.add('add-rect');
+      //   this.select.hideSelect();
+      // }
+    }
   }
 
   onKeyUp(e: KeyboardEvent) {

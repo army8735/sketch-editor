@@ -301,6 +301,10 @@ class Toolbar {
       //   }
       // }
     });
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keyup', e => {});
+    }
   }
 }
 
