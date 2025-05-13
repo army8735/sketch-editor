@@ -57,7 +57,9 @@ sketchEditor
     // 图层树结构展示
     sketchEditor.control.initTree(root, document.querySelector('#tree'), listener);
     // 右侧属性面板展示
-    sketchEditor.control.initPanel(root, document.querySelector('#side'), listener);
+    sketchEditor.control.initPanel(root, document.querySelector('#side'), listener, {
+      maxFontSize: 1000, // 可选panel配置字体限制
+    });
     // 缩放情况展示
     sketchEditor.control.initZoom(root, document.querySelector('#zoom'), listener);
     // toolbar展示（持续补齐功能中）

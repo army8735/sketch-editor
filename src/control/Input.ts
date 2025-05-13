@@ -120,7 +120,7 @@ export default class Input {
       e.stopPropagation(); // 不冒泡更上层的粘贴元素
       const s = e.clipboardData?.getData('text');
       if (s) {
-        onInput(s);
+        // onInput(s);
       }
     });
     inputEl.addEventListener('compositionstart', (e) => {
