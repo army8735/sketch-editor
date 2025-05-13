@@ -68,6 +68,7 @@ import {
   getFrameVertexes,
   getPointsAbsByDsp
 } from '../tools/polyline';
+import { createText } from '../tools/text';
 
 export type ListenerOptions = {
   enabled?: {
@@ -430,95 +431,9 @@ export default class Listener extends Event {
     }
     // 添加文字
     else if (this.state === state.ADD_TEXT) {
-      const page = this.root.getCurPage()!;
-      const zoom = page.getZoom();
-      const x = (e.clientX - this.originX) * dpi;
-      const y = (e.clientY - this.originY) * dpi;
-      const content = '输入文本';
-      const text = new Text({
-        uuid: uuid.v4(),
-        name: content,
-        index: 0,
-        style: {
-          fontFamily: 'Arial',
-          fontStyle: 'normal',
-          fontWeight: 400,
-          fontSize: 16,
-          lineHeight: 0,
-          textAlign: 'left',
-          textDecoration: [],
-          letterSpacing: 0,
-          paragraphSpacing: 0,
-          color: '#000',
-          translateY: '-50%',
-        },
-        content,
-        rich: [{
-          location: 0,
-          length: 4,
-          fontFamily: 'Arial',
-          fontStyle: 'normal',
-          fontWeight: 400,
-          fontSize: 16,
-          lineHeight: 0,
-          textAlign: 'left',
-          textDecoration: [],
-          letterSpacing: 0,
-          paragraphSpacing: 0,
-          color: '#000',
-        }],
-      });
-      // 点在画板上特殊对待
-      const ab = getArtBoardByPoint(this.root, x, y);
-      if (ab) {
-        const br = ab.getBoundingClientRect();
-        const dx = (x - br.left) / zoom;
-        const dy = (y - br.top) / zoom;
-        text.updateStyle({
-          left: dx * 100 / ab.width + '%',
-          top: dy * 100 / ab.height + '%',
-        });
-        ab.appendChild(text);
-        // 默认左对齐，垂直已居中，调整translateX
-        const w = text.width;
-        text.updateStyle({
-          left: (text.computedStyle.left + w * 0.5) * 100 / ab.width + '%',
-          translateX: '-50%',
-        });
-      }
-      else {
-        const { left, top } = getOffsetByPoint(root, x, y);
-        text.updateStyle({
-          left: left * 100 / page.width + '%',
-          top: top * 100 / page.height + '%',
-        });
-        page.appendChild(text);
-        // 默认左对齐，垂直已居中，调整translateX
-        const w = text.width;
-        text.updateStyle({
-          left: (text.computedStyle.left + w * 0.5) * 100 / page.width + '%',
-          translateX: '-50%',
-        });
-      }
-      // 添加后进入编辑态
-      this.selected.splice(0);
-      this.selected.push(text);
-      this.select.showSelect(this.selected);
-      // 全选内容
-      this.input.show(text, e.clientX - this.originX, e.clientY - this.originY);
-      this.input.node!.selectAll();
-      this.input.hideCursor();
-      text.beforeEdit();
-      this.select.select.classList.add('text');
-      this.dom.classList.remove('text');
-      this.history.addCommand(new AddCommand([text], [{
-        x: text.computedStyle.left,
-        y: text.computedStyle.top,
-        parent: text.parent!,
-      }]));
-      this.emit(Listener.ADD_NODE, [text]);
-      this.state = state.EDIT_TEXT;
-      this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
+      this.startX = (e.clientX - this.originX);
+      this.startY = (e.clientY - this.originY);
+      this.addGeom.showRect(this.startX, this.startY);
     }
     else if (this.state === state.ADD_RECT
       || this.state === state.ADD_OVAL
@@ -886,6 +801,11 @@ export default class Listener extends Event {
           this.emit(Listener.CURSOR_NODE, selected.slice(0));
         }
       }
+      else if (this.state === state.ADD_TEXT) {
+        const w = (e.clientX - this.originX - this.startX);
+        const h = (e.clientY - this.originY - this.startY);
+        this.addGeom.updateRect(w, h);
+      }
       else if (this.state === state.ADD_RECT
         || this.state === state.ADD_OVAL
         || this.state === state.ADD_ROUND
@@ -1214,6 +1134,105 @@ export default class Listener extends Event {
           }
         }
       }
+    }
+    else if (this.state === state.ADD_TEXT) {
+      let { x, y, w, h } = this.addGeom.hideRect();
+      const dpi = this.root.dpi;
+      x *= dpi;
+      y *= dpi;
+      w *= dpi;
+      h *= dpi;
+      const text = createText('输入文本');
+      const page = this.root.getCurPage()!;
+      const zoom = page.getZoom();
+      // 已选节点第0个作为兄弟节点参考
+      if (this.selected.length) {
+        const prev = this.selected[0];
+        const container = prev.parent!;
+        const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
+        if (w && h) {
+          text.updateStyle({
+            left: left * 100 / container.width + '%',
+            top: top * 100 / container.height + '%',
+            right: (right - w / zoom) * 100 / container.width + '%',
+            bottom: (bottom - h / zoom) * 100 / container.height + '%',
+          });
+        }
+        else {
+          text.updateStyle({
+            left: left * 100 / container.width + '%',
+            top: top * 100 / container.height + '%',
+          });
+        }
+        prev.insertAfter(text);
+        if (!w || !h) {
+          const w = text.width;
+          text.updateStyle({
+            left: (text.computedStyle.left + w * 0.5) * 100 / page.width + '%',
+            translateX: '-50%',
+          });
+        }
+      }
+      // 无已选看是否是画板内
+      else {
+        let artBoard: ArtBoard | undefined;
+        const pts = [
+          { x, y },
+          { x, y: y + h },
+          { x: x + w, y },
+          { x: x + w, y: y + h },
+        ];
+        for (let i = 0, len = pts.length; i < len; i++) {
+          const pt = pts[i];
+          artBoard = getArtBoardByPoint(this.root, pt.x, pt.y);
+          if (artBoard) {
+            break;
+          }
+        }
+        const container = artBoard || page;
+        const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
+        if (w && h) {
+          text.updateStyle({
+            left: left * 100 / container.width + '%',
+            top: top * 100 / container.height + '%',
+            right: (right - w / zoom) * 100 / container.width + '%',
+            bottom: (bottom - h / zoom) * 100 / container.height + '%',
+          });
+        }
+        else {
+          text.updateStyle({
+            left: left * 100 / container.width + '%',
+            top: top * 100 / container.height + '%',
+          });
+        }
+        container.appendChild(text);
+        if (!w || !h) {
+          const w = text.width;
+          text.updateStyle({
+            left: (text.computedStyle.left + w * 0.5) * 100 / page.width + '%',
+            translateX: '-50%',
+          });
+        }
+      }
+      // 添加后进入编辑态
+      this.selected.splice(0);
+      this.selected.push(text);
+      this.select.showSelect(this.selected);
+      // 全选内容，位置无所谓后面会全选
+      this.input.show(text, this.startX, this.startY);
+      this.input.node!.selectAll();
+      this.input.hideCursor();
+      text.beforeEdit();
+      this.select.select.classList.add('text');
+      this.dom.classList.remove('text');
+      this.history.addCommand(new AddCommand([text], [{
+        x: text.computedStyle.left,
+        y: text.computedStyle.top,
+        parent: text.parent!,
+      }]));
+      this.emit(Listener.ADD_NODE, [text]);
+      this.state = state.EDIT_TEXT;
+      this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
     }
     else if (this.state === state.ADD_RECT
       || this.state === state.ADD_OVAL

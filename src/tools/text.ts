@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import Text from '../node/Text';
 import { color2hexStr } from '../style/css';
 import {
@@ -5,11 +6,10 @@ import {
   StyleNumValue,
   StyleUnit,
   TEXT_ALIGN,
-  TEXT_BEHAVIOUR,
   TEXT_VERTICAL_ALIGN
 } from '../style/define';
 import fontInfo from '../style/font'
-import { Rich, ResizeStyle } from '../format';
+import { ResizeStyle, Rich, TextProps } from '../format';
 
 export const SIZE_LIST = [
   6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 21, 24, 36, 48, 60, 72,
@@ -30,7 +30,7 @@ function putInfo(
   autoLineHeight: boolean[],
   paragraphSpacing: number[],
   textAlign: TEXT_ALIGN[],
-  textBehaviour: TEXT_BEHAVIOUR[],
+  textBehaviour: TextProps['textBehaviour'][],
   obj: Rich | Pick<ComputedStyle, 'fontFamily' | 'color' | 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing' | 'textAlign'>,
   isRich = false,
 ) {
@@ -113,7 +113,7 @@ function putInfo(
 
 export function getTextBehaviour(node: Text) {
   const { left, right, top, bottom, width, height } = node.style;
-  let tb = TEXT_BEHAVIOUR.AUTO;
+  let tb: TextProps['textBehaviour'] = 'auto';
   const autoW = width.u === StyleUnit.AUTO
     && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
   const autoH = height.u === StyleUnit.AUTO
@@ -121,10 +121,10 @@ export function getTextBehaviour(node: Text) {
   if (autoW && autoH) {
   }
   else if (autoH) {
-    tb = TEXT_BEHAVIOUR.FIXED_W;
+    tb = 'autoH';
   }
   else {
-    tb = TEXT_BEHAVIOUR.FIXED_W_H;
+    tb = 'fixed';
   }
   return tb;
 }
@@ -142,7 +142,7 @@ export function getTextInfo(nodes: Text[]) {
   const paragraphSpacing: number[] = [];
   const textAlign: TEXT_ALIGN[] = [];
   const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [];
-  const textBehaviour: TEXT_BEHAVIOUR[] = [];
+  const textBehaviour: TextProps['textBehaviour'][] = [];
   const fontWeight: string[] = [];
   for (let i = 0, len = nodes.length; i < len; i++) {
     const node = nodes[i];
@@ -246,7 +246,7 @@ export function getEditTextInfo(node: Text) {
   const paragraphSpacing: number[] = [];
   const textAlign: TEXT_ALIGN[] = [];
   const textVerticalAlign: TEXT_VERTICAL_ALIGN[] = [node.computedStyle.textVerticalAlign];
-  const textBehaviour: TEXT_BEHAVIOUR[] = [];
+  const textBehaviour: TextProps['textBehaviour'][] = [];
   const fontWeight: string[] = [];
   const richList = node.getCursorRich();
   const { lineHeight: lh } = node.style;
@@ -294,11 +294,11 @@ export function getEditTextInfo(node: Text) {
   };
 }
 
-export function setTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
+export function setTextBehaviour(node: Text, behaviour: TextProps['textBehaviour']) {
   const next: ResizeStyle = {};
   const style = node.getStyle();
   const { left, right, top, bottom, width, height } = style;
-  if (behaviour === TEXT_BEHAVIOUR.AUTO) {
+  if (behaviour === 'auto') {
     // width不自动时设置为auto
     if (width.u !== StyleUnit.AUTO) {
       next.width = 'auto';
@@ -332,7 +332,7 @@ export function setTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
       }
     }
   }
-  else if (behaviour === TEXT_BEHAVIOUR.FIXED_W) {
+  else if (behaviour === 'autoH') {
     // width不固定时设置为固定px，但要排除left和right都是PX的情况
     if (width.u !== StyleUnit.PX && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
       next.width = node.width;
@@ -370,7 +370,7 @@ export function setTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
       }
     }
   }
-  else if (behaviour === TEXT_BEHAVIOUR.FIXED_W_H) {
+  else if (behaviour === 'fixed') {
     // width不固定时设置为固定px，但要排除left和right都是PX的情况
     if (width.u !== StyleUnit.PX && !(left.u === StyleUnit.PX && right.u === StyleUnit.PX)) {
       next.width = node.width;
@@ -418,12 +418,48 @@ export function setTextBehaviour(node: Text, behaviour: TEXT_BEHAVIOUR) {
   node.checkPosSizeUpward();
 }
 
+export function createText(content: string) {
+  return new Text({
+    uuid: uuid.v4(),
+    name: content,
+    index: 0,
+    style: {
+      fontFamily: 'Arial',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      fontSize: 16,
+      lineHeight: 0,
+      textAlign: 'left',
+      textDecoration: [],
+      letterSpacing: 0,
+      paragraphSpacing: 0,
+      color: '#000',
+    },
+    content,
+    rich: [{
+      location: 0,
+      length: 4,
+      fontFamily: 'Arial',
+      fontStyle: 'normal',
+      fontWeight: 400,
+      fontSize: 16,
+      lineHeight: 0,
+      textAlign: 'left',
+      textDecoration: [],
+      letterSpacing: 0,
+      paragraphSpacing: 0,
+      color: '#000',
+    }],
+    textBehaviour: 'auto',
+  });
+}
+
 export default {
-  TEXT_BEHAVIOUR,
   SIZE_LIST,
   getTextInfo,
   getEditTextInfo,
   getTextBehaviour,
   setTextBehaviour,
   getFontWeightList,
+  createText,
 };

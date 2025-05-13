@@ -4,7 +4,7 @@ import Text from '../node/Text';
 import { toPrecision } from '../math';
 import style from '../style';
 import { getEditTextInfo, getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tools/text';
-import { ComputedGradient, ComputedPattern, TEXT_ALIGN, TEXT_BEHAVIOUR, TEXT_VERTICAL_ALIGN } from '../style/define';
+import { ComputedGradient, ComputedPattern, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import RichCommand, { RichData } from '../history/RichCommand';
 import VerticalAlignCommand, { VerticalAlignData } from '../history/VerticalAlignCommand';
@@ -12,7 +12,7 @@ import Listener from './Listener';
 import picker from './picker';
 import state from './state';
 import Panel from './Panel';
-import { Rich } from '../format';
+import { Rich, TextProps } from '../format';
 import fontInfo, { FontData } from '../style/font';
 import font from '../style/font';
 import inject from '../util/inject';
@@ -522,12 +522,12 @@ class TextPanel extends Panel {
       else if ((classList.contains('auto') || classList.contains('fw') || classList.contains('fwh'))
         && !classList.contains('cur')) {
         nodes = this.nodes.slice(0);
-        let next = TEXT_BEHAVIOUR.AUTO;
+        let next: TextProps['textBehaviour'] = 'auto';
         if (classList.contains('fw')) {
-          next = TEXT_BEHAVIOUR.FIXED_W;
+          next = 'autoH';
         }
         else if (classList.contains('fwh')) {
-          next = TEXT_BEHAVIOUR.FIXED_W_H;
+          next = 'fixed';
         }
         const data: ResizeData[] = [];
         nodes.map(item => {
@@ -543,18 +543,18 @@ class TextPanel extends Panel {
             aspectRatio: false,
             fromCenter: false,
           };
-          if (tb === TEXT_BEHAVIOUR.AUTO) {
+          if (tb === 'auto') {
             rd.widthFromAuto = true;
             rd.heightFromAuto = true;
           }
-          else if (tb === TEXT_BEHAVIOUR.FIXED_W) {
+          else if (tb === 'autoH') {
             rd.heightFromAuto = true;
           }
-          if (next === TEXT_BEHAVIOUR.AUTO) {
+          if (next === 'auto') {
             rd.widthToAuto = true;
             rd.heightToAuto = true;
           }
-          else if (next === TEXT_BEHAVIOUR.FIXED_W) {
+          else if (next === 'autoH') {
             rd.heightToAuto = true;
           }
           data.push(rd);
@@ -896,15 +896,15 @@ class TextPanel extends Panel {
       const txt = panel.querySelector('.wh .txt') as HTMLSpanElement;
       if (o.textBehaviour.length === 1) {
         const tb = o.textBehaviour[0];
-        if (tb === TEXT_BEHAVIOUR.AUTO) {
+        if (tb === 'auto') {
           panel.querySelector('.wh .auto')!.classList.add('cur');
           txt.innerHTML = '自动宽度';
         }
-        else if (tb === TEXT_BEHAVIOUR.FIXED_W) {
+        else if (tb === 'autoH') {
           panel.querySelector('.wh .fw')!.classList.add('cur');
           txt.innerHTML = '自动高度';
         }
-        else if (tb === TEXT_BEHAVIOUR.FIXED_W_H) {
+        else if (tb === 'fixed') {
           panel.querySelector('.wh .fwh')!.classList.add('cur');
           txt.innerHTML = '固定尺寸';
         }

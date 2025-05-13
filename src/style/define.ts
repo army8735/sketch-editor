@@ -454,12 +454,6 @@ export enum VISIBILITY {
   HIDDEN = 1,
 }
 
-export enum TEXT_BEHAVIOUR {
-  AUTO = 0,
-  FIXED_W = 1,
-  FIXED_W_H = 2,
-}
-
 export enum TEXT_DECORATION {
   NONE = 0,
   UNDERLINE = 1,
@@ -483,7 +477,6 @@ export default {
   STROKE_LINE_JOIN,
   STROKE_POSITION,
   PATTERN_FILL_TYPE,
-  TEXT_BEHAVIOUR,
   VISIBILITY,
   TEXT_DECORATION,
 };

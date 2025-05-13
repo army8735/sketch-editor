@@ -26,7 +26,6 @@ import {
   Style,
   StyleUnit,
   TEXT_ALIGN,
-  TEXT_BEHAVIOUR,
   TEXT_DECORATION,
   TEXT_VERTICAL_ALIGN,
 } from '../style/define';
@@ -226,9 +225,9 @@ class Text extends Node {
     const { style, computedStyle, width, height, lineBoxList } = this;
     // 特殊逻辑，由于字体的不确定性，自动尺寸的文本框在其它环境下中心点对齐可能会偏差，因此最初的尺寸位置需记录，
     // 待布局后css标准化，双击编辑文本有改变后会重回正常尺寸
-    if (textBehaviour === TEXT_BEHAVIOUR.AUTO || textBehaviour === TEXT_BEHAVIOUR.FIXED_W) {
+    if (textBehaviour === 'auto' || textBehaviour === 'autoH') {
       let check = false;
-      if (textBehaviour === TEXT_BEHAVIOUR.AUTO && style.width.u !== StyleUnit.AUTO) {
+      if (textBehaviour === 'auto' && style.width.u !== StyleUnit.AUTO) {
         let max = 0;
         lineBoxList.forEach(item => {
           max = Math.max(max, item.width);
@@ -3332,22 +3331,22 @@ class Text extends Node {
     const res = new Text(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);
-    if (props.textBehaviour === TEXT_BEHAVIOUR.AUTO) {
-      res.style.width = {
-        v: this.width,
-        u: StyleUnit.PX,
-      };
-      res.style.height = {
-        v: this.height,
-        u: StyleUnit.PX,
-      };
-    }
-    else if (props.textBehaviour === TEXT_BEHAVIOUR.FIXED_W) {
-      res.style.height = {
-        v: this.height,
-        u: StyleUnit.PX,
-      };
-    }
+    // if (props.textBehaviour === 'auto') {
+    //   res.style.width = {
+    //     v: this.width,
+    //     u: StyleUnit.PX,
+    //   };
+    //   res.style.height = {
+    //     v: this.height,
+    //     u: StyleUnit.PX,
+    //   };
+    // }
+    // else if (props.textBehaviour === 'autoH') {
+    //   res.style.height = {
+    //     v: this.height,
+    //     u: StyleUnit.PX,
+    //   };
+    // }
     return res;
   }
 

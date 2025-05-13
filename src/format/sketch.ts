@@ -16,10 +16,9 @@ import {
   JText,
   Override,
   JPoint,
-  TAG_NAME,
+  TAG_NAME, TextProps,
 } from './';
 import { PAGE_H, PAGE_W } from './dft';
-import { TEXT_BEHAVIOUR } from '../style/define';
 import font from '../style/font';
 import { r2d } from '../math/geom';
 import reg from '../style/reg';
@@ -702,7 +701,7 @@ async function convertItem(
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
     const tb = layer.textBehaviour;
-    let textBehaviour: TEXT_BEHAVIOUR;
+    let textBehaviour: TextProps['textBehaviour'];
     /**
      * sketch独有，优先级高于ResizingConstraint，指明文本框的对齐方式。
      * sketch中自动宽的文本不能左右固定只能最多一方，因此都是translate:-50%的中心对齐。
@@ -710,7 +709,7 @@ async function convertItem(
      * 所以传入，并在初始化时考虑translate:-50%的计算居中对齐。
      */
     if (tb === SketchFormat.TextBehaviour.Flexible) {
-      textBehaviour = TEXT_BEHAVIOUR.AUTO;
+      textBehaviour = 'auto';
       // 左右类型，是固定宽度，width无用但保留
       if (left !== 'auto' && right !== 'auto') {
         right = 'auto';
@@ -741,7 +740,7 @@ async function convertItem(
       height = layer.frame.height;
     }
     else if (tb === SketchFormat.TextBehaviour.Fixed) {
-      textBehaviour = TEXT_BEHAVIOUR.FIXED_W;
+      textBehaviour = 'autoH';
       if (top !== 'auto' && bottom !== 'auto') {
         bottom = 'auto';
         const t = parseFloat(top.toString());
@@ -757,7 +756,7 @@ async function convertItem(
     }
     // FixedWidthAndHeight啥也不干，等同普通节点的固定宽高，脏数据不太可能，也认为是固定尺寸
     else {
-      textBehaviour = TEXT_BEHAVIOUR.FIXED_W_H;
+      textBehaviour = 'fixed';
     }
     const { string, attributes } = layer.attributedString;
     const rich: JRich[] = attributes.length
