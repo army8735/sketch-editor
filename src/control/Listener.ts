@@ -1168,8 +1168,10 @@ export default class Listener extends Event {
         if (!w || !h) {
           const w = text.width;
           text.updateStyle({
-            left: (text.computedStyle.left + w * 0.5) * 100 / page.width + '%',
+            left: (text.computedStyle.left + w * 0.5) * 100 / container.width + '%',
             translateX: '-50%',
+            right: 'auto',
+            bottom: 'auto',
           });
         }
       }
@@ -1209,8 +1211,10 @@ export default class Listener extends Event {
         if (!w || !h) {
           const w = text.width;
           text.updateStyle({
-            left: (text.computedStyle.left + w * 0.5) * 100 / page.width + '%',
+            left: (text.computedStyle.left + w * 0.5) * 100 / container.width + '%',
             translateX: '-50%',
+            right: 'auto',
+            bottom: 'auto',
           });
         }
       }
@@ -1936,7 +1940,6 @@ export default class Listener extends Event {
       this.hover(x, y);
     }
     const { keyCode, code } = e;
-    // console.log(keyCode, code);
     const target = e.target as HTMLElement; // 忽略输入时
     const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase());
     // backspace/delete
@@ -2486,6 +2489,14 @@ export default class Listener extends Event {
         }
       }
     }
+    // toolbar上的快捷键
+    else if ((keyCode === 82 || code === 'KeyR') && this.state !== state.EDIT_TEXT) {}
+    else if ((keyCode === 79 || code === 'keyO') && this.state !== state.EDIT_TEXT) {}
+    else if ((keyCode === 85 || code === 'KeyU') && this.state !== state.EDIT_TEXT) {}
+    else if ((keyCode === 76 || code === 'KeyL') && this.state !== state.EDIT_TEXT) {}
+    else if ((keyCode === 86 || code === 'KeyV') && this.state !== state.EDIT_TEXT) {}
+    else if ((keyCode === 72 || code === 'KeyH') && this.state !== state.EDIT_TEXT) {}
+    else if ((keyCode === 84 || code === 'KeyT') && this.state !== state.EDIT_TEXT) {}
   }
 
   onKeyUp(e: KeyboardEvent) {

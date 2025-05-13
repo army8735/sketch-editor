@@ -22,12 +22,12 @@ const geomHtml = `
   <li title="rect"><b class="rect"></b><span class="name">矩形</span><span class="key">R</span></li>
   <li title="oval"><b class="oval"></b><span class="name">椭圆形</span><span class="key">O</span></li>
   <li title="round"><b class="round"></b><span class="name">圆角矩形</span><span class="key">U</span></li>
-  <li title="line"><b class="line"></b><span class="name">直线</span><span class="key">L</span></li>
-  <li title="arrow"><b class="arrow"></b><span class="name">箭头</span></li>
+<!--  <li title="line"><b class="line"></b><span class="name">直线</span><span class="key">L</span></li>-->
+<!--  <li title="arrow"><b class="arrow"></b><span class="name">箭头</span></li>-->
   <li title="triangle"><b class="triangle"></b><span class="name">三角形</span></li>
-  <li title="star"><b class="star"></b><span class="name">星形</span></li>
-  <li class="split"></li>
-  <li title="pen"><b class="pen"></b><span class="name">钢笔</span><span class="key">P</span></li>
+<!--  <li title="star"><b class="star"></b><span class="name">星形</span></li>-->
+<!--  <li class="split"></li>-->
+<!--  <li title="pen"><b class="pen"></b><span class="name">钢笔</span><span class="key">P</span></li>-->
 </ul>
 `;
 
