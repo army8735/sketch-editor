@@ -18,6 +18,7 @@ import font from '../style/font';
 import inject from '../util/inject';
 import { color2rgbaStr } from '../style/css';
 import { RefreshLevel } from '../refresh/level';
+import { PanelOptions } from './opts';
 
 const html = `
   <h4 class="panel-title">字符<b class="btn arrow"></b></h4>
@@ -81,7 +82,7 @@ class TextPanel extends Panel {
   panel: HTMLElement;
   nodes: Text[];
 
-  constructor(root: Root, dom: HTMLElement, listener: Listener) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener, opts?: PanelOptions) {
     super(root, dom, listener);
     this.nodes = [];
 
@@ -104,6 +105,10 @@ class TextPanel extends Panel {
     const ps = panel.querySelector('.ps input') as HTMLInputElement;
     const ff = panel.querySelector('.ff select') as HTMLSelectElement;
     const fw = panel.querySelector('.weight select') as HTMLSelectElement;
+
+    if (opts?.maxFontSize && opts.maxFontSize > 0) {
+      fs.setAttribute('max', opts.maxFontSize.toString());
+    }
 
     let nodes: Text[] = [];
     let prevs: Rich[][] = [];

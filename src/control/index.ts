@@ -22,6 +22,7 @@ import contextMenu from './contextMenu';
 import Guides from './Guides';
 import Toolbar from './Toolbar';
 import state from './state';
+import { PanelOptions } from './opts';
 
 export function initPageList(root: Root, dom: HTMLElement, listener: Listener) {
   return new PageList(root, dom, listener);
@@ -39,7 +40,7 @@ export function initTree(root: Root, dom: HTMLElement, listener: Listener) {
   return new Tree(root, dom, listener);
 }
 
-export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
+export function initPanel(root: Root, dom: HTMLElement, listener: Listener, opts?: PanelOptions) {
   const alignPanel = new AlignPanel(root, dom, listener);
   alignPanel.show(listener.selected);
 
@@ -61,7 +62,7 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener) {
   const strokePanel = new StrokePanel(root, dom, listener);
   strokePanel.show(listener.selected);
 
-  const textPanel = new TextPanel(root, dom, listener);
+  const textPanel = new TextPanel(root, dom, listener, opts);
   textPanel.show(listener.selected);
 
   const shadowPanel = new ShadowPanel(root, dom, listener);
