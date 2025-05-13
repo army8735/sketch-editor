@@ -85,6 +85,63 @@ export function createRound() {
   });
 }
 
+export function createTriangle() {
+  return new Polyline({
+    uuid: uuid.v4(),
+    name: '三角形',
+    style: {
+      fill: ['#D8D8D8'],
+      fillEnable: [true],
+      fillOpacity: [1],
+      stroke: ['#979797'],
+      strokeEnable: [true],
+      strokeWidth: [1],
+      strokePosition: ['center'],
+      strokeMode: ['normal'],
+    },
+    points: [
+      { x: 0.5, y: 0, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.5, fy: 0, tx: 0.5, ty: 0 },
+      { x: 1, y: 1, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 1, fy: 1, tx: 1, ty: 1 },
+      { x: 0, y: 1, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0, fy: 1, tx: 0, ty: 1 },
+    ],
+    isClosed: true,
+    isRectangle: true,
+    fixedRadius: 0,
+  });
+}
+
+// export function createStar() {
+//   return new Polyline({
+//     uuid: uuid.v4(),
+//     name: '星形',
+//     style: {
+//       fill: ['#D8D8D8'],
+//       fillEnable: [true],
+//       fillOpacity: [1],
+//       stroke: ['#979797'],
+//       strokeEnable: [true],
+//       strokeWidth: [1],
+//       strokePosition: ['center'],
+//       strokeMode: ['normal'],
+//     },
+//     points: [
+//       { x: 0.5, y: 0.75, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.5, fy: 0.75, tx: 0.5, ty: 0.75 },
+//       { x: 0.2061073738537635, y: 0.9045084971874737, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.2061073738537635, fy: 0.9045084971874737, tx: 0.2061073738537635, ty: 0.9045084971874737 },
+//       { x: 0.2622358709262116, y: 0.5772542485937369, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.2622358709262116, fy: 0.5772542485937369, tx: 0.2622358709262116, ty: 0.5772542485937369 },
+//       { x: 0.02447174185242318, y: 0.3454915028125264, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.02447174185242318, fy: 0.3454915028125264, tx: 0.02447174185242318, ty: 0.3454915028125264 },
+//       { x: 0.35305368692688166, y: 0.29774575140626314, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.35305368692688166, fy: 0.29774575140626314, tx: 0.35305368692688166, ty: 0.29774575140626314 },
+//       { x: 0.5, y: 0, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.5, fy: 0, tx: 0.5, ty: 0 },
+//       { x: 0.6469463130731182, y: 0.29774575140626314, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.6469463130731182, fy: 0.29774575140626314, tx: 0.6469463130731182, ty: 0.29774575140626314 },
+//       { x: 0.9755282581475768, y: 0.34549150281252616, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.9755282581475768, fy: 0.34549150281252616, tx: 0.9755282581475768, ty: 0.34549150281252616 },
+//       { x: 0.7377641290737884, y: 0.5772542485937368, cornerRadius: 8, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.7377641290737884, fy: 0.5772542485937368, tx: 0.7377641290737884, ty: 0.5772542485937368 },
+//       { x: 0.7938926261462367, y: 0.9045084971874736, cornerRadius: 8, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0.7938926261462367, fy: 0.9045084971874736, tx: 0.7938926261462367, ty: 0.9045084971874736 },
+//     ],
+//     isClosed: true,
+//     isRectangle: true,
+//     fixedRadius: 0,
+//   });
+// }
+
 // 框选范围内的顶点
 export function getFrameVertexes(node: Polyline, x1: number, y1: number, x2: number, y2: number) {
   const list: number[] = [];

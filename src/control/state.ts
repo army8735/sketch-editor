@@ -9,6 +9,8 @@ export enum state {
   ADD_RECT = 7, // 添加矢量
   ADD_OVAL = 8,
   ADD_ROUND = 9,
+  ADD_TRIANGLE = 10,
+  ADD_STAR = 11,
 }
 
 export default state;

@@ -1016,13 +1016,14 @@
       }
     }
 
-    .rect, .oval, .round {
+    .rect, .oval, .round, .triangle, .star {
       box-sizing: border-box;
       position: absolute;
       border: 1px solid #979797;
       box-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
       transform-origin: 0 0;
       pointer-events: none;
+      overflow: visible;
     }
 
     .oval {
@@ -1031,6 +1032,10 @@
 
     .round {
       border-radius: 8px;
+    }
+
+    .triangle, .star {
+      border: none;
     }
   }
 

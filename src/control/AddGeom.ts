@@ -6,6 +6,8 @@ export default class AddGeom {
   rect: HTMLElement;
   oval: HTMLElement;
   round: HTMLElement;
+  triangle: HTMLElement;
+  star: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement) {
     this.root = root;
@@ -25,6 +27,17 @@ export default class AddGeom {
     round.className = 'round';
     round.style.display = 'none';
     dom.appendChild(round);
+
+    const triangle = this.triangle = document.createElement('div');
+    triangle.className = 'triangle';
+    triangle.style.display = 'none';
+    triangle.innerHTML = '<svg><path d="" stroke="#979797" fill="none" stroke-width="1"></path></svg>';
+    dom.appendChild(triangle);
+
+    const star = this.star = document.createElement('div');
+    star.className = 'star';
+    star.style.display = 'none';
+    // dom.appendChild(star);
   }
 
   show(style: CSSStyleDeclaration, x: number, y: number) {
@@ -117,5 +130,35 @@ export default class AddGeom {
     const { clientWidth: w, clientHeight: h, style } = this.round;
     return this.hide(style, w, h);
   }
+
+  showTriangle(x: number, y: number) {
+    const style = this.triangle.style;
+    this.show(style, x, y);
+  }
+
+  updateTriangle(w: number, h: number) {
+    const style = this.triangle.style;
+    this.update(style, w, h);
+    const svg = this.triangle.querySelector('svg') as SVGSVGElement;
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.setAttribute('width', w + 'px');
+    svg.setAttribute('height', h + 'px');
+    const path = svg.querySelector('path') as SVGPathElement;
+    path.setAttribute('d', `M${w * 0.5},0 L${w},${h} L0,${h} L${w * 0.5},0 Z`);
+  }
+
+  hideTriangle() {
+    const { clientWidth: w, clientHeight: h, style } = this.triangle;
+    return this.hide(style, w, h);
+  }
+
+  showStar(x: number, y: number) {
+    const style = this.star.style;
+    this.show(style, x, y);
+  }
+
+  updateStar(w: number, h: number) {}
+
+  hideStar() {}
 }
 

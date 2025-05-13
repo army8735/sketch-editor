@@ -210,8 +210,16 @@ class Toolbar {
         listener.dom.classList.add('add-oval');
         listener.select.hideSelect();
       }
-      else if (title === 'triangle') {}
-      else if (title === 'star') {}
+      else if (title === 'triangle') {
+        listener.state = state.ADD_TRIANGLE;
+        listener.dom.classList.add('add-triangle');
+        listener.select.hideSelect();
+      }
+      else if (title === 'star') {
+        listener.state = state.ADD_STAR;
+        listener.dom.classList.add('add-star');
+        listener.select.hideSelect();
+      }
       else if (title === 'line') {}
       else if (title === 'arrow') {}
       else if (title === 'pen') {}

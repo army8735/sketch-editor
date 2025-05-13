@@ -60,7 +60,14 @@ import PointCommand, { PointData } from '../history/PointCommand';
 import BoolGroupCommand from '../history/BoolGroupCommand';
 import FlattenCommand from '../history/FlattenCommand';
 import { appendWithPosAndSize } from '../tools/container';
-import { createOval, createRect, createRound, getFrameVertexes, getPointsAbsByDsp } from '../tools/polyline';
+import {
+  createOval,
+  createRect,
+  createRound,
+  createTriangle,
+  getFrameVertexes,
+  getPointsAbsByDsp
+} from '../tools/polyline';
 
 export type ListenerOptions = {
   enabled?: {
@@ -515,7 +522,8 @@ export default class Listener extends Event {
     }
     else if (this.state === state.ADD_RECT
       || this.state === state.ADD_OVAL
-      || this.state === state.ADD_ROUND) {
+      || this.state === state.ADD_ROUND
+      || this.state === state.ADD_TRIANGLE) {
       this.startX = (e.clientX - this.originX);
       this.startY = (e.clientY - this.originY);
       if (this.state === state.ADD_RECT) {
@@ -526,6 +534,9 @@ export default class Listener extends Event {
       }
       else if (this.state === state.ADD_ROUND) {
         this.addGeom.showRound(this.startX, this.startY);
+      }
+      else if (this.state === state.ADD_TRIANGLE) {
+        this.addGeom.showTriangle(this.startX, this.startY);
       }
     }
     // 点到canvas上，也有可能在canvas外，逻辑一样
@@ -877,7 +888,8 @@ export default class Listener extends Event {
       }
       else if (this.state === state.ADD_RECT
         || this.state === state.ADD_OVAL
-        || this.state === state.ADD_ROUND) {
+        || this.state === state.ADD_ROUND
+        || this.state === state.ADD_TRIANGLE) {
         const w = (e.clientX - this.originX - this.startX);
         const h = (e.clientY - this.originY - this.startY);
         if (this.state === state.ADD_RECT) {
@@ -888,6 +900,9 @@ export default class Listener extends Event {
         }
         else if (this.state === state.ADD_ROUND) {
           this.addGeom.updateRound(w, h);
+        }
+        else if (this.state === state.ADD_TRIANGLE) {
+          this.addGeom.updateTriangle(w, h);
         }
       }
       else {
@@ -1202,13 +1217,15 @@ export default class Listener extends Event {
     }
     else if (this.state === state.ADD_RECT
       || this.state === state.ADD_OVAL
-      || this.state === state.ADD_ROUND) {
+      || this.state === state.ADD_ROUND
+      || this.state === state.ADD_TRIANGLE) {
       const old = this.state;
       const addGeom = this.addGeom;
       const hide = {
         [state.ADD_RECT]: addGeom.hideRect,
         [state.ADD_OVAL]: addGeom.hideOval,
         [state.ADD_ROUND]: addGeom.hideRound,
+        [state.ADD_TRIANGLE]: addGeom.hideTriangle,
       }[old] as Function;
       let { x, y, w, h } = hide.call(addGeom);
       const dpi = this.root.dpi;
@@ -1216,10 +1233,13 @@ export default class Listener extends Event {
       y *= dpi;
       w *= dpi;
       h *= dpi;
+      w = Math.max(w, 1);
+      h = Math.max(h, 1);
       const create = {
         [state.ADD_RECT]: createRect,
         [state.ADD_OVAL]: createOval,
         [state.ADD_ROUND]: createRound,
+        [state.ADD_TRIANGLE]: createTriangle,
       }[old] as Function;
       const node = create();
       const page = this.root.getCurPage()!;
@@ -1271,6 +1291,7 @@ export default class Listener extends Event {
       this.dom.classList.remove('add-round');
       this.dom.classList.remove('add-line');
       this.dom.classList.remove('add-star');
+      this.dom.classList.remove('add-triangle');
       this.history.addCommand(new AddCommand([node], [{
         x: node.computedStyle.left,
         y: node.computedStyle.top,
