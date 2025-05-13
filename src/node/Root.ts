@@ -581,11 +581,13 @@ class Root extends Container implements FrameCallback {
       }
       this.clear();
       this.rl = RefreshLevel.NONE;
-      renderWebgl(this.ctx!, this);
+      if (this.ctx) {
+        renderWebgl(this.ctx, this);
+      }
       this.emit(Event.REFRESH, rl);
       this.firstDraw = false;
     }
-    if (!this.imgLoadingCount && !this.breakMerge && !this.tileRemain) {
+    if (this.ctx && !this.imgLoadingCount && !this.breakMerge && !this.tileRemain) {
       this.emit(Event.REFRESH_COMPLETE, rl);
     }
   }
