@@ -239,7 +239,7 @@ class Toolbar {
     });
 
     listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
-      if (next === state.NORMAL) {
+      if (next === state.NORMAL || prev === state.ADD_TEXT && next === state.EDIT_TEXT) {
         dom.querySelector('.active')?.classList.remove('active');
         dom.querySelector('.sel.item')?.classList.add('active');
         dom.querySelector('.sel.item .ti')?.setAttribute('title', 'select');

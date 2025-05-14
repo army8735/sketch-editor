@@ -1236,7 +1236,6 @@ export default class Listener extends Event {
       this.emit(Listener.ADD_NODE, [text]);
       const old = this.state;
       this.state = state.EDIT_TEXT;
-      this.emit(Listener.CANCEL_ADD_ESC);
       this.emit(Listener.STATE_CHANGE, old, this.state);
     }
     else if (this.state === state.ADD_RECT
