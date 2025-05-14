@@ -23,7 +23,7 @@ const geomHtml = `
   <li title="rect"><b class="rect"></b><span class="name">矩形</span><span class="key">R</span></li>
   <li title="oval"><b class="oval"></b><span class="name">椭圆形</span><span class="key">O</span></li>
   <li title="round"><b class="round"></b><span class="name">圆角矩形</span><span class="key">U</span></li>
-<!--  <li title="line"><b class="line"></b><span class="name">直线</span><span class="key">L</span></li>-->
+  <li title="line"><b class="line"></b><span class="name">直线</span><span class="key">L</span></li>
 <!--  <li title="arrow"><b class="arrow"></b><span class="name">箭头</span></li>-->
   <li title="triangle"><b class="triangle"></b><span class="name">三角形</span></li>
 <!--  <li title="star"><b class="star"></b><span class="name">星形</span></li>-->
@@ -186,7 +186,8 @@ class Toolbar {
       }
       else if (title === 'text') {
         listener.state = state.ADD_TEXT;
-        listener.dom.classList.add('text');
+        listener.dom.classList.add('add-text');
+        listener.select.hideSelect();
       }
       else if (title === 'union' || title === 'subtract' || title === 'intersect' || title === 'xor') {
         listener.state = state.NORMAL;
@@ -211,6 +212,11 @@ class Toolbar {
         listener.dom.classList.add('add-oval');
         listener.select.hideSelect();
       }
+      else if (title === 'line') {
+        listener.state = state.ADD_LINE;
+        listener.dom.classList.add('add-line');
+        listener.select.hideSelect();
+      }
       else if (title === 'triangle') {
         listener.state = state.ADD_TRIANGLE;
         listener.dom.classList.add('add-triangle');
@@ -221,7 +227,6 @@ class Toolbar {
         listener.dom.classList.add('add-star');
         listener.select.hideSelect();
       }
-      else if (title === 'line') {}
       else if (title === 'arrow') {}
       else if (title === 'pen') {}
 
@@ -312,16 +317,21 @@ class Toolbar {
       if (picker.isShow()) {
         picker.hide();
       }
-      listener.cancelEditGeom();
-      listener.cancelEditGradient();
       listener.dom.classList.remove('hand');
-      listener.dom.classList.remove('text');
+      listener.dom.classList.remove('add-text');
       listener.dom.classList.remove('add-rect');
       listener.dom.classList.remove('add-oval');
       listener.dom.classList.remove('add-round');
       listener.dom.classList.remove('add-triangle');
       listener.dom.classList.remove('add-star');
       clear();
+      if (keyCode === 86 || code === 'KeyV' || keyCode === 72 || code === 'KeyH') {}
+      else {
+        listener.cancelEditGeom();
+        listener.cancelEditGradient();
+        listener.select.hideSelect();
+      }
+
       if (keyCode === 86 || code === 'KeyV') {
         listener.state = state.NORMAL;
         sel.classList.add('active');
@@ -366,6 +376,15 @@ class Toolbar {
         (div.querySelector('b') as HTMLElement).className = 'round';
         geom.querySelector('.sub [title="round"]')?.classList.add('cur');
       }
+      else if (keyCode === 76 || code === 'KeyL') {
+        listener.state = state.ADD_LINE;
+        listener.dom.classList.add('add-line');
+        geom.classList.add('active');
+        const div = geom.querySelector('.ti') as HTMLElement;
+        div.title = 'line';
+        (div.querySelector('b') as HTMLElement).className = 'line';
+        geom.querySelector('.sub [title="line"]')?.classList.add('cur');
+      }
       else if (keyCode === 84 || code === 'KeyT') {
         listener.state = state.ADD_TEXT;
         listener.dom.classList.add('add-text');
@@ -373,6 +392,7 @@ class Toolbar {
       }
     });
 
+    // 添加状态按下esc后取消添加返回至普通状态，按钮也要随之变化
     listener.on(Listener.CANCEL_ADD_ESC, () => {
       clear();
       sel.classList.add('active');
@@ -380,6 +400,9 @@ class Toolbar {
       div.title = 'select';
       (div.querySelector('b') as HTMLElement).className = 'select';
       sel.querySelector('.sub [title="select"]')?.classList.add('cur');
+      if (listener.selected.length) {
+        listener.select.showSelectNotUpdate();
+      }
     });
   }
 }

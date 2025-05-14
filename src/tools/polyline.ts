@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { Point } from '../format';
+import { JPoint, Point } from '../format';
 import Polyline from '../node/geom/Polyline';
 import { calPoint, inverse4 } from '../math/matrix';
 import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
@@ -81,6 +81,41 @@ export function createRound() {
     ],
     isClosed: true,
     isRectangle: true,
+    fixedRadius: 0,
+  });
+}
+
+export function createLine(transform: string) {
+  const points: JPoint[] = [
+    { x: 0, y: 0, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 0, fy: 0, tx: 0, ty: 0 },
+    { x: 1, y: 1, cornerRadius: 0, curveMode: 'straight', hasCurveFrom: false, hasCurveTo: false, fx: 1, fy: 1, tx: 1, ty: 1 },
+  ];
+  if (transform === 'scale(-1, -1)') {
+    points.reverse();
+  }
+  else if (transform === 'scaleX(-1)') {
+    points[0].x = points[0].fx = points[0].tx = 1;
+    points[1].x = points[1].fx = points[1].tx = 0;
+  }
+  else if (transform === 'scaleY(-1)') {
+    points[0].y = points[0].fy = points[0].ty = 1;
+    points[1].y = points[1].fy = points[1].ty = 0;
+  }
+  return new Polyline({
+    uuid: uuid.v4(),
+    name: '直线',
+    style: {
+      fill: ['#D8D8D8'],
+      fillEnable: [true],
+      fillOpacity: [1],
+      stroke: ['#979797'],
+      strokeEnable: [true],
+      strokeWidth: [1],
+      strokePosition: ['center'],
+      strokeMode: ['normal'],
+    },
+    points,
+    isClosed: false,
     fixedRadius: 0,
   });
 }

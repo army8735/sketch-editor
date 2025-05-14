@@ -413,10 +413,6 @@
         }
       }
 
-      &.text {
-        cursor: text;
-      }
-
       .l {
         position: absolute;
         left: -2px;
@@ -1020,7 +1016,7 @@
       }
     }
 
-    .rect, .oval, .round, .triangle, .star {
+    .rect, .oval, .round, .line, .triangle, .star {
       box-sizing: border-box;
       position: absolute;
       border: 1px solid #979797;
@@ -1028,6 +1024,13 @@
       transform-origin: 0 0;
       pointer-events: none;
       overflow: visible;
+
+      svg {
+        position: absolute;
+        left: 0;
+        top: 0;
+        overflow: visible;
+      }
     }
 
     .oval {
@@ -1036,6 +1039,10 @@
 
     .round {
       border-radius: 8px;
+    }
+
+    .line {
+      border: none;
     }
 
     .triangle, .star {

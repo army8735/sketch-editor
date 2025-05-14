@@ -61,6 +61,7 @@ import BoolGroupCommand from '../history/BoolGroupCommand';
 import FlattenCommand from '../history/FlattenCommand';
 import { appendWithPosAndSize } from '../tools/container';
 import {
+  createLine,
   createOval,
   createRect,
   createRound,
@@ -438,7 +439,9 @@ export default class Listener extends Event {
     else if (this.state === state.ADD_RECT
       || this.state === state.ADD_OVAL
       || this.state === state.ADD_ROUND
-      || this.state === state.ADD_TRIANGLE) {
+      || this.state === state.ADD_LINE
+      || this.state === state.ADD_TRIANGLE
+      || this.state === state.ADD_STAR) {
       this.startX = (e.clientX - this.originX);
       this.startY = (e.clientY - this.originY);
       if (this.state === state.ADD_RECT) {
@@ -449,6 +452,9 @@ export default class Listener extends Event {
       }
       else if (this.state === state.ADD_ROUND) {
         this.addGeom.showRound(this.startX, this.startY);
+      }
+      else if (this.state === state.ADD_LINE) {
+        this.addGeom.showLine(this.startX, this.startY);
       }
       else if (this.state === state.ADD_TRIANGLE) {
         this.addGeom.showTriangle(this.startX, this.startY);
@@ -809,6 +815,7 @@ export default class Listener extends Event {
       else if (this.state === state.ADD_RECT
         || this.state === state.ADD_OVAL
         || this.state === state.ADD_ROUND
+        || this.state === state.ADD_LINE
         || this.state === state.ADD_TRIANGLE) {
         const w = (e.clientX - this.originX - this.startX);
         const h = (e.clientY - this.originY - this.startY);
@@ -820,6 +827,9 @@ export default class Listener extends Event {
         }
         else if (this.state === state.ADD_ROUND) {
           this.addGeom.updateRound(w, h);
+        }
+        else if (this.state === state.ADD_LINE) {
+          this.addGeom.updateLine(w, h);
         }
         else if (this.state === state.ADD_TRIANGLE) {
           this.addGeom.updateTriangle(w, h);
@@ -1241,6 +1251,7 @@ export default class Listener extends Event {
     else if (this.state === state.ADD_RECT
       || this.state === state.ADD_OVAL
       || this.state === state.ADD_ROUND
+      || this.state === state.ADD_LINE
       || this.state === state.ADD_TRIANGLE) {
       const old = this.state;
       const addGeom = this.addGeom;
@@ -1248,9 +1259,10 @@ export default class Listener extends Event {
         [state.ADD_RECT]: addGeom.hideRect,
         [state.ADD_OVAL]: addGeom.hideOval,
         [state.ADD_ROUND]: addGeom.hideRound,
+        [state.ADD_LINE]: addGeom.hideLine,
         [state.ADD_TRIANGLE]: addGeom.hideTriangle,
       }[old] as Function;
-      let { x, y, w, h } = hide.call(addGeom);
+      let { x, y, w, h, transform } = hide.call(addGeom);
       if (w && h) {
         const dpi = this.root.dpi;
         x *= dpi;
@@ -1263,9 +1275,10 @@ export default class Listener extends Event {
           [state.ADD_RECT]: createRect,
           [state.ADD_OVAL]: createOval,
           [state.ADD_ROUND]: createRound,
+          [state.ADD_LINE]: createLine,
           [state.ADD_TRIANGLE]: createTriangle,
         }[old] as Function;
-        const node = create();
+        const node = create(transform);
         const page = this.root.getCurPage()!;
         const zoom = page.getZoom();
         // 已选节点第0个作为兄弟节点参考
@@ -2010,26 +2023,27 @@ export default class Listener extends Event {
       else if (this.state === state.EDIT_TEXT) {
         this.cancelEditText();
       }
-      else if (this.state === state.ADD_TEXT) {
-        this.dom.classList.remove('text');
-        this.state = state.NORMAL;
-        this.emit(Listener.STATE_CHANGE, state.ADD_TEXT, this.state);
-      }
       else if (this.state === state.ADD_RECT
         || this.state === state.ADD_OVAL
         || this.state === state.ADD_ROUND
+        || this.state === state.ADD_LINE
         || this.state === state.ADD_TRIANGLE
-        || this.state === state.ADD_STAR) {
+        || this.state === state.ADD_STAR
+        || this.state === state.ADD_TEXT) {
         this.dom.classList.remove('add-rect');
         this.dom.classList.remove('add-oval');
         this.dom.classList.remove('add-round');
+        this.dom.classList.remove('add-line');
         this.dom.classList.remove('add-triangle');
         this.dom.classList.remove('add-star');
+        this.dom.classList.remove('add-text');
+        const old = this.state;
         this.state = state.NORMAL;
         if (picker.isShow()) {
           picker.hide();
         }
         this.emit(Listener.CANCEL_ADD_ESC);
+        this.emit(Listener.STATE_CHANGE, old, this.state);
       }
       else if (this.state === state.EDIT_GEOM) {
         if (this.geometry.hasEditPoint()) {
@@ -2514,7 +2528,7 @@ export default class Listener extends Event {
       || keyCode === 82 || code === 'KeyR'
       || keyCode === 79 || code === 'keyO'
       || keyCode === 85 || code === 'KeyU'
-      // || keyCode === 76 || code === 'KeyL'
+      || keyCode === 76 || code === 'KeyL'
       || keyCode === 84 || code === 'KeyT')
       && this.state !== state.EDIT_TEXT && !this.metaKey) {
       this.emit(Listener.SHORTCUT_KEY, keyCode, code);

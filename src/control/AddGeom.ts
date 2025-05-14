@@ -7,6 +7,7 @@ export default class AddGeom {
   oval: HTMLElement;
   round: HTMLElement;
   triangle: HTMLElement;
+  line: HTMLElement;
   star: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement) {
@@ -27,6 +28,12 @@ export default class AddGeom {
     round.className = 'round';
     round.style.display = 'none';
     dom.appendChild(round);
+
+    const line = this.line = document.createElement('div');
+    line.className = 'line';
+    line.style.display = 'none';
+    line.innerHTML = '<svg><path d="" stroke="#979797" fill="none" stroke-width="1"></path></svg>';
+    dom.appendChild(line);
 
     const triangle = this.triangle = document.createElement('div');
     triangle.className = 'triangle';
@@ -49,8 +56,8 @@ export default class AddGeom {
   }
 
   update(style: CSSStyleDeclaration, w: number, h: number) {
-    style.width = Math.abs(w) + 'px';
-    style.height = Math.abs(h) + 'px';
+    style.width = Math.max(1, Math.abs(w)) + 'px';
+    style.height = Math.max(1, Math.abs(h)) + 'px';
     if (w < 0 && h < 0) {
       style.transform = 'scale(-1, -1)';
     }
@@ -83,7 +90,7 @@ export default class AddGeom {
     style.width = '0px';
     style.height = '0px';
     style.transform = '';
-    return { x, y, w, h };
+    return { x, y, w, h, transform };
   }
 
   showRect(x: number, y: number) {
@@ -139,6 +146,8 @@ export default class AddGeom {
   updateTriangle(w: number, h: number) {
     const style = this.triangle.style;
     this.update(style, w, h);
+    w = Math.max(1, Math.abs(w));
+    h = Math.max(1, Math.abs(h));
     const svg = this.triangle.querySelector('svg') as SVGSVGElement;
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     svg.setAttribute('width', w + 'px');
@@ -149,6 +158,29 @@ export default class AddGeom {
 
   hideTriangle() {
     const { clientWidth: w, clientHeight: h, style } = this.triangle;
+    return this.hide(style, w, h);
+  }
+
+  showLine(x: number, y: number) {
+    const style = this.line.style;
+    this.show(style, x, y);
+  }
+
+  updateLine(w: number, h: number) {
+    const style = this.line.style;
+    this.update(style, w, h);
+    w = Math.max(1, Math.abs(w));
+    h = Math.max(1, Math.abs(h));
+    const svg = this.line.querySelector('svg') as SVGSVGElement;
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.setAttribute('width', w + 'px');
+    svg.setAttribute('height', h + 'px');
+    const path = svg.querySelector('path') as SVGPathElement;
+    path.setAttribute('d', `M0,0 L${w},${h}`);
+  }
+
+  hideLine() {
+    const { clientWidth: w, clientHeight: h, style } = this.line;
     return this.hide(style, w, h);
   }
 

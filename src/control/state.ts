@@ -10,7 +10,8 @@ export enum state {
   ADD_OVAL = 8,
   ADD_ROUND = 9,
   ADD_TRIANGLE = 10,
-  ADD_STAR = 11,
+  ADD_LINE = 11,
+  ADD_STAR = 12,
 }
 
 export default state;
