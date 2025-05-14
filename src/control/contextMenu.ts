@@ -25,8 +25,11 @@ const htmlCanvas = `
   <div class="item mask">
     <span class="checked">✅</span>用作蒙版 <b class="arrow"></b>
     <div class="sub">
-      <div class="item outline-mask"><span class="checked">✅</span>轮廓模版</div>
-      <div class="item alpha-mask"><span class="checked">✅</span>透明度模版</div>
+      <div class="item outline-mask"><span class="checked">✅</span>轮廓蒙版</div>
+      <div class="item alpha-mask"><span class="checked">✅</span>透明度蒙版</div>
+      <div class="item gray-mask"><span class="checked">✅</span>灰度蒙版</div>
+      <div class="item alpha-with-mask"><span class="checked">✅</span>透明内容蒙版</div>
+      <div class="item gray-with-mask"><span class="checked">✅</span>灰度内容蒙版</div>
     </div>
   </div>
   <div class="item break-mask"><span class="checked">✅</span>忽略底层蒙版</div>
@@ -92,6 +95,30 @@ function init(listener: Listener) {
         }
         else {
           listener.mask('alpha');
+        }
+      }
+      else if (classList.contains('gray-mask')) {
+        if (canvasDiv.classList.contains('gray')) {
+          listener.mask('none');
+        }
+        else {
+          listener.mask('gray');
+        }
+      }
+      else if (classList.contains('alpha-with')) {
+        if (canvasDiv.classList.contains('alpha-with')) {
+          listener.mask('none');
+        }
+        else {
+          listener.mask('alpha-with');
+        }
+      }
+      else if (classList.contains('gray-with')) {
+        if (canvasDiv.classList.contains('gray-with')) {
+          listener.mask('none');
+        }
+        else {
+          listener.mask('gray-with');
         }
       }
       else if (classList.contains('break-mask')) {
@@ -176,14 +203,27 @@ const o = {
     else {
       classList.add('no-clone');
     }
-    let hasMask = nodes.filter(item => item.computedStyle.maskMode);
+    const hasMask = nodes.filter(item => item.computedStyle.maskMode);
     if (hasMask.length) {
-      let outline = nodes.filter(item => item.computedStyle.maskMode === MASK.OUTLINE);
+      const outline = nodes.filter(item => item.computedStyle.maskMode === MASK.OUTLINE);
+      const alpha = nodes.filter(item => item.computedStyle.maskMode === MASK.ALPHA);
+      const gray = nodes.filter(item => item.computedStyle.maskMode === MASK.GRAY);
+      const alphaWith = nodes.filter(item => item.computedStyle.maskMode === MASK.ALPHA_WITH);
+      const grayWith = nodes.filter(item => item.computedStyle.maskMode === MASK.GRAY_WITH);
       if (outline.length) {
         classList.add('outline');
       }
-      else {
+      else if (alpha.length) {
         classList.add('alpha');
+      }
+      else if (gray.length) {
+        classList.add('gray');
+      }
+      else if (alphaWith.length) {
+        classList.add('alpha-with');
+      }
+      else if (grayWith.length) {
+        classList.add('gray-with');
       }
     }
     let hasBreakMask = nodes.filter(item => item.computedStyle.breakMask);

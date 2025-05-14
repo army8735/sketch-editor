@@ -344,7 +344,7 @@ class Toolbar {
         listener.dom.classList.add('add-rect');
         geom.classList.add('active');
         const div = geom.querySelector('.ti') as HTMLElement;
-        geom.title = 'rect';
+        div.title = 'rect';
         (div.querySelector('b') as HTMLElement).className = 'rect';
         geom.querySelector('.sub [title="rect"]')?.classList.add('cur');
       }
@@ -353,7 +353,7 @@ class Toolbar {
         listener.dom.classList.add('add-oval');
         geom.classList.add('active');
         const div = geom.querySelector('.ti') as HTMLElement;
-        geom.title = 'oval';
+        div.title = 'oval';
         (div.querySelector('b') as HTMLElement).className = 'oval';
         geom.querySelector('.sub [title="oval"]')?.classList.add('cur');
       }
@@ -362,7 +362,7 @@ class Toolbar {
         listener.dom.classList.add('add-round');
         geom.classList.add('active');
         const div = geom.querySelector('.ti') as HTMLElement;
-        geom.title = 'round';
+        div.title = 'round';
         (div.querySelector('b') as HTMLElement).className = 'round';
         geom.querySelector('.sub [title="round"]')?.classList.add('cur');
       }

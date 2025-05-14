@@ -2661,7 +2661,7 @@
     pointer-events: none;
   }
 
-  &.outline, &.alpha {
+  &.outline, &.alpha, &.gray, &.alpha-with, &.gray-with {
     .mask > .checked {
       display: block;
     }
@@ -2678,6 +2678,18 @@
   }
 
   &.alpha .alpha-mask .checked {
+    display: block;
+  }
+
+  &.gray .gray-mask .checked {
+    display: block;
+  }
+
+  &.alpha-with .alpha-with-mask .checked {
+    display: block;
+  }
+
+  &.gray-with .gray-with-mask .checked {
     display: block;
   }
 
