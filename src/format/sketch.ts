@@ -1146,7 +1146,7 @@ async function convertItem(
   inject.error(layer);
 }
 
-async function convertFill(item: SketchFormat.Fill, opt: Opt) {
+export async function convertFill(item: SketchFormat.Fill, opt: Opt) {
   if (item.fillType === SketchFormat.FillType.Pattern) {
     let url = '';
     const image = item.image!;
@@ -1201,7 +1201,7 @@ async function convertFill(item: SketchFormat.Fill, opt: Opt) {
   }
 }
 
-async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
+export async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
   const {
     borders,
     borderOptions,

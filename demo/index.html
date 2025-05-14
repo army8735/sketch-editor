@@ -75,6 +75,7 @@
   const dpi = 2;
   const $input = document.querySelector('#file');
   let root;
+  let listener;
   $input.onchange = function(e) {
     const file = $input.files[0];
     $input.value = null;
@@ -117,7 +118,7 @@
           canvas,
         });
 
-        const listener = sketchEditor.control.initCanvasControl(root, $canvasC);
+        listener = sketchEditor.control.initCanvasControl(root, $canvasC);
         const $page = document.querySelector('#page');
         const $tree = document.querySelector('#tree');
         const $side = document.querySelector('#side');

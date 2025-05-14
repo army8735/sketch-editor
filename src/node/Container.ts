@@ -4,7 +4,7 @@ import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import inject from '../util/inject';
-import { clone } from '../util/type';
+import { clone, isNil } from '../util/type';
 import { LayoutData } from './layout';
 import { calRectPoints } from '../math/matrix';
 
@@ -41,7 +41,7 @@ class Container<T extends Node = Node> extends Node {
       first.parent = this;
       first.willMount();
       // 手写错误情况
-      if (first.index <= 0 || first.index >= 1) {
+      if (first.index <= 0 || first.index >= 1 || isNil(first.index)) {
         setIndex = true;
       }
       let last = first;
@@ -49,7 +49,7 @@ class Container<T extends Node = Node> extends Node {
         const child = children[i];
         child.parent = this;
         // 手写情况可能会出现无index或错误index，需重设，转换的sketch/psd转换过程保证，一定是(0,1)之间
-        if (child.index <= 0 || child.index <= last.index || child.index >= 1) {
+        if (child.index <= 0 || child.index <= last.index || child.index >= 1 || isNil(child.index)) {
           setIndex = true;
         }
         child.willMount();
@@ -79,7 +79,7 @@ class Container<T extends Node = Node> extends Node {
 
   override lay(data: LayoutData) {
     super.lay(data);
-    const { children, computedStyle } = this;
+    const { children } = this;
     // 递归下去布局
     for (let i = 0, len = children.length; i < len; i++) {
       const child = children[i];
