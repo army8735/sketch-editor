@@ -200,10 +200,8 @@ export default class Listener extends Event {
     dom.addEventListener('dblclick', this.onDblClick.bind(this));
     dom.addEventListener('wheel', this.onWheel.bind(this));
     dom.addEventListener('contextmenu', this.onContextMenu.bind(this));
-    if (typeof document !== 'undefined') {
-      document.addEventListener('keydown', this.onKeyDown.bind(this));
-      document.addEventListener('keyup', this.onKeyUp.bind(this));
-    }
+    document.addEventListener('keydown', this.onKeyDown.bind(this));
+    document.addEventListener('keyup', this.onKeyUp.bind(this));
   }
 
   // 更新dom的位置做原点坐标，鼠标按下或touch按下时
@@ -1251,78 +1249,80 @@ export default class Listener extends Event {
         [state.ADD_TRIANGLE]: addGeom.hideTriangle,
       }[old] as Function;
       let { x, y, w, h } = hide.call(addGeom);
-      const dpi = this.root.dpi;
-      x *= dpi;
-      y *= dpi;
-      w *= dpi;
-      h *= dpi;
-      w = Math.max(w, 1);
-      h = Math.max(h, 1);
-      const create = {
-        [state.ADD_RECT]: createRect,
-        [state.ADD_OVAL]: createOval,
-        [state.ADD_ROUND]: createRound,
-        [state.ADD_TRIANGLE]: createTriangle,
-      }[old] as Function;
-      const node = create();
-      const page = this.root.getCurPage()!;
-      const zoom = page.getZoom();
-      // 已选节点第0个作为兄弟节点参考
-      if (this.selected.length) {
-        const prev = this.selected[0];
-        const container = prev.parent!;
-        const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
-        node.updateStyle({
-          left: left * 100 / container.width + '%',
-          top: top * 100 / container.height + '%',
-          right: (right - w / zoom) * 100 / container.width + '%',
-          bottom: (bottom - h / zoom) * 100 / container.height + '%',
-        });
-        prev.insertAfter(node);
-      }
-      // 无已选看是否是画板内
-      else {
-        let artBoard: ArtBoard | undefined;
-        const pts = [
-          { x, y },
-          { x, y: y + h },
-          { x: x + w, y },
-          { x: x + w, y: y + h },
-        ];
-        for (let i = 0, len = pts.length; i < len; i++) {
-          const pt = pts[i];
-          artBoard = getArtBoardByPoint(this.root, pt.x, pt.y);
-          if (artBoard) {
-            break;
-          }
+      if (w && h) {
+        const dpi = this.root.dpi;
+        x *= dpi;
+        y *= dpi;
+        w *= dpi;
+        h *= dpi;
+        w = Math.max(w, 1);
+        h = Math.max(h, 1);
+        const create = {
+          [state.ADD_RECT]: createRect,
+          [state.ADD_OVAL]: createOval,
+          [state.ADD_ROUND]: createRound,
+          [state.ADD_TRIANGLE]: createTriangle,
+        }[old] as Function;
+        const node = create();
+        const page = this.root.getCurPage()!;
+        const zoom = page.getZoom();
+        // 已选节点第0个作为兄弟节点参考
+        if (this.selected.length) {
+          const prev = this.selected[0];
+          const container = prev.parent!;
+          const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
+          node.updateStyle({
+            left: left * 100 / container.width + '%',
+            top: top * 100 / container.height + '%',
+            right: (right - w / zoom) * 100 / container.width + '%',
+            bottom: (bottom - h / zoom) * 100 / container.height + '%',
+          });
+          prev.insertAfter(node);
         }
-        const container = artBoard || page;
-        const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
-        node.updateStyle({
-          left: left * 100 / container.width + '%',
-          top: top * 100 / container.height + '%',
-          right: (right - w / zoom) * 100 / container.width + '%',
-          bottom: (bottom - h / zoom) * 100 / container.height + '%',
-        });
-        container.appendChild(node);
+        // 无已选看是否是画板内
+        else {
+          let artBoard: ArtBoard | undefined;
+          const pts = [
+            { x, y },
+            { x, y: y + h },
+            { x: x + w, y },
+            { x: x + w, y: y + h },
+          ];
+          for (let i = 0, len = pts.length; i < len; i++) {
+            const pt = pts[i];
+            artBoard = getArtBoardByPoint(this.root, pt.x, pt.y);
+            if (artBoard) {
+              break;
+            }
+          }
+          const container = artBoard || page;
+          const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
+          node.updateStyle({
+            left: left * 100 / container.width + '%',
+            top: top * 100 / container.height + '%',
+            right: (right - w / zoom) * 100 / container.width + '%',
+            bottom: (bottom - h / zoom) * 100 / container.height + '%',
+          });
+          container.appendChild(node);
+        }
+        this.selected.splice(0);
+        this.selected.push(node);
+        this.select.showSelect(this.selected);
+        this.dom.classList.remove('add-rect');
+        this.dom.classList.remove('add-oval');
+        this.dom.classList.remove('add-round');
+        this.dom.classList.remove('add-line');
+        this.dom.classList.remove('add-star');
+        this.dom.classList.remove('add-triangle');
+        this.history.addCommand(new AddCommand([node], [{
+          x: node.computedStyle.left,
+          y: node.computedStyle.top,
+          parent: node.parent!,
+        }]));
+        this.emit(Listener.ADD_NODE, [node]);
+        this.state = state.NORMAL;
+        this.emit(Listener.STATE_CHANGE, old, this.state);
       }
-      this.selected.splice(0);
-      this.selected.push(node);
-      this.select.showSelect(this.selected);
-      this.dom.classList.remove('add-rect');
-      this.dom.classList.remove('add-oval');
-      this.dom.classList.remove('add-round');
-      this.dom.classList.remove('add-line');
-      this.dom.classList.remove('add-star');
-      this.dom.classList.remove('add-triangle');
-      this.history.addCommand(new AddCommand([node], [{
-        x: node.computedStyle.left,
-        y: node.computedStyle.top,
-        parent: node.parent!,
-      }]));
-      this.emit(Listener.ADD_NODE, [node]);
-      this.state = state.NORMAL;
-      this.emit(Listener.STATE_CHANGE, old, this.state);
     }
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
@@ -2013,6 +2013,22 @@ export default class Listener extends Event {
         this.state = state.NORMAL;
         this.emit(Listener.STATE_CHANGE, state.ADD_TEXT, this.state);
       }
+      else if (this.state === state.ADD_RECT
+        || this.state === state.ADD_OVAL
+        || this.state === state.ADD_ROUND
+        || this.state === state.ADD_TRIANGLE
+        || this.state === state.ADD_STAR) {
+        this.dom.classList.remove('add-rect');
+        this.dom.classList.remove('add-oval');
+        this.dom.classList.remove('add-round');
+        this.dom.classList.remove('add-triangle');
+        this.dom.classList.remove('add-star');
+        this.state = state.NORMAL;
+        if (picker.isShow()) {
+          picker.hide();
+        }
+        this.emit(Listener.CANCEL_ADD_ESC);
+      }
       else if (this.state === state.EDIT_GEOM) {
         if (this.geometry.hasEditPoint()) {
           this.geometry.clearCur();
@@ -2291,6 +2307,7 @@ export default class Listener extends Event {
             if (this.state === state.EDIT_TEXT) {
               this.state = state.NORMAL;
               this.input.hide();
+              this.dom.classList.remove('add-text');
               this.emit(Listener.STATE_CHANGE, state.ADD_TEXT, this.state);
             }
           }
@@ -2431,6 +2448,7 @@ export default class Listener extends Event {
             }
             this.input.focus();
           }
+          this.emit([Listener.TEXT_CONTENT_NODE], nodes.slice(0));
         }
         else if (c instanceof PointCommand) {
           this.emit(Listener.SELECT_NODE, nodes.slice(0));
@@ -2495,20 +2513,10 @@ export default class Listener extends Event {
       || keyCode === 82 || code === 'KeyR'
       || keyCode === 79 || code === 'keyO'
       || keyCode === 85 || code === 'KeyU'
-      || keyCode === 76 || code === 'KeyL'
-      || keyCode === 84 || code === 'KeyT') && this.state !== state.EDIT_TEXT) {
-      // if (picker.isShow()) {
-      //   picker.hide();
-      // }
-      // this.cancelEditGeom();
-      // this.cancelEditGradient();
-      // this.dom.classList.remove('hand');
-      // if (keyCode === 86 || code === 'KeyV') {}
-      // else if (keyCode === 82 || code === 'KeyR') {
-      //   this.state = state.ADD_RECT;
-      //   this.dom.classList.add('add-rect');
-      //   this.select.hideSelect();
-      // }
+      // || keyCode === 76 || code === 'KeyL'
+      || keyCode === 84 || code === 'KeyT')
+      && this.state !== state.EDIT_TEXT && !this.metaKey) {
+      this.emit(Listener.SHORTCUT_KEY, keyCode, code);
     }
   }
 
@@ -2663,4 +2671,6 @@ export default class Listener extends Event {
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
   static STATE_CHANGE = 'STATE_CHANGE';
+  static SHORTCUT_KEY = 'SHORTCUT_KEY';
+  static CANCEL_ADD_ESC = 'CANCEL_ADD_ESC';
 }

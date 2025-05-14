@@ -55,6 +55,9 @@ export default class Input {
         inputEl.value = '';
         this.listener.select.updateSelect([this.node]);
         listener.emit([Listener.TEXT_CONTENT_NODE, Listener.CURSOR_NODE], [this.node]);
+        if (!this.node.nameIsFixed) {
+          this.node.name = content;
+        }
         this.listener.history.addCommand(new TextCommand([this.node], [{
           prev: {
             content,

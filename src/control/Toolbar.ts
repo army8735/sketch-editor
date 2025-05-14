@@ -4,7 +4,8 @@ import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Listener from './Listener';
 import state from './state';
-import { BOOLEAN_OPERATION, MASK } from '../style/define';
+import { BOOLEAN_OPERATION } from '../style/define';
+import picker from './picker';
 
 const selHtml = `
 <div class="ti" title="select"><b class="select"></b></div>
@@ -242,12 +243,12 @@ class Toolbar {
         dom.querySelector('.active')?.classList.remove('active');
         dom.querySelector('.sel.item')?.classList.add('active');
         dom.querySelector('.sel.item .ti')?.setAttribute('title', 'select');
-        const b = dom.querySelector('.sel.item .ti b') as HTMLElement;
+        const b = sel.querySelector('.ti b') as HTMLElement;
         if (b) {
           b.className = 'select';
         }
-        dom.querySelector('.sel.item li.cur')?.classList.remove('cur');
-        dom.querySelector('.sel.item li[title="select"]')?.classList.add('cur');
+        sel.querySelector('.cur')?.classList.remove('cur');
+        sel.querySelector('[title="select"]')?.classList.add('cur');
       }
     });
 
@@ -302,9 +303,84 @@ class Toolbar {
       // }
     });
 
-    if (typeof document !== 'undefined') {
-      document.addEventListener('keyup', e => {});
+    function clear() {
+      dom.querySelector('.active')?.classList.remove('active');
+      dom.querySelector('.cur')?.classList.remove('cur');
     }
+
+    listener.on(Listener.SHORTCUT_KEY, (keyCode: number, code: string) => {
+      if (picker.isShow()) {
+        picker.hide();
+      }
+      listener.cancelEditGeom();
+      listener.cancelEditGradient();
+      listener.dom.classList.remove('hand');
+      listener.dom.classList.remove('text');
+      listener.dom.classList.remove('add-rect');
+      listener.dom.classList.remove('add-oval');
+      listener.dom.classList.remove('add-round');
+      listener.dom.classList.remove('add-triangle');
+      listener.dom.classList.remove('add-star');
+      clear();
+      if (keyCode === 86 || code === 'KeyV') {
+        listener.state = state.NORMAL;
+        sel.classList.add('active');
+        const div = sel.querySelector('.ti') as HTMLElement;
+        div.title = 'select';
+        (div.querySelector('b') as HTMLElement).className = 'select';
+        sel.querySelector('.sub [title="select"]')?.classList.add('cur');
+      }
+      else if (keyCode === 72 || code === 'KeyH') {
+        listener.state = state.HAND;
+        listener.dom.classList.add('hand');
+        sel.classList.add('active');
+        const div = sel.querySelector('.ti') as HTMLElement;
+        div.title = 'hand';
+        (div.querySelector('b') as HTMLElement).className = 'hand';
+        sel.querySelector('.sub [title="hand"]')?.classList.add('cur');
+      }
+      else if (keyCode === 82 || code === 'KeyR') {
+        listener.state = state.ADD_RECT;
+        listener.dom.classList.add('add-rect');
+        geom.classList.add('active');
+        const div = geom.querySelector('.ti') as HTMLElement;
+        geom.title = 'rect';
+        (div.querySelector('b') as HTMLElement).className = 'rect';
+        geom.querySelector('.sub [title="rect"]')?.classList.add('cur');
+      }
+      else if (keyCode === 79 || code === 'KeyO') {
+        listener.state = state.ADD_OVAL;
+        listener.dom.classList.add('add-oval');
+        geom.classList.add('active');
+        const div = geom.querySelector('.ti') as HTMLElement;
+        geom.title = 'oval';
+        (div.querySelector('b') as HTMLElement).className = 'oval';
+        geom.querySelector('.sub [title="oval"]')?.classList.add('cur');
+      }
+      else if (keyCode === 85 || code === 'KeyU') {
+        listener.state = state.ADD_ROUND;
+        listener.dom.classList.add('add-round');
+        geom.classList.add('active');
+        const div = geom.querySelector('.ti') as HTMLElement;
+        geom.title = 'round';
+        (div.querySelector('b') as HTMLElement).className = 'round';
+        geom.querySelector('.sub [title="round"]')?.classList.add('cur');
+      }
+      else if (keyCode === 84 || code === 'KeyT') {
+        listener.state = state.ADD_TEXT;
+        listener.dom.classList.add('add-text');
+        text.classList.add('active');
+      }
+    });
+
+    listener.on(Listener.CANCEL_ADD_ESC, () => {
+      clear();
+      sel.classList.add('active');
+      const div = sel.querySelector('.ti') as HTMLElement;
+      div.title = 'select';
+      (div.querySelector('b') as HTMLElement).className = 'select';
+      sel.querySelector('.sub [title="select"]')?.classList.add('cur');
+    });
   }
 }
 

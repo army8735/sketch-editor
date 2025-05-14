@@ -207,6 +207,27 @@ function toPoint() {
   }
 }
 
+function toTree() {
+  const tree = document.querySelector('#tree');
+  function scan(node) {
+    const res = {
+      name: node.querySelector('dt .name').title,
+      children: [],
+    };
+    const children = node.children;
+    for (let i = 1, len = children.length; i < len; i++) {
+      res.children.push(scan(children[i].children[0]));
+    }
+    return res;
+  }
+  const list = [count++];
+  const children = tree.children[0].children;
+  for (let i = 0, len = children.length; i < len; i++) {
+    list.push(scan(children[i].children[0]));
+  }
+  input.value = JSON.stringify(list);
+}
+
 window.onerror = function(e) {
   input.value = e.toString();
   requestAnimationFrame(function () {
@@ -264,6 +285,7 @@ fetch('./sketch.sketch')
         const button4 = document.querySelector('#button4');
         const button5 = document.querySelector('#button5');
         const button6 = document.querySelector('#button6');
+        const button7 = document.querySelector('#button7');
         if (button1) {
           button1.addEventListener('click', () => {
             toDataURL();
@@ -292,6 +314,11 @@ fetch('./sketch.sketch')
         if (button6) {
           button6.addEventListener('click', () => {
             toPoint();
+          });
+        }
+        if (button7) {
+          button7.addEventListener('click', () => {
+            toTree();
           });
         }
       });
