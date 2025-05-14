@@ -1226,6 +1226,7 @@ export default class Listener extends Event {
       this.input.hideCursor();
       text.beforeEdit();
       this.select.select.classList.add('text');
+      this.dom.classList.remove('add-text');
       this.dom.classList.remove('text');
       this.history.addCommand(new AddCommand([text], [{
         x: text.computedStyle.left,
@@ -1233,8 +1234,10 @@ export default class Listener extends Event {
         parent: text.parent!,
       }]));
       this.emit(Listener.ADD_NODE, [text]);
+      const old = this.state;
       this.state = state.EDIT_TEXT;
-      this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
+      this.emit(Listener.CANCEL_ADD_ESC);
+      this.emit(Listener.STATE_CHANGE, old, this.state);
     }
     else if (this.state === state.ADD_RECT
       || this.state === state.ADD_OVAL
@@ -2307,8 +2310,7 @@ export default class Listener extends Event {
             if (this.state === state.EDIT_TEXT) {
               this.state = state.NORMAL;
               this.input.hide();
-              this.dom.classList.remove('add-text');
-              this.emit(Listener.STATE_CHANGE, state.ADD_TEXT, this.state);
+              this.emit(Listener.STATE_CHANGE, state.EDIT_TEXT, this.state);
             }
           }
         }
