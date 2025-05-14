@@ -17,8 +17,8 @@ module.exports = {
       .assert.not.elementPresent('#toolbar .sel.item .ti[title="select"] .select')
       .assert.elementPresent('#toolbar .sel.item .ti[title="hand"]')
       .assert.elementPresent('#toolbar .sel.item .ti[title="hand"] .hand')
-      .assert.elementPresent('#toolbar .sel.item .sub .cur[title="select"]')
-      .assert.not.elementPresent('#toolbar .sel.item .sub .cur[title="hand"]')
+      .assert.not.elementPresent('#toolbar .sel.item .sub .cur[title="select"]')
+      .assert.elementPresent('#toolbar .sel.item .sub .cur[title="hand"]')
 
       .keys('v')
       .assert.elementPresent('#toolbar .sel.item.active')
@@ -26,8 +26,8 @@ module.exports = {
       .assert.elementPresent('#toolbar .sel.item .ti[title="select"] .select')
       .assert.not.elementPresent('#toolbar .sel.item .ti[title="hand"]')
       .assert.not.elementPresent('#toolbar .sel.item .ti[title="hand"] .hand')
-      .assert.not.elementPresent('#toolbar .sel.item .sub .cur[title="select"]')
-      .assert.elementPresent('#toolbar .sel.item .sub .cur[title="hand"]')
+      .assert.elementPresent('#toolbar .sel.item .sub .cur[title="select"]')
+      .assert.not.elementPresent('#toolbar .sel.item .sub .cur[title="hand"]')
 
       .keys('r')
       .assert.not.elementPresent('#toolbar .sel.item.active')
