@@ -1,5 +1,6 @@
-import Panel from './Panel';
+import Node from '../node/Node';
 import Root from '../node/Root';
+import Panel from './Panel';
 import Listener from './Listener';
 import state from './state';
 import Polyline from '../node/geom/Polyline';
@@ -393,7 +394,7 @@ class PointPanel extends Panel {
       if (next === state.EDIT_GEOM || prev === state.EDIT_GEOM) {
         nodes.splice(0);
         prevPoint.splice(0);
-        this.show();
+        this.show(listener.selected);
       }
     });
 
@@ -412,8 +413,8 @@ class PointPanel extends Panel {
     });
   }
 
-  override show() {
-    const geoms = this.listener.selected.filter(item => item instanceof Polyline);
+  override show(nodes: Node[]) {
+    const geoms = nodes.filter(item => item instanceof Polyline);
     const panel = this.panel;
     if (!geoms.length || this.listener.state !== state.EDIT_GEOM) {
       panel.style.display = 'none';

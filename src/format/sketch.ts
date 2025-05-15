@@ -984,8 +984,6 @@ async function convertItem(
         constrainProportions,
         points,
         isClosed: layer.isClosed,
-        // @ts-ignore
-        fixedRadius: layer.fixedRadius || 0,
         isRectangle: layer._class === 'rectangle',
         isOval: layer._class === 'oval',
         styleId,

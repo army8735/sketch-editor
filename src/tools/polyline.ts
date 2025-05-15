@@ -27,7 +27,6 @@ export function createRect() {
     ],
     isClosed: true,
     isRectangle: true,
-    fixedRadius: 0,
   });
 }
 
@@ -55,7 +54,6 @@ export function createOval() {
     ],
     isClosed: true,
     isOval: true,
-    fixedRadius: 0,
   });
 }
 
@@ -81,7 +79,6 @@ export function createRound() {
     ],
     isClosed: true,
     isRectangle: true,
-    fixedRadius: 0,
   });
 }
 
@@ -116,7 +113,6 @@ export function createLine(transform: string) {
     },
     points,
     isClosed: false,
-    fixedRadius: 0,
   });
 }
 
@@ -141,7 +137,6 @@ export function createTriangle() {
     ],
     isClosed: true,
     isRectangle: true,
-    fixedRadius: 0,
   });
 }
 
@@ -173,7 +168,6 @@ export function createTriangle() {
 //     ],
 //     isClosed: true,
 //     isRectangle: true,
-//     fixedRadius: 0,
 //   });
 // }
 

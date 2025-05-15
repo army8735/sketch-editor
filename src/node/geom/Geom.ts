@@ -21,7 +21,6 @@ class Geom extends Node {
   loaders: Loader[];
   points: Point[];
   isClosed: boolean;
-  fixedRadius: number;
 
   constructor(props: GeomProps) {
     super(props);
@@ -29,7 +28,6 @@ class Geom extends Node {
     this.loaders = [];
     this.points = [];
     this.isClosed = props.isClosed || false;
-    this.fixedRadius = props.fixedRadius || 0;
   }
 
   override lay(data: LayoutData) {

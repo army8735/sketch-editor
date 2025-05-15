@@ -10,18 +10,20 @@ import state from './state';
 const html = `
   <h4 class="panel-title">圆角</h4>
   <div class="line">
-    <input type="range" min="0" max="100" step="1"/>
+    <input type="range" min="0" step="1"/>
     <div class="input-unit">
-      <input type="number" min="0" max="100" step="1"/>
+      <input type="number" min="0" step="1"/>
     </div>
   </div>
 `;
 
 class RoundPanel extends Panel {
   panel: HTMLElement;
+  nodes: (Polyline | ShapeGroup)[];
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
+    this.nodes = [];
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'round-panel';
@@ -29,10 +31,8 @@ class RoundPanel extends Panel {
     panel.innerHTML = html;
     dom.appendChild(panel);
 
-    listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
-      if (next === state.EDIT_GEOM || next === state.NORMAL) {
-        this.show(listener.selected);
-      }
+    listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
+      this.show(nodes);
     });
   }
 
@@ -62,26 +62,7 @@ class RoundPanel extends Panel {
     this.nodes = geoms;
     const rs: number[] = [];
     geoms.forEach(item => {
-      if (item instanceof Polyline) {
-        item.props.points.forEach(point => {
-          const r = point.cornerRadius;
-          if (!rs.includes(r)) {
-            rs.push(r);
-          }
-        });
-      }
-      else if (item instanceof ShapeGroup) {
-        item.children.forEach(child => {
-          if (child instanceof Polyline) {
-            child.props.points.forEach(point => {
-              const r = point.cornerRadius;
-              if (!rs.includes(r)) {
-                rs.push(r);
-              }
-            });
-          }
-        });
-      }
+      scan(item, rs);
     });
     const r = panel.querySelector('input[type=range]') as HTMLInputElement;
     const n = panel.querySelector('input[type=number]') as HTMLInputElement;
@@ -96,6 +77,33 @@ class RoundPanel extends Panel {
       r.style.setProperty('--p', c);
       n.value = c;
     }
+  }
+}
+
+// 递归查看所有矢量节点，shapeGroup会有子孙节点
+function scan(node: Node, rs: number[]) {
+  if (node instanceof Polyline) {
+    node.points.forEach(point => {
+      const r = point.cornerRadius;
+      if (!rs.includes(r)) {
+        rs.push(r);
+      }
+    });
+  }
+  else if (node instanceof ShapeGroup) {
+    node.children.forEach(child => {
+      if (child instanceof Polyline) {
+        child.points.forEach(point => {
+          const r = point.cornerRadius;
+          if (!rs.includes(r)) {
+            rs.push(r);
+          }
+        });
+      }
+      else if (child instanceof ShapeGroup) {
+        scan(child, rs);
+      }
+    });
   }
 }
 

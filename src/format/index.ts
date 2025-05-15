@@ -187,7 +187,6 @@ export type Props = {
 
 export type GeomProps = Props & {
   isClosed: boolean;
-  fixedRadius: number;
 };
 
 export type RootProps = Props & {

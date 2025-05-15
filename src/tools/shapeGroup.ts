@@ -119,7 +119,6 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
         index: shapeGroup.index,
         isClosed: true,
         points,
-        fixedRadius: 0,
         // 初始化相对于shapeGroup满尺寸（和coords一致），didMount()后自适应计算
         style: Object.assign({}, style, {
           left: '0%',
@@ -144,7 +143,6 @@ export function flatten(shapeGroup: ShapeGroup, ps?: Polyline | ShapeGroup) {
       index: shapeGroup.index,
       isClosed: true,
       points,
-      fixedRadius: 0,
       style,
     });
   }

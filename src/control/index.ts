@@ -6,7 +6,7 @@ import Input from './Input';
 import Panel from './Panel';
 import BasicPanel from './BasicPanel';
 import OpacityPanel from './OpacityPanel';
-// import RoundPanel from './RoundPanel';
+import RoundPanel from './RoundPanel';
 import PointPanel from './PointPanel';
 import FillPanel from './FillPanel';
 import StrokePanel from './StrokePanel';
@@ -50,11 +50,11 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener, opts
   const opacityPanel = new OpacityPanel(root, dom, listener);
   opacityPanel.show(listener.selected);
 
-  // const roundPanel = new RoundPanel(root, dom, listener);
-  // roundPanel.show(listener.selected);
+  const roundPanel = new RoundPanel(root, dom, listener);
+  roundPanel.show(listener.selected);
 
   const pointPanel = new PointPanel(root, dom, listener);
-  pointPanel.show();
+  pointPanel.show(listener.selected);
 
   const fillPanel = new FillPanel(root, dom, listener);
   fillPanel.show(listener.selected);
