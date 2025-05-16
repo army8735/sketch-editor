@@ -47,7 +47,7 @@ import config from '../util/config';
 import Tile from '../refresh/Tile';
 import TileManager from '../refresh/TileManager';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
-import { renderWebgl, Struct } from '../refresh/struct';
+import { calWorldMatrixAndOpacity, renderWebgl, Struct } from '../refresh/struct';
 import Event from '../util/Event';
 import ArtBoard from './ArtBoard';
 import Container from './Container';
@@ -199,7 +199,9 @@ class Root extends Container implements FrameCallback {
     this.reLayout();
     this.didMount();
     for (let i = 0, len = this.structs.length; i < len; i++) {
-      this.structs[i].node.calContent();
+      const { node } = this.structs[i];
+      node.calContent();
+      calWorldMatrixAndOpacity(node, i, node.parent);
     }
   }
 

@@ -326,6 +326,10 @@ function renderWebglTile(
       );
       // 和普通渲染相比没有检查画板写回Page的过程
       if (shouldIgnore) {
+        for (let j = i + 1; j < i + total + next; j++) {
+          const node = structs[j].node;
+          calWorldMatrixAndOpacity(node, j, node.parent);
+        }
         i += total + next;
         // 在画布end处重置clip
         if (artBoardIndex[i]) {
@@ -852,6 +856,10 @@ function renderWebglNoTile(
       scaleIndex,
     );
     if (shouldIgnore) {
+      for (let j = i + 1; j < i + total + next; j++) {
+        const node = structs[j].node;
+        calWorldMatrixAndOpacity(node, j, node.parent);
+      }
       i += total + next;
       // 同正常逻辑检查画板end，重置clip
       if (artBoardIndex[i]) {
@@ -1089,7 +1097,7 @@ function renderWebglNoTile(
 }
 
 // 计算节点的世界坐标系数据
-function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
+export function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Container) {
   // 世界opacity和matrix不一定需要重算，有可能之前调用算过了有缓存
   let hasCacheOp = false;
   let hasCacheMw = false;
