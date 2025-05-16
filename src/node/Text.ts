@@ -2766,7 +2766,7 @@ class Text extends Node {
   }
 
   updateRangeStyle(location: number, length: number, st: ModifyRichStyle) {
-    const lv = this.updateRangeStyleNoRefresh(location, length, st);
+    const lv = this.updateRangeStyleData(location, length, st);
     if (lv) {
       this.refresh(lv);
     }
@@ -2774,7 +2774,7 @@ class Text extends Node {
   }
 
   // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
-  updateRangeStyleNoRefresh(location: number, length: number, st: ModifyRichStyle) {
+  updateRangeStyleData(location: number, length: number, st: ModifyRichStyle) {
     let lv = RefreshLevel.NONE;
     // 开头同时更新节点本身默认样式
     if (location === 0) {

@@ -181,7 +181,7 @@ class TextPanel extends Panel {
           }
           else {
             // 输入等onchange
-            const lv = node.updateRangeStyleNoRefresh(start, end - start, {
+            const lv = node.updateRangeStyleData(start, end - start, {
               [key]: value,
             });
             lvs.push(lv);
@@ -231,7 +231,7 @@ class TextPanel extends Panel {
           }
           // 输入统一改为单个值比较简单等onchange
           else {
-            const lv = node.updateRangeStyleNoRefresh(0, node._content.length, {
+            const lv = node.updateRangeStyleData(0, node._content.length, {
               [key]: value,
             });
             lvs.push(lv);
