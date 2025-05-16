@@ -40,6 +40,7 @@ import RemoveCommand, { RemoveData } from '../history/RemoveCommand';
 import RotateCommand from '../history/RotateCommand';
 import RichCommand from '../history/RichCommand';
 import OpacityCommand from '../history/OpacityCommand';
+import RoundCommand from '../history/RoundCommand';
 import VerticalAlignCommand from '../history/VerticalAlignCommand';
 import ShadowCommand from '../history/ShadowCommand';
 import BlurCommand from '../history/BlurCommand';
@@ -2335,6 +2336,9 @@ export default class Listener extends Event {
         else if (c instanceof OpacityCommand) {
           this.emit(Listener.OPACITY_NODE, nodes.slice(0));
         }
+        else if (c instanceof RoundCommand) {
+          this.emit(Listener.ROUND_NODE, nodes.slice(0));
+        }
         else if (c instanceof ShadowCommand) {
           this.emit(Listener.SHADOW_NODE, nodes.slice(0));
         }
@@ -2348,7 +2352,7 @@ export default class Listener extends Event {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
         }
         else if (c instanceof FillCommand) {
-          this.emit(Listener.FILL_NODE, nodes.slice(0), c.data);
+          this.emit(Listener.FILL_NODE, nodes.slice(0));
         }
         else if (c instanceof StrokeCommand) {
           this.emit(Listener.STROKE_NODE, nodes.slice(0));
@@ -2508,7 +2512,7 @@ export default class Listener extends Event {
         }
         // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
         // 定义无论是人工导致还是命令导致，选择节点一旦发生变更，统一触发SELECT事件
-        // SELECT事件最后触发，主要是需要再ADD、GROUP之后
+        // SELECT事件最后触发，主要是需要在ADD、GROUP之后
         if (needUpdateSelectEvent) {
           if (nodes.length !== olds.length) {
             this.emit(Listener.SELECT_NODE, nodes.slice(0));
@@ -2651,6 +2655,7 @@ export default class Listener extends Event {
   static MOVE_NODE = 'MOVE_NODE';
   static ROTATE_NODE = 'ROTATE_NODE';
   static OPACITY_NODE = 'OPACITY_NODE';
+  static ROUND_NODE = 'ROUND_NODE';
   static FLIP_H_NODE = 'FLIP_H_NODE';
   static FLIP_V_NODE = 'FLIP_V_NODE';
   static FILL_NODE = 'FILL_NODE';

@@ -1,9 +1,9 @@
 import AbstractCommand from './AbstractCommand';
 import Polyline from '../node/geom/Polyline';
+import ShapeGroup from '../node/geom/ShapeGroup';
 import { Point } from '../format';
 import { clone } from '../util/type';
 import { getPointsAbsByDsp } from '../tools/polyline';
-import ShapeGroup from '../node/geom/ShapeGroup';
 
 export type PointData = {
   prev: Point[],

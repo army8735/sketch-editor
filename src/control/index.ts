@@ -50,8 +50,8 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener, opts
   const opacityPanel = new OpacityPanel(root, dom, listener);
   opacityPanel.show(listener.selected);
 
-  const roundPanel = new RoundPanel(root, dom, listener);
-  roundPanel.show(listener.selected);
+  // const roundPanel = new RoundPanel(root, dom, listener);
+  // roundPanel.show(listener.selected);
 
   const pointPanel = new PointPanel(root, dom, listener);
   pointPanel.show(listener.selected);
