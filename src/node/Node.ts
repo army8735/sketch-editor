@@ -1080,7 +1080,7 @@ class Node extends Event {
     this.root?.addUpdate(this, keys, undefined, false, false, cb);
   }
 
-  refreshStyle(style: any, cb?: (sync: boolean) => void) {
+  refreshStyle(style: string[] | Object, cb?: (sync: boolean) => void) {
     let keys: string[];
     if (Array.isArray(style)) {
       keys = style.slice(0);
