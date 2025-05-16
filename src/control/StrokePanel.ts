@@ -125,11 +125,13 @@ class StrokePanel extends Panel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       const classList = el.classList;
+      const line = el.parentElement!.parentElement!.parentElement!;
+      const index = parseInt(line.title);
       if (classList.contains('pick')) {
         if (el.parentElement!.classList.contains('read-only')) {
           return;
         }
-        if (picker.isShowFrom('strokePanel')) {
+        if (picker.isShowFrom('strokePanel' + index)) {
           picker.hide();
           return;
         }
@@ -150,8 +152,6 @@ class StrokePanel extends Panel {
           });
         });
 
-        const line = el.parentElement!.parentElement!.parentElement!;
-        const index = parseInt(line.title);
         const stroke = this.nodes[0].computedStyle.stroke[index];
         const onInput = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
           this.silence = true;
@@ -202,7 +202,7 @@ class StrokePanel extends Panel {
         };
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
-        picker.show(el, stroke, 'strokePanel', onInput, pickCallback, listener);
+        picker.show(el, stroke, 'strokePanel' + index, onInput, pickCallback, listener);
         if (!Array.isArray(stroke)) {
           listener.select.hideSelect();
           listener.gradient.show(this.nodes[0], stroke, onInput, () => {

@@ -160,11 +160,13 @@ class FillPanel extends Panel {
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       const classList = el.classList;
+      const line = el.parentElement!.parentElement!.parentElement!;
+      const index = parseInt(line.title);
       if (classList.contains('pick')) {
         if (el.parentElement!.classList.contains('read-only')) {
           return;
         }
-        if (picker.isShowFrom('fillPanel')) {
+        if (picker.isShowFrom('fillPanel' + index)) {
           picker.hide();
           return;
         }
@@ -183,8 +185,7 @@ class FillPanel extends Panel {
             fillEnable,
           });
         });
-        const line = el.parentElement!.parentElement!.parentElement!;
-        const index = parseInt(line.title);
+
         const fill = this.nodes[0].computedStyle.fill[index];
         const onInput = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false, changeType = false) => {
           this.silence = true;
@@ -244,7 +245,7 @@ class FillPanel extends Panel {
         };
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
-        picker.show(el, fill, 'fillPanel', onInput, pickCallback, listener);
+        picker.show(el, fill, 'fillPanel' + index, onInput, pickCallback, listener);
         if (!Array.isArray(fill)) {
           listener.select.hideSelect();
           listener.gradient.show(this.nodes[0], fill, onInput, () => {
