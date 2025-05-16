@@ -100,6 +100,7 @@ export default {
             onInput(c, false, true);
           }
           picker.setColor(c, true);
+          listener.gradient.hide();
         }
         else {
           line.style.display = 'block';
