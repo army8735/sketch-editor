@@ -198,6 +198,9 @@ class Root extends Container implements FrameCallback {
     this.structs = this.structure(0);
     this.reLayout();
     this.didMount();
+    for (let i = 0, len = this.structs.length; i < len; i++) {
+      this.structs[i].node.calContent();
+    }
   }
 
   private initShaders(gl: WebGL2RenderingContext | WebGLRenderingContext) {
