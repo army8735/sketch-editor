@@ -180,9 +180,10 @@ class TextPanel extends Panel {
             });
           }
           else {
-            const lv = node.updateRangeStyle(start, end - start, {
+            // 输入等onchange
+            const lv = node.updateRangeStyleNoRefresh(start, end - start, {
               [key]: value,
-            }, false);
+            });
             lvs.push(lv);
           }
           nexts.push(node.getRich());
@@ -228,11 +229,11 @@ class TextPanel extends Panel {
               });
             });
           }
-          // 输入统一改为单个值比较简单
+          // 输入统一改为单个值比较简单等onchange
           else {
-            const lv = node.updateRangeStyle(0, node._content.length, {
+            const lv = node.updateRangeStyleNoRefresh(0, node._content.length, {
               [key]: value,
-            }, false);
+            });
             lvs.push(lv);
           }
           nexts.push(node.getRich());
