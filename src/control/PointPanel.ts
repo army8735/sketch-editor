@@ -10,6 +10,7 @@ import { clone } from '../util/type';
 import PointCommand from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
 import { toPrecision } from '../math';
+import ShapeGroup from '../node/geom/ShapeGroup';
 
 const html = `
   <h4 class="panel-title">锚点</h4>
@@ -54,7 +55,7 @@ class PointPanel extends Panel {
     dom.appendChild(panel);
 
     const nodes: Polyline[] = [];
-    const prevPoint: Point[][] = [];
+    const prevPoints: Point[][] = [];
 
     panel.addEventListener('click', (e) => {
       this.silence = true;
@@ -66,19 +67,19 @@ class PointPanel extends Panel {
         const is = idxes[i];
         if (is.length) {
           nodes.push(node);
-          prevPoint.push(clone(node.points));
+          prevPoints.push(clone(node.points));
         }
       });
       if (tagName === 'LI' && !classList.contains('cur')) {
         panel.querySelector('.type .cur')?.classList.remove('cur');
         classList.add('cur');
         nodes.splice(0);
-        prevPoint.splice(0);
+        prevPoints.splice(0);
         nodes2.forEach((node, i) => {
           const is = idxes[i];
           if (is.length) {
             nodes.push(node);
-            prevPoint.push(clone(node.points));
+            prevPoints.push(clone(node.points));
             const points = is.map(i => node.points[i]);
             points.forEach(p => {
               p.hasCurveTo = p.hasCurveFrom = true;
@@ -155,12 +156,12 @@ class PointPanel extends Panel {
         listener.geometry.updateAll(init);
         listener.history.addCommand(new PointCommand(nodes.slice(0), nodes.map((item, i) => {
           return {
-            prev: prevPoint[i],
+            prev: prevPoints[i],
             next: clone(item.points),
           };
         })));
         nodes.splice(0);
-        prevPoint.splice(0);
+        prevPoints.splice(0);
       }
     };
 
@@ -179,7 +180,7 @@ class PointPanel extends Panel {
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
-            prevPoint.push(clone(node.points));
+            prevPoints.push(clone(node.points));
           }
           const points = is.map(i => node.points[i]);
           points.forEach((item, j) => {
@@ -300,7 +301,7 @@ class PointPanel extends Panel {
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
-            prevPoint.push(clone(node.points));
+            prevPoints.push(clone(node.points));
           }
           const points = is.map(i => node.points[i]);
           points.forEach(item => {
@@ -310,6 +311,10 @@ class PointPanel extends Panel {
             item.cornerRadius = value;
           });
           node.refresh();
+          let parent = node.parent;
+          if (parent instanceof ShapeGroup) {
+            parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
+          }
           listener.geometry.updateVertex(node);
           data.push(points);
         }
@@ -333,7 +338,7 @@ class PointPanel extends Panel {
         if (is.length) {
           if (isFirst) {
             nodes.push(node);
-            prevPoint.push(clone(node.points));
+            prevPoints.push(clone(node.points));
           }
           const points = is.map(i => node.points[i]);
           points.forEach((item, j) => {
@@ -393,7 +398,7 @@ class PointPanel extends Panel {
       // 出现或消失
       if (next === state.EDIT_GEOM || prev === state.EDIT_GEOM) {
         nodes.splice(0);
-        prevPoint.splice(0);
+        prevPoints.splice(0);
         this.show(listener.selected);
       }
     });
@@ -406,7 +411,7 @@ class PointPanel extends Panel {
         return;
       }
       nodes.splice(0);
-      prevPoint.splice(0);
+      prevPoints.splice(0);
       this.updateCoords();
       this.updateType();
       this.updateRange();

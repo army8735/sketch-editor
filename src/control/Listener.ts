@@ -1492,9 +1492,10 @@ export default class Listener extends Event {
           e.clientY - this.originY,
         );
         node.beforeEdit();
+        const old = this.state;
         this.state = state.EDIT_TEXT;
         this.select.select.classList.add('text');
-        this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
+        this.emit(Listener.STATE_CHANGE, old, this.state);
       }
       else if (node instanceof Polyline) {
         // 双击shapeGroup进入的polyline是选择，之后再双击编辑矢量
@@ -1504,8 +1505,9 @@ export default class Listener extends Event {
           }
           this.select.hideSelect();
           this.geometry.show([node]);
+          const old = this.state;
           this.state = state.EDIT_GEOM;
-          this.emit(Listener.STATE_CHANGE, state.NORMAL, this.state);
+          this.emit(Listener.STATE_CHANGE, old, this.state);
         }
       }
       this.emit(Listener.SELECT_NODE, this.selected.slice(0));

@@ -335,16 +335,16 @@ export default class Geometry {
             return p;
           });
           if (pts.length) {
-          getPointsAbsByDsp(item, pts);
-          item.reflectPoints(pts);
-          item.refresh();
-          let parent = item.parent;
-          if (parent instanceof ShapeGroup) {
-            parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
-          }
-          this.updateVertex(item);
-          nodes.push(item);
-          data.push(pts);
+            getPointsAbsByDsp(item, pts);
+            item.reflectPoints(pts);
+            item.refresh();
+            let parent = item.parent;
+            if (parent instanceof ShapeGroup) {
+              parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
+            }
+            this.updateVertex(item);
+            nodes.push(item);
+            data.push(pts);
           }
         });
         listener.emit(Listener.POINT_NODE, nodes, data);
