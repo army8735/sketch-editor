@@ -189,7 +189,7 @@ class FillPanel extends Panel {
         const onInput = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false, changeType = false) => {
           this.silence = true;
           const style = (line.querySelector('.pick') as HTMLElement).style;
-          // 类型变更需改变select/input展示，stroke之类不会出现渐变切换所以可能会没有要加?防止
+          // 类型变更需改变select/input展示
           if (Array.isArray(data)) {
             panel.querySelector('.value .hex')?.classList.remove('hide');
             panel.querySelector('.value .gradient')?.classList.add('hide');
@@ -203,9 +203,9 @@ class FillPanel extends Panel {
             if (p.url !== undefined) {}
             else {
               data = data  as ComputedGradient;
-              panel.querySelector('.value .hex')!.classList.add('hide');
-              panel.querySelector('.value .gradient')!.classList.remove('hide');
-              panel.querySelector('.value .multi-type')!.classList.add('hide');
+              panel.querySelector('.value .hex')?.classList.add('hide');
+              panel.querySelector('.value .gradient')?.classList.remove('hide');
+              panel.querySelector('.value .multi-type')?.classList.add('hide');
               const select = panel.querySelector('.value .gradient select') as HTMLSelectElement;
               select.value = data.t.toString();
               style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
@@ -236,7 +236,9 @@ class FillPanel extends Panel {
             listener.gradient.update(this.nodes[0], fill, changeType);
           }
           if (nodes.length) {
-            listener.emit(Listener.FILL_NODE, nodes.slice(0));
+            listener.emit(Listener.FILL_NODE, nodes.slice(0), prevs.map((prev, i) => {
+              return { prev, next: nexts[i], index };
+            }));
           }
           this.silence = false;
         };
@@ -296,6 +298,7 @@ class FillPanel extends Panel {
         if (value) {
           classList.remove('un-checked');
           classList.add('checked');
+          line.querySelector('.read-only')?.classList.remove('read-only');
           line.querySelectorAll('input:read-only').forEach((item) => {
             (item as HTMLInputElement).readOnly = false;
           });
@@ -303,6 +306,7 @@ class FillPanel extends Panel {
         else {
           classList.remove('checked');
           classList.add('un-checked');
+          line.querySelector('.picker-btn')?.classList.add('read-only');
           line.querySelectorAll('input').forEach(item => {
             (item as HTMLInputElement).readOnly = true;
           });

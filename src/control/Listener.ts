@@ -2352,10 +2352,10 @@ export default class Listener extends Event {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
         }
         else if (c instanceof FillCommand) {
-          this.emit(Listener.FILL_NODE, nodes.slice(0));
+          this.emit(Listener.FILL_NODE, nodes.slice(0), c.data);
         }
         else if (c instanceof StrokeCommand) {
-          this.emit(Listener.STROKE_NODE, nodes.slice(0));
+          this.emit(Listener.STROKE_NODE, nodes.slice(0), c.data);
         }
         // 编组之类强制更新并选择节点
         else if (c instanceof GroupCommand) {

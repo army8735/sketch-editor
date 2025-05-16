@@ -7,10 +7,10 @@ import Bitmap from '../node/Bitmap';
 import picker from './picker';
 import Listener from './Listener';
 import { ComputedGradient, ComputedPattern } from '../style/define';
-import { color2hexStr, color2rgbaStr, getCssFillStroke, getCssStrokePosition } from '../style/css';
+import { color2rgbaStr, getCssFillStroke, getCssStrokePosition } from '../style/css';
 import Panel from './Panel';
 import { StrokeStyle } from '../format';
-import StrokeCommand from '../history/StrokeCommand';
+import StrokeCommand, { StrokeData } from '../history/StrokeCommand';
 import state from './state';
 
 const html = `
@@ -36,7 +36,7 @@ function renderItem(
   const multiGradient = strokeGradient.length > 1;
   const multiStroke = (strokeColor.length ? 1 : 0) + (strokePattern.length ? 1 : 0) + (strokeGradient.length ? 1 : 0) > 1;
   const multi = multiStroke || multiColor || multiPattern || multiGradient;
-  const readOnly = (multiStrokeEnable || !strokeEnable || multiStroke || multiPattern || multiGradient || strokePattern.length || strokeGradient.length) ? 'readonly="readonly"' : '';
+  const readOnly = (multiStrokeEnable || !strokeEnable || multiStroke || multiPattern || multiGradient || strokePattern.length) ? 'readonly="readonly"' : '';
   let background = '';
   let txt1 = ' ';
   if (multiStroke) {
@@ -107,16 +107,18 @@ class StrokePanel extends Panel {
     let nodes: Node[] = [];
     let prevs: StrokeStyle[] = [];
     let nexts: StrokeStyle[] = [];
+    let indexes: number[] = [];
 
     const pickCallback = () => {
       if (nexts && nexts.length) {
         listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
-          return { prev, next: nexts[i] };
+          return { prev, next: nexts[i], index: indexes[i] };
         })));
       }
       nodes = [];
       prevs = [];
       nexts = [];
+      indexes = [];
       listener.gradient.hide();
     };
 
@@ -150,13 +152,11 @@ class StrokePanel extends Panel {
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
         const stroke = this.nodes[0].computedStyle.stroke[index];
-        const onChange = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
+        const onInput = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
           this.silence = true;
           const style = (line.querySelector('.pick') as HTMLElement).style;
           // 类型变更需改变select/input展示
           if (Array.isArray(data)) {
-            panel.querySelector('.value .hex')?.classList.remove('hide');
-            panel.querySelector('.value .gradient')?.classList.add('hide');
             panel.querySelector('.value .multi-type')?.classList.add('hide');
             style.background = color2rgbaStr(data);
           }
@@ -165,15 +165,12 @@ class StrokePanel extends Panel {
             if (p.url !== undefined) {}
             else {
               data = data  as ComputedGradient;
-              panel.querySelector('.value .hex')!.classList.add('hide');
-              panel.querySelector('.value .gradient')!.classList.remove('hide');
-              panel.querySelector('.value .multi-type')!.classList.add('hide');
-              const select = panel.querySelector('.value .gradient select') as HTMLSelectElement;
-              select.value = data.t.toString();
+              panel.querySelector('.value .multi-type')?.classList.add('hide');
               style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
             }
           }
           nexts = [];
+          indexes = [];
           nodes.forEach((node) => {
             const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
             const cssStroke = stroke.map((item, i) => {
@@ -191,6 +188,7 @@ class StrokePanel extends Panel {
               strokeWidth,
             };
             nexts.push(o);
+            indexes.push(index);
             node.updateStyle(o);
           });
           if (!fromGradient) {
@@ -203,10 +201,12 @@ class StrokePanel extends Panel {
         };
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
-        picker.show(el, stroke, 'strokePanel', onChange, pickCallback, listener);
+        picker.show(el, stroke, 'strokePanel', onInput, pickCallback, listener);
         listener.select.hideSelect();
-        listener.gradient.show(this.nodes[0], stroke, onChange);
-        listener.state = state.EDIT_GRADIENT;
+        listener.gradient.show(this.nodes[0], stroke, onInput, () => {});
+        if (!Array.isArray(stroke)) {
+          listener.state = state.EDIT_GRADIENT;
+        }
       }
       else if (classList.contains('enabled')) {
         this.silence = true;
@@ -215,6 +215,7 @@ class StrokePanel extends Panel {
         const nodes = this.nodes.slice(0);
         const prevs: StrokeStyle[] = [];
         const nexts: StrokeStyle[] = [];
+        const indexes: number[] = [];
         let value = false;
         if (classList.contains('multi-checked') || classList.contains('un-checked')) {
           value = true;
@@ -242,12 +243,14 @@ class StrokePanel extends Panel {
             strokeWidth: sw,
           };
           nexts.push(o);
+          indexes.push(index);
           node.updateStyle(o);
         });
         classList.remove('multi-checked');
         if (value) {
           classList.remove('un-checked');
           classList.add('checked');
+          line.querySelector('.read-only')?.classList.remove('read-only');
           line.querySelectorAll('input:read-only').forEach((item) => {
             (item as HTMLInputElement).readOnly = false;
           });
@@ -255,6 +258,7 @@ class StrokePanel extends Panel {
         else {
           classList.remove('checked');
           classList.add('un-checked');
+          line.querySelector('.picker-btn')?.classList.add('read-only');
           line.querySelectorAll('input').forEach(item => {
             (item as HTMLInputElement).readOnly = true;
           });
@@ -262,7 +266,7 @@ class StrokePanel extends Panel {
         if (nodes.length) {
           listener.emit(Listener.STROKE_NODE, nodes.slice(0));
           listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
-            return { prev, next: nexts[i] };
+            return { prev, next: nexts[i], index: indexes[i] };
           })));
         }
         this.silence = false;
@@ -311,7 +315,7 @@ class StrokePanel extends Panel {
         if (nodes.length) {
           listener.emit(Listener.STROKE_NODE, nodes.slice(0));
           listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
-            return { prev, next: nexts[i] };
+            return { prev, next: nexts[i], index: indexes[i] };
           })));
         }
         this.silence = false;
@@ -409,11 +413,16 @@ class StrokePanel extends Panel {
 
     listener.on([
       Listener.STROKE_NODE,
-    ], (nodes: Node[]) => {
+    ], (nodes: Node[], data: StrokeData[]) => {
       if (this.silence) {
         return;
       }
       this.show(nodes);
+      if (listener.state === state.EDIT_GRADIENT) {
+        // node一定相等，就是第0个，用记录的索引确定更新的是哪个fill
+        const node = listener.gradient.node!;
+        listener.gradient.update(node, node.computedStyle.stroke[data[0].index]);
+      }
     });
   }
 
