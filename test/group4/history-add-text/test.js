@@ -18,7 +18,7 @@ module.exports = {
 
       .assert.cssClassPresent('#main .canvas-c', ['canvas-c'])
       .moveToElement('canvas', 50, 50)
-      .assert.cssClassPresent('#main .canvas-c', ['canvas-c', 'text'])
+      .assert.cssClassPresent('#main .canvas-c', ['canvas-c', 'add-text'])
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
       .assert.elementPresent('#toolbar .sel.item.active')

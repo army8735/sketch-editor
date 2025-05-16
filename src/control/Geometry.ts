@@ -627,7 +627,7 @@ export default class Geometry {
       s2 += `<span class="t ${isStraight ? 'hide' : ''}"><b></b></span>`;
       s2 += `<span class="f ${isStraight ? 'hide' : ''}"><b></b></span>`;
       s2 += '</div>';
-      if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
+      if (isStraight) {
         // 最后一个判断是否闭合
         if (item.cornerRadius && (i < len || node.isClosed)) {
           s += `<path title="cr${i}" idx="${count++}" d=""></path>`;
@@ -655,6 +655,7 @@ export default class Geometry {
     if (nodeIdx === -1) {
       return;
     }
+    const idxes = this.idxes[nodeIdx] || [];
     node.buildPoints();
     const panel = this.panel;
     const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
@@ -668,6 +669,10 @@ export default class Geometry {
       const div = vts[i] as HTMLElement;
       if (div) {
         div.style.transform = `translate(${item.absX * zoom}px, ${item.absY * zoom}px)`;
+        // 可能重新生成后丢掉了已选，比如改变radius由0变成正数触发重新生成
+        if (idxes.includes(i)) {
+          div.classList.add('cur');
+        }
         const spans = div.querySelectorAll('span');
         const [prev, next] = spans;
         prev.classList.add('hide');

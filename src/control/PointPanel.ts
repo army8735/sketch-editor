@@ -150,10 +150,10 @@ class PointPanel extends Panel {
       this.silence = false;
     });
 
-    const onChange = (init = false) => {
+    const onChange = () => {
       if (nodes.length) {
         nodes.forEach(item => item.checkPointsChange());
-        listener.geometry.updateAll(init);
+        listener.geometry.updateAll();
         listener.history.addCommand(new PointCommand(nodes.slice(0), nodes.map((item, i) => {
           return {
             prev: prevPoints[i],
@@ -311,7 +311,11 @@ class PointPanel extends Panel {
             item.cornerRadius = value;
           });
           node.refresh();
-          let parent = node.parent;
+          if (rangeAlt) {
+            rangeAlt = false;
+            listener.geometry.update(node, true);
+          }
+          const parent = node.parent;
           if (parent instanceof ShapeGroup) {
             parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
           }
@@ -324,12 +328,13 @@ class PointPanel extends Panel {
       listener.emit(Listener.POINT_NODE, nodes.slice(0), data);
       this.silence = false;
     });
-    range.addEventListener('change', () => onChange(rangeAlt));
+    range.addEventListener('change', () => onChange());
 
     number.addEventListener('input', (e) => {
       this.silence = true;
       const  { geometry: { nodes: nodes2, idxes } } = listener;
       const value = parseFloat(number.value) || 0;
+      rangeAlt = false;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
       const data: Point[][] = [];
@@ -343,6 +348,9 @@ class PointPanel extends Panel {
           const points = is.map(i => node.points[i]);
           points.forEach((item, j) => {
             if (isInput) {
+              if (item.cornerRadius && !value || !item.cornerRadius && value) {
+                rangeAlt = true;
+              }
               item.cornerRadius = value;
               if (!i && !j) {
                 range.placeholder = number.placeholder = '';
@@ -373,6 +381,9 @@ class PointPanel extends Panel {
                   d = -0.1;
                 }
               }
+              if (item.cornerRadius && !d || !item.cornerRadius && d) {
+                rangeAlt = true;
+              }
               item.cornerRadius += d;
               if (!i && !j) {
                 if (number.placeholder) {
@@ -385,6 +396,14 @@ class PointPanel extends Panel {
             }
           });
           node.refresh();
+          if (rangeAlt) {
+            rangeAlt = false;
+            listener.geometry.update(node, true);
+          }
+          const parent = node.parent;
+          if (parent instanceof ShapeGroup) {
+            parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
+          }
           listener.geometry.updateVertex(node);
           data.push(points);
         }
