@@ -135,6 +135,7 @@ class StrokePanel extends Panel {
         }
         // picker侦听了document全局click隐藏窗口，这里停止
         picker.keep = true;
+        listener.gradient.keep = true;
         // 最开始记录nodes/prevs
         nodes = this.nodes.slice(0);
         prevs = [];
@@ -202,9 +203,17 @@ class StrokePanel extends Panel {
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
         picker.show(el, stroke, 'strokePanel', onInput, pickCallback, listener);
-        listener.select.hideSelect();
-        listener.gradient.show(this.nodes[0], stroke, onInput, () => {});
         if (!Array.isArray(stroke)) {
+          listener.select.hideSelect();
+          listener.gradient.show(this.nodes[0], stroke, onInput, () => {
+            if (nexts.length) {
+              listener.history.addCommand(new StrokeCommand(nodes, prevs.map((prev, i) => {
+                return { prev, next: nexts[i], index };
+              })), true);
+              prevs = nexts.slice(0);
+              nexts = [];
+            }
+          });
           listener.state = state.EDIT_GRADIENT;
         }
       }
@@ -264,7 +273,9 @@ class StrokePanel extends Panel {
           });
         }
         if (nodes.length) {
-          listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+          listener.emit(Listener.STROKE_NODE, nodes.slice(0), prevs.map((prev, i) => {
+            return { prev, next: nexts[i], index: indexes[i] };
+          }));
           listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
             return { prev, next: nexts[i], index: indexes[i] };
           })));

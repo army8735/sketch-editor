@@ -245,17 +245,17 @@ class FillPanel extends Panel {
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
         picker.show(el, fill, 'fillPanel', onInput, pickCallback, listener);
-        listener.select.hideSelect();
-        listener.gradient.show(this.nodes[0], fill, onInput, () => {
-          if (nexts.length) {
-            listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
-              return { prev, next: nexts[i], index };
-            })), true);
-            prevs = nexts.slice(0);
-            nexts = [];
-          }
-        });
         if (!Array.isArray(fill)) {
+          listener.select.hideSelect();
+          listener.gradient.show(this.nodes[0], fill, onInput, () => {
+            if (nexts.length) {
+              listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+                return { prev, next: nexts[i], index };
+              })), true);
+              prevs = nexts.slice(0);
+              nexts = [];
+            }
+          });
           listener.state = state.EDIT_GRADIENT;
         }
       }
