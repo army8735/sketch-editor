@@ -10,6 +10,7 @@ import {
   drawShadow,
   drawTextureCache,
   drawTint,
+  // texture2Blob,
 } from '../gl/webgl';
 import { boxesForGauss, kernelSize, outerSizeByD } from '../math/blur';
 import { d2r, isConvexPolygonOverlapRect, isRectsOverlap } from '../math/geom';
@@ -2296,7 +2297,7 @@ function genMask(
               let tex: WebGLTexture | undefined;
               /**
                * 有mbm先将本节点内容绘制到同尺寸纹理上，注意sketch和psd的区别，
-               * sketch即便是outline也不收集为底层，因此第0个summary不生效，第1个菜生效，
+               * sketch即便是outline也不收集为底层，因此第0个summary不生效，第1个才生效，
                * psd的alpha-with作为底层，因此第0个summary生效
                */
               if (mixBlendMode !== MIX_BLEND_MODE.NORMAL

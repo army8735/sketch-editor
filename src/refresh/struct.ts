@@ -882,7 +882,7 @@ function renderWebglNoTile(
     let target = textureTarget[scaleIndex],
       isInScreen = false;
     // 有merge的直接判断是否在可视范围内，合成结果在merge中做了，可能超出范围不合成
-    if (target && target.available) {
+    if (target?.available) {
       isInScreen = checkInScreen(target.bbox, matrix, W, H);
     }
     // 无merge的是单个节点，判断是否有内容以及是否在可视范围内，首次渲染或更新后会无target
@@ -952,7 +952,7 @@ function renderWebglNoTile(
     }
     // console.log(i, node.props.name, isInScreen, x1, y1, x2, y2, abRect.join(','))
     // 真正的渲染部分
-    if (isInScreen && target && target.available) {
+    if (isInScreen && target?.available) {
       const { mixBlendMode, blur } = computedStyle;
       /**
        * 背景模糊是个很特殊的渲染，将当前节点区域和主画布重合的地方裁剪出来，
@@ -1049,7 +1049,7 @@ function renderWebglNoTile(
     if (
       target?.available &&
       target !== node.textureCache[scaleIndex] ||
-      computedStyle.maskMode // mask图片还未加载完成没有可渲染的内容也要跳过
+      computedStyle.maskMode && node instanceof Bitmap // mask图片还未加载完成没有可渲染的内容也要跳过
     ) {
       i += total + next;
     }
