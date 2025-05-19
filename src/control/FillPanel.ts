@@ -507,15 +507,21 @@ class FillPanel extends Panel {
 
     listener.on([
       Listener.FILL_NODE,
-    ], (nodes: Node[], data: FillData[]) => {
+    ], (nodes: Node[], index: number[]) => {
       if (this.silence) {
         return;
       }
       this.show(nodes);
       if (listener.state === state.EDIT_GRADIENT) {
-        // node一定相等，就是第0个，用记录的索引确定更新的是哪个fill
+        // node一般相等，就是第0个，用记录的索引确定更新的是哪个fill，如果不相等说明是在另外node打开picker后执行undo/redo
         const node = listener.gradient.node!;
-        listener.gradient.update(node, node.computedStyle.fill[data[0].index]);
+        if (nodes[0] === node) {
+          listener.gradient.update(node, node.computedStyle.fill[index[0]]);
+        }
+        else {
+          listener.gradient.hide();
+          picker.hide();
+        }
       }
     });
   }

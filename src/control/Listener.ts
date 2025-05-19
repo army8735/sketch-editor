@@ -46,8 +46,8 @@ import ShadowCommand from '../history/ShadowCommand';
 import BlurCommand from '../history/BlurCommand';
 import ColorAdjustCommand from '../history/ColorAdjustCommand';
 import TextCommand from '../history/TextCommand';
-import FillCommand from '../history/FillCommand';
-import StrokeCommand from '../history/StrokeCommand';
+import FillCommand, { FillData } from '../history/FillCommand';
+import StrokeCommand, { StrokeData } from '../history/StrokeCommand';
 import MaskModeCommand from '../history/MaskModeCommand';
 import BreakMaskCommand from '../history/BreakMaskCommand';
 import GroupCommand from '../history/GroupCommand';
@@ -2352,10 +2352,10 @@ export default class Listener extends Event {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
         }
         else if (c instanceof FillCommand) {
-          this.emit(Listener.FILL_NODE, nodes.slice(0), c.data);
+          this.emit(Listener.FILL_NODE, nodes.slice(0), (c.data as FillData[]).map(item => item.index));
         }
         else if (c instanceof StrokeCommand) {
-          this.emit(Listener.STROKE_NODE, nodes.slice(0), c.data);
+          this.emit(Listener.STROKE_NODE, nodes.slice(0), (c.data as StrokeData[]).map(item => item.index));
         }
         // 编组之类强制更新并选择节点
         else if (c instanceof GroupCommand) {
