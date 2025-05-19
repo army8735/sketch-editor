@@ -6,6 +6,7 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import Bitmap from '../node/Bitmap';
 import Group from '../node/Group';
+import ShapeGroup from '../node/geom/ShapeGroup';
 import Slice from '../node/Slice';
 import { MASK, MIX_BLEND_MODE } from '../style/define';
 import config from '../util/config';
@@ -1049,8 +1050,8 @@ function renderWebglNoTile(
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     if (
       target?.available && target !== node.textureCache[scaleIndex]
-      || computedStyle.maskMode && (node instanceof Bitmap || node instanceof Group)
-      // mask图片还未加载完成没有可渲染的内容也要跳过，group不会有内容也要跳过
+      || computedStyle.maskMode && (!(node instanceof Group) || node instanceof ShapeGroup)
+      // 不能跳过group的子节点（group自身没有内容），但要考虑shapeGroup
     ) {
       i += total + next;
     }
