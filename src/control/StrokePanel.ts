@@ -436,10 +436,13 @@ class StrokePanel extends Panel {
         const node = listener.gradient.node!;
         if (nodes[0] === node && idx[0] === index) {
           listener.gradient.update(node, node.computedStyle.stroke[index]);
+          listener.select.hideSelect();
         }
         else {
           listener.gradient.hide();
           picker.hide();
+          listener.state = state.NORMAL;
+          listener.emit(Listener.STATE_CHANGE, state.EDIT_GRADIENT, state.NORMAL);
         }
       }
     });
