@@ -108,7 +108,7 @@ class ShadowPanel extends Panel {
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
         const color = this.nodes[0].computedStyle.shadow[index].color;
-        picker.show(el, color, 'shadowPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
+        picker.show(el, color, 'shadowPanel' + index, (data: number[] | ComputedGradient | ComputedPattern) => {
           this.silence = true;
           nexts = [];
           nodes.forEach(node => {

@@ -158,7 +158,7 @@ class StrokePanel extends Panel {
           const style = (line.querySelector('.pick') as HTMLElement).style;
           // 类型变更需改变select/input展示
           if (Array.isArray(data)) {
-            panel.querySelector('.value .multi-type')?.classList.add('hide');
+            panel.querySelector(`.line[title="${index}"] .value .multi-type`)?.classList.add('hide');
             style.background = color2rgbaStr(data);
           }
           else {
@@ -166,7 +166,7 @@ class StrokePanel extends Panel {
             if (p.url !== undefined) {}
             else {
               data = data  as ComputedGradient;
-              panel.querySelector('.value .multi-type')?.classList.add('hide');
+              panel.querySelector(`.line[title="${index}"] .value .multi-type`)?.classList.add('hide');
               style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
             }
           }

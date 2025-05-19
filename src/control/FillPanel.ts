@@ -192,9 +192,9 @@ class FillPanel extends Panel {
           const style = (line.querySelector('.pick') as HTMLElement).style;
           // 类型变更需改变select/input展示
           if (Array.isArray(data)) {
-            panel.querySelector('.value .hex')?.classList.remove('hide');
-            panel.querySelector('.value .gradient')?.classList.add('hide');
-            panel.querySelector('.value .multi-type')?.classList.add('hide');
+            panel.querySelector(`.line[title="${index}"] .value .hex`)?.classList.remove('hide');
+            panel.querySelector(`.line[title="${index}"] .value .gradient`)?.classList.add('hide');
+            panel.querySelector(`.line[title="${index}"] .value .multi-type`)?.classList.add('hide');
             const c = color2hexStr(data);
             (line.querySelector('.hex input') as HTMLInputElement).value = c.slice(1);
             style.background = color2rgbaStr(data);
@@ -204,9 +204,9 @@ class FillPanel extends Panel {
             if (p.url !== undefined) {}
             else {
               data = data  as ComputedGradient;
-              panel.querySelector('.value .hex')?.classList.add('hide');
-              panel.querySelector('.value .gradient')?.classList.remove('hide');
-              panel.querySelector('.value .multi-type')?.classList.add('hide');
+              panel.querySelector(`.line[title="${index}"] .value .hex`)?.classList.add('hide');
+              panel.querySelector(`.line[title="${index}"] .value .gradient`)?.classList.remove('hide');
+              panel.querySelector(`.line[title="${index}"] .value .multi-type`)?.classList.add('hide');
               const select = panel.querySelector('.value .gradient select') as HTMLSelectElement;
               select.value = data.t.toString();
               style.background = getCssFillStroke(data, this.nodes[0].width, this.nodes[0].height, true);
@@ -248,15 +248,7 @@ class FillPanel extends Panel {
         picker.show(el, fill, 'fillPanel' + index, onInput, pickCallback, listener);
         if (!Array.isArray(fill)) {
           listener.select.hideSelect();
-          listener.gradient.show(this.nodes[0], fill, onInput, () => {
-            if (nexts.length) {
-              listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
-                return { prev, next: nexts[i], index };
-              })), true);
-              prevs = nexts.slice(0);
-              nexts = [];
-            }
-          });
+          listener.gradient.show(this.nodes[0], fill, onInput, pickCallback);
           listener.state = state.EDIT_GRADIENT;
         }
       }
