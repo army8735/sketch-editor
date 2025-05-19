@@ -108,6 +108,7 @@ class StrokePanel extends Panel {
     let prevs: StrokeStyle[] = [];
     let nexts: StrokeStyle[] = [];
     let indexes: number[] = [];
+    let index: number;
 
     const pickCallback = () => {
       if (nexts && nexts.length) {
@@ -126,7 +127,7 @@ class StrokePanel extends Panel {
       const el = e.target as HTMLElement;
       const classList = el.classList;
       const line = el.parentElement!.parentElement!.parentElement!;
-      const index = parseInt(line.title);
+      index = parseInt(line.title);
       if (classList.contains('pick')) {
         if (el.parentElement!.classList.contains('read-only')) {
           return;
@@ -221,7 +222,7 @@ class StrokePanel extends Panel {
       else if (classList.contains('enabled')) {
         this.silence = true;
         const line = el.parentElement!;
-        const index = parseInt(line.title);
+        index = parseInt(line.title);
         const nodes = this.nodes.slice(0);
         const prevs: StrokeStyle[] = [];
         const nexts: StrokeStyle[] = [];
@@ -288,7 +289,7 @@ class StrokePanel extends Panel {
         el.parentElement!.querySelector('.cur')?.classList.remove('cur');
         el.classList.add('cur');
         const line = el.parentElement!.parentElement!.parentElement!;
-        const index = parseInt(line.title);
+        index = parseInt(line.title);
         const nodes = this.nodes.slice(0);
         const prevs: StrokeStyle[] = [];
         const nexts: StrokeStyle[] = [];
@@ -338,7 +339,7 @@ class StrokePanel extends Panel {
       this.silence = true;
       const input = e.target as HTMLInputElement;
       const line = input.parentElement!.parentElement!.parentElement!;
-      const index = parseInt(line.title);
+      index = parseInt(line.title);
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
@@ -425,7 +426,7 @@ class StrokePanel extends Panel {
 
     listener.on([
       Listener.STROKE_NODE,
-    ], (nodes: Node[], index: number[]) => {
+    ], (nodes: Node[], idx: number[]) => {
       if (this.silence) {
         return;
       }
@@ -433,8 +434,8 @@ class StrokePanel extends Panel {
       if (listener.state === state.EDIT_GRADIENT) {
         // node一般相等，就是第0个，用记录的索引确定更新的是哪个fill，如果不相等说明是在另外node打开picker后执行undo/redo
         const node = listener.gradient.node!;
-        if (nodes[0] === node) {
-          listener.gradient.update(node, node.computedStyle.stroke[index[0]]);
+        if (nodes[0] === node && idx[0] === index) {
+          listener.gradient.update(node, node.computedStyle.stroke[index]);
         }
         else {
           listener.gradient.hide();
