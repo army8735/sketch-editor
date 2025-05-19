@@ -248,7 +248,16 @@ class FillPanel extends Panel {
         picker.show(el, fill, 'fillPanel' + index, onInput, pickCallback, listener);
         if (!Array.isArray(fill)) {
           listener.select.hideSelect();
-          listener.gradient.show(this.nodes[0], fill, onInput, pickCallback);
+          // onChange特殊化和pickCallback不同，不能清空以及隐藏gradient
+          listener.gradient.show(this.nodes[0], fill, onInput, () => {
+            if (nexts.length) {
+              listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+                return { prev, next: nexts[i], index };
+              })), true);
+              prevs = nexts.slice(0);
+              nexts = [];
+            }
+          });
           listener.state = state.EDIT_GRADIENT;
         }
       }

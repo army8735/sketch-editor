@@ -205,6 +205,7 @@ class StrokePanel extends Panel {
         picker.show(el, stroke, 'strokePanel' + index, onInput, pickCallback, listener);
         if (!Array.isArray(stroke)) {
           listener.select.hideSelect();
+          // onChange特殊化和pickCallback不同，不能清空以及隐藏gradient
           listener.gradient.show(this.nodes[0], stroke, onInput, () => {
             if (nexts.length) {
               listener.history.addCommand(new StrokeCommand(nodes, prevs.map((prev, i) => {
