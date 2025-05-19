@@ -625,14 +625,13 @@ function renderWebglTile(
       }
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
       if (
-        target &&
-        target.available &&
-        target !== node.textureCache[scaleIndex] ||
-        computedStyle.maskMode
+        target?.available && target !== node.textureCache[scaleIndex]
+        || computedStyle.maskMode && (!(node instanceof Group) || node instanceof ShapeGroup)
+        // 不能跳过group的子节点（group自身没有内容），但要考虑shapeGroup
       ) {
         i += total + next;
       }
-      else if (node.isShapeGroup) {
+      else if (node instanceof ShapeGroup) {
         i += total;
       }
       // 在画布end处重置clip
@@ -944,7 +943,7 @@ function renderWebglNoTile(
       }
     }
     // 画布外的画板直接跳过
-    else if (node.isArtBoard && node instanceof ArtBoard) {
+    else if (node instanceof ArtBoard) {
       i += total + next;
       continue;
     }
@@ -1055,7 +1054,7 @@ function renderWebglNoTile(
     ) {
       i += total + next;
     }
-    else if (node.isShapeGroup) {
+    else if (node instanceof ShapeGroup) {
       i += total;
     }
     // 在画布end处重置clip

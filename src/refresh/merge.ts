@@ -361,14 +361,12 @@ function genBboxTotal(
     }
     // 有局部缓存跳过，注意可用
     if (
-      target &&
-      target.available &&
-      target !== node2.textureCache[scaleIndex]
+      target?.available && target !== node2.textureCache[scaleIndex]
     ) {
       i += total2 + next2;
     }
     // 没缓存的shapeGroup仅可跳过孩子
-    else if (node2.isShapeGroup) {
+    else if (node2 instanceof ShapeGroup) {
       i += total2;
     }
     // 收集子节点中的嵌套关系，子的不是顶层isTop
@@ -671,14 +669,12 @@ function genTotal(
     }
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     if (
-      target2 &&
-      target2.available &&
-      target2 !== node2.textureCache[scaleIndex] ||
-      computedStyle.maskMode && i !== index
+      target2?.available && target2 !== node2.textureCache[scaleIndex]
+      || computedStyle.maskMode && i !== index && (!(node2 instanceof Group) || node2 instanceof ShapeGroup)
     ) {
       i += total2 + next2;
     }
-    else if (node2.isShapeGroup) {
+    else if (node2 instanceof ShapeGroup) {
       i += total2;
     }
   }
@@ -2357,14 +2353,12 @@ function genMask(
         }
         // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
         if (
-          target2 &&
-          target2.available &&
-          target2 !== node2.textureCache[scaleIndex] ||
-          computedStyle.maskMode
+          target2?.available && target2 !== node2.textureCache[scaleIndex]
+          || computedStyle.maskMode && (!(node2 instanceof Group) || node2 instanceof ShapeGroup)
         ) {
           i += total2 + next2;
         }
-        else if (node2.isShapeGroup) {
+        else if (node2 instanceof ShapeGroup) {
           i += total2;
         }
       }
