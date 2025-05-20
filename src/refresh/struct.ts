@@ -5,7 +5,6 @@ import Container from '../node/Container';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Bitmap from '../node/Bitmap';
-import Group from '../node/Group';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Slice from '../node/Slice';
 import { MASK, MIX_BLEND_MODE } from '../style/define';
@@ -626,10 +625,15 @@ function renderWebglTile(
       // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
       if (
         target?.available && target !== node.textureCache[scaleIndex]
-        || computedStyle.maskMode && (!(node instanceof Group) || node instanceof ShapeGroup)
-        // 不能跳过group的子节点（group自身没有内容），但要考虑shapeGroup
+        || computedStyle.maskMode
       ) {
-        i += total + next;
+        // 有种特殊情况，group没内容且没next，但children有内容，outline蒙版需要渲染出来
+        if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(computedStyle.maskMode)
+          && (!node.next || node.next.computedStyle.breakMask)) {
+        }
+        else {
+          i += total + next;
+        }
       }
       else if (node instanceof ShapeGroup) {
         i += total;
@@ -1049,10 +1053,15 @@ function renderWebglNoTile(
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     if (
       target?.available && target !== node.textureCache[scaleIndex]
-      || computedStyle.maskMode && (!(node instanceof Group) || node instanceof ShapeGroup)
-      // 不能跳过group的子节点（group自身没有内容），但要考虑shapeGroup
+      || computedStyle.maskMode
     ) {
-      i += total + next;
+      // 有种特殊情况，group没内容且没next，但children有内容，outline蒙版需要渲染出来
+      if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(computedStyle.maskMode)
+        && (!node.next || node.next.computedStyle.breakMask)) {
+      }
+      else {
+        i += total + next;
+      }
     }
     else if (node instanceof ShapeGroup) {
       i += total;

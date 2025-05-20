@@ -156,13 +156,6 @@ export function genMerge(
           node.resetTextureTarget();
         }
       }
-      // 兄弟连续的mask，前面的不生效，等同有breakMask
-      // const next = node.next;
-      // if (next) {
-      //   if (next.computedStyle.maskMode || next.computedStyle.breakMask) {
-      //     needMask = false;
-      //   }
-      // }
     }
     const needColor =
       hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
@@ -362,6 +355,7 @@ function genBboxTotal(
     // 有局部缓存跳过，注意可用
     if (
       target?.available && target !== node2.textureCache[scaleIndex]
+      || node2.computedStyle.maskMode
     ) {
       i += total2 + next2;
     }
@@ -670,9 +664,16 @@ function genTotal(
     // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
     if (
       target2?.available && target2 !== node2.textureCache[scaleIndex]
-      || computedStyle.maskMode && i !== index && (!(node2 instanceof Group) || node2 instanceof ShapeGroup)
+      || computedStyle.maskMode && i !== index
     ) {
-      i += total2 + next2;
+
+      // 有种特殊情况，group没内容且没next，但children有内容，outline蒙版需要渲染出来
+      if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(computedStyle.maskMode)
+        && (!node2.next || node2.next.computedStyle.breakMask)) {
+      }
+      else {
+        i += total2 + next2;
+      }
     }
     else if (node2 instanceof ShapeGroup) {
       i += total2;
@@ -2354,9 +2355,15 @@ function genMask(
         // 有局部子树缓存可以跳过其所有子孙节点，特殊的shapeGroup是个bo运算组合，已考虑所有子节点的结果
         if (
           target2?.available && target2 !== node2.textureCache[scaleIndex]
-          || computedStyle.maskMode && (!(node2 instanceof Group) || node2 instanceof ShapeGroup)
+          || computedStyle.maskMode
         ) {
-          i += total2 + next2;
+          // 有种特殊情况，group没内容且没next，但children有内容，outline蒙版需要渲染出来
+          if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(computedStyle.maskMode)
+            && (!node2.next || node2.next.computedStyle.breakMask)) {
+          }
+          else {
+            i += total2 + next2;
+          }
         }
         else if (node2 instanceof ShapeGroup) {
           i += total2;
