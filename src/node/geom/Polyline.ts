@@ -33,6 +33,8 @@ const EPS = 1e-4;
 
 class Polyline extends Geom {
   props: PolylineProps;
+  isRectangle: boolean;
+  isOval: boolean;
 
   constructor(props: PolylineProps) {
     super(props);
@@ -61,6 +63,8 @@ class Polyline extends Geom {
       }) as Point);
     });
     this.isPolyline = true;
+    this.isRectangle = !!props.isRectangle;
+    this.isOval = !!props.isOval;
   }
 
   override didMount() {

@@ -35,15 +35,22 @@ class RoundPanel extends Panel {
     dom.appendChild(panel);
 
     const polylines: Polyline[] = []; // 所有polyline和shapeGroup的子孙polyline，合并并打平
-    const nodes: Polyline[][] = []; // 所有polyline和shapeGroup的子孙polyline，合并不大平
-    const prevPoints: Point[][] = []; // 同上
+    const nodes: Polyline[][] = []; // 所有polyline和shapeGroup的子孙polyline，合并不打平
+    const prevPoints: Point[][][] = []; // 同上
+    let hasRefresh = false; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
 
     const onChange = () => {
       if (polylines.length) {
+        if (!hasRefresh) {
+          hasRefresh = true;
+          this.nodes.forEach(node => {
+            node.refresh();
+          });
+        }
         listener.history.addCommand(new RoundCommand(this.nodes.slice(0), this.nodes.map((item, i) => {
           return {
             nodes: nodes[i],
-            prev: prevPoints,
+            prev: prevPoints[i],
             next: nodes[i].map(item => clone(item.points)),
           };
         })));
@@ -60,8 +67,9 @@ class RoundPanel extends Panel {
       this.silence = true;
       const value = parseFloat(range.value) || 0;
       const isFirst = !polylines.length;
+      hasRefresh = true;
       this.nodes.forEach((node, i) => {
-        scan2(node, value, polylines, nodes[i] = nodes[i] || [], prevPoints[i] = prevPoints[i] || [], isFirst);
+        scan2(node, value, polylines, nodes[i] = nodes[i] || [], prevPoints[i] = prevPoints[i] || [], isFirst, true);
       });
       polylines.forEach(item => {
         const parent = item.parent;
@@ -71,21 +79,64 @@ class RoundPanel extends Panel {
       });
       range.placeholder = number.placeholder = '';
       number.value = range.value;
+      listener.emit(Listener.CORNER_RADIUS_NODE, nodes.slice(0));
+      this.silence = false;
     });
     range.addEventListener('change', onChange);
 
-    number.addEventListener('input', () => {});
-    number.addEventListener('change', () => {
-      onChange();
+    number.addEventListener('input', (e) => {
+      this.silence = true;
+      const value = parseFloat(number.value) || 0;
+      const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      const isFirst = !nodes.length;
+      this.nodes.forEach((node, i) => {
+        if (isInput) {
+          hasRefresh = false;
+          scan2(node, value, polylines, nodes[i] = nodes[i] || [], prevPoints[i] = prevPoints[i] || [], isFirst);
+          if (!i) {
+            range.placeholder = number.placeholder = '';
+            range.value = number.value;
+          }
+        }
+        else {
+          hasRefresh = true;
+          scan3(node, value, polylines, nodes[i] = nodes[i] || [], prevPoints[i] = prevPoints[i] || [], isFirst, number.placeholder, listener);
+          if (!i) {
+            if (number.placeholder) {
+              number.value = '';
+            }
+          }
+        }
+      });
+      polylines.forEach(item => {
+        const parent = item.parent;
+        if (parent instanceof ShapeGroup) {
+          parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
+        }
+      });
+      listener.emit(Listener.CORNER_RADIUS_NODE, nodes.slice(0));
+      this.silence = false;
     });
+    number.addEventListener('change', () => onChange());
 
     listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
       // 出现或消失
       if (next === state.EDIT_GEOM || prev === state.EDIT_GEOM) {
         polylines.splice(0);
+        nodes.splice(0);
         prevPoints.splice(0);
         this.show(listener.selected);
       }
+    });
+
+    listener.on(Listener.CORNER_RADIUS_NODE, (nodes2: Node[]) => {
+      if (this.silence) {
+        return;
+      }
+      polylines.splice(0);
+      nodes.splice(0);
+      prevPoints.splice(0);
+      this.show(nodes2);
     });
   }
 
@@ -94,7 +145,7 @@ class RoundPanel extends Panel {
     let willShow = false;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const item = nodes[i];
-      if (item instanceof Polyline || item instanceof ShapeGroup) {
+      if ((item instanceof Polyline && !item.isOval) || item instanceof ShapeGroup) {
         willShow = true;
         break;
       }
@@ -140,7 +191,7 @@ class RoundPanel extends Panel {
   }
 }
 
-// 递归查看所有矢量节点，shapeGroup会有子孙节点
+// 递归查看所有矢量节点获取半径宽高数据，shapeGroup会有子孙节点
 function scan(node: Node, rs: number[], ws: number[], hs: number[]) {
   if (node instanceof Polyline) {
     node.points.forEach(point => {
@@ -164,8 +215,8 @@ function scan(node: Node, rs: number[], ws: number[], hs: number[]) {
   }
 }
 
-// 递归所有矢量节点，shapeGroup会查看所有子孙节点并按顺序保存更新数据
-function scan2(node: Node, value: number, polylines: Polyline[], nodes: Polyline[], prevPoints: Point[], isFirst: boolean) {
+// 递归所有矢量节点undo/redo保存，shapeGroup会查看所有子孙节点并按顺序保存更新数据
+function scan2(node: Node, value: number, polylines: Polyline[], nodes: Polyline[], prevPoints: Point[][], isFirst: boolean, refresh = false) {
   if (node instanceof Polyline) {
     if (isFirst) {
       polylines.push(node);
@@ -175,11 +226,56 @@ function scan2(node: Node, value: number, polylines: Polyline[], nodes: Polyline
     node.points.forEach(point => {
       point.cornerRadius = value;
     });
+    if (refresh) {
+      node.refresh();
+    }
+  }
+  else if (node instanceof ShapeGroup) {
+    node.children.forEach(child => {
+      scan2(child, value, polylines, nodes, prevPoints, isFirst, refresh);
+    });
+  }
+}
+
+// 同上，在number触发input时使用
+function scan3(node: Node, value: number, polylines: Polyline[], nodes: Polyline[], prevPoints: Point[][], isFirst: boolean, placeholder: string, listener: Listener) {
+  if (node instanceof Polyline) {
+    if (isFirst) {
+      polylines.push(node);
+      nodes.push(node);
+      prevPoints.push(clone(node.points));
+    }
+    node.points.forEach(point => {
+      let d = 0;
+      if (placeholder) {
+        d = value;
+      }
+      else {
+        d = value - point.cornerRadius;
+      }
+      if (listener.shiftKey) {
+        if (d > 0) {
+          d = 10;
+        }
+        else {
+          d = -10;
+        }
+      }
+      else if (listener.altKey) {
+        if (d > 0) {
+          d = 0.1;
+        }
+        else {
+          d = -0.1;
+        }
+      }
+      point.cornerRadius += d;
+    });
     node.refresh();
   }
   else if (node instanceof ShapeGroup) {
     node.children.forEach(child => {
-      scan2(child, value, polylines, nodes, prevPoints, isFirst);
+      scan3(child, value, polylines, nodes, prevPoints, isFirst, placeholder, listener);
     });
   }
 }
