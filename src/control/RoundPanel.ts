@@ -79,7 +79,7 @@ class RoundPanel extends Panel {
       });
       range.placeholder = number.placeholder = '';
       number.value = range.value;
-      listener.emit(Listener.CORNER_RADIUS_NODE, nodes.slice(0));
+      listener.emit(Listener.ROUND_NODE, nodes.slice(0));
       this.silence = false;
     });
     range.addEventListener('change', onChange);
@@ -114,7 +114,7 @@ class RoundPanel extends Panel {
           parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
         }
       });
-      listener.emit(Listener.CORNER_RADIUS_NODE, nodes.slice(0));
+      listener.emit(Listener.ROUND_NODE, nodes.slice(0));
       this.silence = false;
     });
     number.addEventListener('change', () => onChange());
@@ -129,7 +129,7 @@ class RoundPanel extends Panel {
       }
     });
 
-    listener.on(Listener.CORNER_RADIUS_NODE, (nodes2: Node[]) => {
+    listener.on(Listener.ROUND_NODE, (nodes2: Node[]) => {
       if (this.silence) {
         return;
       }
