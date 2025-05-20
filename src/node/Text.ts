@@ -227,7 +227,7 @@ class Text extends Node {
     // 待布局后css标准化，双击编辑文本有改变后会重回正常尺寸
     if (textBehaviour === 'auto' || textBehaviour === 'autoH') {
       let check = false;
-      const style: any = {};
+      const update: any = {};
       if (textBehaviour === 'auto' && style.width.u !== StyleUnit.AUTO) {
         let max = 0;
         lineBoxList.forEach(item => {
@@ -241,7 +241,7 @@ class Text extends Node {
           else if (computedStyle.textAlign === TEXT_ALIGN.RIGHT) {
             this.adjustPosAndSizeSelf(-d * 0.5, 0, 0, 0);
           }
-          style.width = 'auto';
+          update.width = 'auto';
           check = true;
         }
         else {
@@ -261,7 +261,7 @@ class Text extends Node {
           else if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
             this.adjustPosAndSizeSelf(0, -d * 0.5, 0, 0);
           }
-          style.height = 'auto';
+          update.height = 'auto';
           check = true;
         }
         else {
@@ -272,7 +272,7 @@ class Text extends Node {
         }
       }
       if (check) {
-        this.updateStyle(style);
+        this.updateStyle(update);
         this.checkPosSizeUpward();
       }
     }
