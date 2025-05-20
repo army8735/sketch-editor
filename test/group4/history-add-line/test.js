@@ -30,7 +30,7 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[2,"直线"]')
       .click('#button7')
-      .assert.value('#base64', '[3,{"name":"编组","children":[{"name":"2","children":[]},{"name":"1","children":[]}]},{"name":"ab","children":[{"name":"直线","children":[]}]}]')
+      .assert.value('#base64', '[3,{"name":"ab","children":[{"name":"直线","children":[]}]}]')
       .assert.elementPresent('#tree .name[title="直线"]')
 
       .keys(browser.Keys.META)
