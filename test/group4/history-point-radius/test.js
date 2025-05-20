@@ -17,7 +17,9 @@ module.exports = {
 
       .moveToElement('canvas', 30, 30)
       .doubleClick()
-      .click('#main .geometry .vt[title="0"]')
+      .moveToElement('#main .geometry .vt[title="0"]', 0, 0)
+      .mouseButtonDown(0)
+      .mouseButtonUp(0)
       .assert.value('#side .point-panel .num input[type="number"]', 10)
       .assert.value('#side .point-panel .num input[type="range"]', 10)
       // .assert.domPropertyEquals('#side .point-panel .num input[type="range"]', 'disabled', 'false')
