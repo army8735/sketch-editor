@@ -144,6 +144,7 @@ class PointPanel extends Panel {
           listener.geometry.updateVertex(node);
         });
         onChange();
+        onBlur();
       }
       // 不能关闭矢量编辑状态
       listener.geometry.keep = true;
@@ -160,9 +161,12 @@ class PointPanel extends Panel {
             next: clone(item.points),
           };
         })));
-        nodes.splice(0);
-        prevPoints.splice(0);
       }
+    };
+
+    const onBlur = () => {
+      nodes.splice(0);
+      prevPoints.splice(0);
     };
 
     const x = panel.querySelector('input.x') as HTMLInputElement;
@@ -279,11 +283,13 @@ class PointPanel extends Panel {
       onInputCoords(e, true);
     });
     x.addEventListener('change', () => onChange());
+    x.addEventListener('blur', () => onBlur());
 
     y.addEventListener('input', (e) => {
       onInputCoords(e, false);
     });
     y.addEventListener('change', () => onChange());
+    y.addEventListener('blur', () => onBlur());
 
     const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
     const number = panel.querySelector('input.r') as HTMLInputElement;
@@ -328,7 +334,10 @@ class PointPanel extends Panel {
       listener.emit(Listener.POINT_NODE, nodes.slice(0), data);
       this.silence = false;
     });
-    range.addEventListener('change', () => onChange());
+    range.addEventListener('change', () => {
+      onChange();
+      onBlur();
+    });
 
     number.addEventListener('input', (e) => {
       this.silence = true;
@@ -412,6 +421,7 @@ class PointPanel extends Panel {
       this.silence = false;
     });
     number.addEventListener('change', () => onChange());
+    number.addEventListener('blur', () => onBlur());
 
     listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
       // 出现或消失

@@ -76,6 +76,10 @@ class ShadowPanel extends Panel {
           return { prev, next: nexts[i] };
         })));
       }
+      onBlur();
+    };
+
+    const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
@@ -274,8 +278,12 @@ class ShadowPanel extends Panel {
     });
 
     panel.addEventListener('input', (e) => {
-      this.silence = true;
       const input = e.target as HTMLInputElement;
+      const tagName = input.tagName.toUpperCase();
+      if (tagName !== 'INPUT') {
+        return;
+      }
+      this.silence = true;
       const index = parseInt((input.parentElement!.parentElement!).title);
       const classList = input.classList;
       let type = 1; // x
@@ -358,6 +366,15 @@ class ShadowPanel extends Panel {
     });
 
     panel.addEventListener('change', pickCallback);
+
+    panel.addEventListener('blur', (e) => {
+      const target = e.target as HTMLInputElement;
+      const tagName = target.tagName.toUpperCase();
+      if (tagName !== 'INPUT') {
+        return;
+      }
+      onBlur();
+    });
 
     listener.on([
       Listener.SHADOW_NODE,

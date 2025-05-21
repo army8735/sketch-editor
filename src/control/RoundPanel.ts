@@ -34,9 +34,9 @@ class RoundPanel extends Panel {
     panel.innerHTML = html;
     dom.appendChild(panel);
 
-    const polylines: Polyline[] = []; // 所有polyline和shapeGroup的子孙polyline，合并并打平
-    const nodes: Polyline[][] = []; // 所有polyline和shapeGroup的子孙polyline，合并不打平
-    const prevPoints: Point[][][] = []; // 同上
+    let polylines: Polyline[] = []; // 所有polyline和shapeGroup的子孙polyline，合并并打平
+    let nodes: Polyline[][] = []; // 所有polyline和shapeGroup的子孙polyline，合并不打平
+    let prevPoints: Point[][][] = []; // 同上
     let hasRefresh = false; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
 
     const onChange = () => {
@@ -54,9 +54,9 @@ class RoundPanel extends Panel {
             next: nodes[i].map(item => clone(item.points)),
           };
         })));
-        polylines.splice(0);
-        nodes.splice(0);
-        prevPoints.splice(0);
+        polylines = [];
+        nodes = [];
+        prevPoints = [];
       }
     };
 
@@ -82,7 +82,7 @@ class RoundPanel extends Panel {
       listener.emit(Listener.ROUND_NODE, nodes.slice(0));
       this.silence = false;
     });
-    range.addEventListener('change', onChange);
+    range.addEventListener('change', () => onChange());
 
     number.addEventListener('input', (e) => {
       this.silence = true;

@@ -305,6 +305,10 @@ class BlurPanel extends Panel {
           };
         })));
       }
+      onBlur();
+    };
+
+    const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
@@ -319,6 +323,7 @@ class BlurPanel extends Panel {
       onNumberInput(radiusRange, radiusNumber, 'radius', e instanceof InputEvent, 50, 0);
     });
     radiusNumber.addEventListener('change', onChange);
+    radiusNumber.addEventListener('blur', onBlur);
 
     angleRange.addEventListener('input', () => {
       onRangeInput(angleRange, angleNumber, 'angle');
@@ -329,6 +334,7 @@ class BlurPanel extends Panel {
       onNumberInput(angleRange, angleNumber, 'angle', e instanceof InputEvent, 180, -180);
     });
     angleNumber.addEventListener('change', onChange);
+    angleNumber.addEventListener('blur', onBlur);
 
     saturationRange.addEventListener('input', () => {
       onRangeInput(saturationRange, saturationNumber, 'saturation');
@@ -339,6 +345,7 @@ class BlurPanel extends Panel {
       onNumberInput(saturationRange, saturationNumber, 'saturation', e instanceof InputEvent, 100, -100);
     });
     saturationNumber.addEventListener('change', onChange);
+    saturationNumber.addEventListener('blur', onBlur);
 
     listener.on([
       Listener.BLUR_NODE,

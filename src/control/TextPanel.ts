@@ -128,6 +128,13 @@ class TextPanel extends Panel {
       nexts = [];
     };
 
+    const onBlur = () => {
+      nodes = [];
+      prevs = [];
+      nexts = [];
+      lvs = [];
+    };
+
     const onInput = (e: Event, key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
       this.silence = true;
       const input = e.target as HTMLInputElement;
@@ -305,11 +312,11 @@ class TextPanel extends Panel {
       }
     };
 
-    const onBlur = () => {
-      if (listener.state === state.EDIT_TEXT) {
-        listener.input.focus();
-      }
-    };
+    // const onBlur = () => {
+    //   if (listener.state === state.EDIT_TEXT) {
+    //     listener.input.focus();
+    //   }
+    // };
 
     fs.addEventListener('input', (e) => {
       onInput(e, 'fontSize');

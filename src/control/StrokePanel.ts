@@ -116,11 +116,15 @@ class StrokePanel extends Panel {
           return { prev, next: nexts[i], index: indexes[i] };
         })));
       }
+      onBlur();
+      listener.gradient.hide();
+    };
+
+    const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
       indexes = [];
-      listener.gradient.hide();
     };
 
     panel.addEventListener('click', (e) => {
@@ -336,8 +340,12 @@ class StrokePanel extends Panel {
     });
 
     panel.addEventListener('input', (e) => {
-      this.silence = true;
       const input = e.target as HTMLInputElement;
+      const tagName = input.tagName.toUpperCase();
+      if (tagName !== 'INPUT') {
+        return;
+      }
+      this.silence = true;
       const line = input.parentElement!.parentElement!.parentElement!;
       index = parseInt(line.title);
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
@@ -422,7 +430,23 @@ class StrokePanel extends Panel {
       this.silence = false;
     });
 
-    panel.addEventListener('change', pickCallback);
+    panel.addEventListener('change', (e) => {
+      const input = e.target as HTMLInputElement;
+      const tagName = input.tagName.toUpperCase();
+      if (tagName !== 'INPUT') {
+        return;
+      }
+      pickCallback();
+    });
+
+    panel.addEventListener('blur', (e) => {
+      const input = e.target as HTMLInputElement;
+      const tagName = input.tagName.toUpperCase();
+      if (tagName !== 'INPUT') {
+        return;
+      }
+      onBlur();
+    });
 
     listener.on([
       Listener.STROKE_NODE,

@@ -221,6 +221,10 @@ class ColorAdjustPanel extends Panel {
           };
         })));
       }
+      onBlur();
+    };
+
+    const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
@@ -235,6 +239,7 @@ class ColorAdjustPanel extends Panel {
       onNumberInput(hueRotateRange, hueRotateNumber, 'hueRotate', e instanceof InputEvent, 180, -180);
     });
     hueRotateNumber.addEventListener('change', onChange);
+    hueRotateNumber.addEventListener('blur', onBlur);
 
     saturateRange.addEventListener('input', () => {
       onRangeInput(saturateRange, saturateNumber, 'saturate');
@@ -245,6 +250,7 @@ class ColorAdjustPanel extends Panel {
       onNumberInput(saturateRange, saturateNumber, 'saturate', e instanceof InputEvent, 100, -100);
     });
     saturateNumber.addEventListener('change', onChange);
+    saturateNumber.addEventListener('blur', onBlur);
 
     brightnessRange.addEventListener('input', () => {
       onRangeInput(brightnessRange, brightnessNumber, 'brightness');
@@ -255,6 +261,7 @@ class ColorAdjustPanel extends Panel {
       onNumberInput(brightnessRange, brightnessNumber, 'brightness', e instanceof InputEvent, 100, -100);
     });
     brightnessNumber.addEventListener('change', onChange);
+    brightnessNumber.addEventListener('blur', onBlur);
 
     contrastRange.addEventListener('input', () => {
       onRangeInput(contrastRange, contrastNumber, 'contrast');
@@ -265,6 +272,7 @@ class ColorAdjustPanel extends Panel {
       onNumberInput(contrastRange, contrastNumber, 'contrast', e instanceof InputEvent, 100, -100);
     });
     contrastNumber.addEventListener('change', onChange);
+    contrastNumber.addEventListener('blur', onBlur);
 
     listener.on([
       Listener.COLOR_ADJUST_NODE,

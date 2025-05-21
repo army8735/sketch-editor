@@ -163,12 +163,16 @@ class BasicPanel extends Panel {
           node.checkPosSizeUpward();
         });
         listener.history.addCommand(new MoveCommand(nodes, data));
-        nodes = [];
-        originStyle = [];
-        computedStyle = [];
-        prevNumber = [];
-        nextNumber = [];
       }
+    };
+
+    const onBlur = () => {
+      nodes = [];
+      originStyle = [];
+      computedStyle = [];
+      cssStyle = [];
+      prevNumber = [];
+      nextNumber = [];
     };
 
     x.addEventListener('input', (e) => {
@@ -177,6 +181,7 @@ class BasicPanel extends Panel {
     x.addEventListener('change', (e) => {
       onChangePos(true);
     });
+    x.addEventListener('blur', () => onBlur());
 
     y.addEventListener('input', (e) => {
       onInputPos(e, false);
@@ -184,6 +189,7 @@ class BasicPanel extends Panel {
     y.addEventListener('change', (e) => {
       onChangePos(false);
     });
+    y.addEventListener('blur', () => onBlur());
 
     r.addEventListener('input', (e) => {
       this.silence = true;
@@ -260,6 +266,7 @@ class BasicPanel extends Panel {
         nextNumber = [];
       }
     });
+    r.addEventListener('blur', () => onBlur());
 
     const onInputSize = (e: Event, isWOrH = true) => {
       this.silence = true;
@@ -385,11 +392,6 @@ class BasicPanel extends Panel {
         if (nodes.length && data.length) {
           listener.history.addCommand(new ResizeCommand(nodes, data));
         }
-        nodes = [];
-        originStyle = [];
-        computedStyle = [];
-        prevNumber = [];
-        nextNumber = [];
       }
     };
 
@@ -399,6 +401,7 @@ class BasicPanel extends Panel {
     w.addEventListener('change', (e) => {
       onChangeSize(true);
     });
+    w.addEventListener('blur', () => onBlur());
 
     h.addEventListener('input', (e) => {
       onInputSize(e, false);
@@ -406,6 +409,7 @@ class BasicPanel extends Panel {
     h.addEventListener('change', (e) => {
       onChangeSize(false);
     });
+    h.addEventListener('blur', () => onBlur());
 
     cp.addEventListener('click', (e) => {
       this.silence = true;

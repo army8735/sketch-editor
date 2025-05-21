@@ -34,6 +34,13 @@ class OpacityPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: number[] = [];
     let nexts: number[] = [];
+
+    const onBlur = () => {
+      nodes = [];
+      prevs = [];
+      nexts = [];
+    };
+
     range.addEventListener('input', (e) => {
       // 连续多个只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
@@ -72,9 +79,7 @@ class OpacityPanel extends Panel {
           };
         })));
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
-        nodes = [];
-        prevs = [];
-        nexts = [];
+        onBlur();
       }
     });
 
@@ -153,11 +158,9 @@ class OpacityPanel extends Panel {
             opacity: nexts[i],
           },
         }))));
-        nodes = [];
-        prevs = [];
-        nexts = [];
       }
     });
+    number.addEventListener('blur', () => onBlur());
 
     listener.on([
       Listener.OPACITY_NODE,

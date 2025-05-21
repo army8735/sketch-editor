@@ -151,11 +151,15 @@ class FillPanel extends Panel {
           return { prev, next: nexts[i], index: indexes[i] };
         })));
       }
+      onBlur();
+      listener.gradient.hide();
+    };
+
+    const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
       indexes = [];
-      listener.gradient.hide();
     };
 
     panel.addEventListener('click', (e) => {
@@ -503,6 +507,14 @@ class FillPanel extends Panel {
       }
       else if (tagName === 'INPUT') {
         pickCallback();
+      }
+    });
+
+    panel.addEventListener('blur', (e) => {
+      const target = e.target as HTMLElement;
+      const tagName = target.tagName.toUpperCase();
+      if (tagName === 'INPUT') {
+        onBlur();
       }
     });
 
