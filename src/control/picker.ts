@@ -3,7 +3,8 @@ import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
 import { convert2Css } from '../style/gradient';
 import Listener from './Listener';
 import state from './state';
-const Picker = require('./vanilla-picker.js');
+// @ts-ignore
+import Picker from './vanilla-picker.mjs';
 
 let div: HTMLElement;
 const html = `
