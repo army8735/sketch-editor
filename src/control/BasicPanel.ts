@@ -164,6 +164,7 @@ class BasicPanel extends Panel {
         });
         listener.history.addCommand(new MoveCommand(nodes, data));
       }
+      onBlur();
     };
 
     const onBlur = () => {
