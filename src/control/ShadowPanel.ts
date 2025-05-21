@@ -69,20 +69,33 @@ class ShadowPanel extends Panel {
     let nexts: ShadowStyle[] = [];
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
-    const pickCallback = () => {
+    const pickCallback = (independence = false) => {
       // 只有变更才会有next
       if (nexts.length) {
         listener.history.addCommand(new ShadowCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
-        })));
+        })), independence);
       }
-      onBlur();
+      // onBlur();
     };
 
     const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
+    };
+
+    const setPrev = () => {
+      nodes = this.nodes.slice(0);
+      prevs = [];
+      nodes.forEach(node => {
+        const { shadow, shadowEnable } = node.getComputedStyle();
+        const cssShadow = shadow.map(item => getCssShadow(item));
+        prevs.push({
+          shadow: cssShadow,
+          shadowEnable,
+        });
+      });
     };
 
     panel.addEventListener('click', (e) => {
@@ -99,16 +112,7 @@ class ShadowPanel extends Panel {
         // picker侦听了document全局click隐藏窗口，这里停止
         picker.keep = true;
         // 最开始记录nodes/prevs
-        nodes = this.nodes.slice(0);
-        prevs = [];
-        nodes.forEach(node => {
-          const { shadow, shadowEnable } = node.getComputedStyle();
-          const cssShadow = shadow.map(item => getCssShadow(item));
-          prevs.push({
-            shadow: cssShadow,
-            shadowEnable,
-          });
-        });
+        setPrev();
         const line = el.parentElement!.parentElement!.parentElement!;
         const index = parseInt(line.title);
         const color = this.nodes[0].computedStyle.shadow[index].color;
@@ -139,7 +143,10 @@ class ShadowPanel extends Panel {
             listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
           }
           this.silence = false;
-        }, pickCallback, listener);
+        }, () => {
+          pickCallback(true);
+          setPrev();
+        }, setPrev, listener);
       }
       else if (classList.contains('add')) {
         this.silence = true;
@@ -365,7 +372,10 @@ class ShadowPanel extends Panel {
       this.silence = false;
     });
 
-    panel.addEventListener('change', pickCallback);
+    panel.addEventListener('change', () => {
+      pickCallback();
+      onBlur();
+    });
 
     panel.addEventListener('blur', (e) => {
       const target = e.target as HTMLInputElement;

@@ -110,13 +110,13 @@ class StrokePanel extends Panel {
     let indexes: number[] = [];
     let index: number;
 
-    const pickCallback = () => {
+    const pickCallback = (independence = false) => {
       if (nexts && nexts.length) {
         listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: indexes[i] };
-        })));
+        })), independence);
       }
-      onBlur();
+      // onBlur();
       listener.gradient.hide();
     };
 
@@ -125,6 +125,21 @@ class StrokePanel extends Panel {
       prevs = [];
       nexts = [];
       indexes = [];
+    };
+
+    const setPrev = () => {
+      nodes = this.nodes.slice(0);
+      prevs = [];
+      nodes.forEach(node => {
+        const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+        const cssStroke = stroke.map(item => getCssFillStroke(item, node.width, node.height));
+        prevs.push({
+          stroke: cssStroke,
+          strokeEnable,
+          strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+          strokeWidth,
+        });
+      });
     };
 
     panel.addEventListener('click', (e) => {
@@ -144,18 +159,7 @@ class StrokePanel extends Panel {
         picker.keep = true;
         listener.gradient.keep = true;
         // 最开始记录nodes/prevs
-        nodes = this.nodes.slice(0);
-        prevs = [];
-        nodes.forEach(node => {
-          const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
-          const cssStroke = stroke.map(item => getCssFillStroke(item, node.width, node.height));
-          prevs.push({
-            stroke: cssStroke,
-            strokeEnable,
-            strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
-            strokeWidth,
-          });
-        });
+        setPrev();
 
         const stroke = this.nodes[0].computedStyle.stroke[index];
         const onInput = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false) => {
@@ -207,7 +211,10 @@ class StrokePanel extends Panel {
         };
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
-        picker.show(el, stroke, 'strokePanel' + index, onInput, pickCallback, listener);
+        picker.show(el, stroke, 'strokePanel' + index, onInput, () => {
+          pickCallback(true);
+          setPrev();
+        }, setPrev, listener);
         if (!Array.isArray(stroke)) {
           listener.select.hideSelect();
           // onChange特殊化和pickCallback不同，不能清空以及隐藏gradient
@@ -437,6 +444,7 @@ class StrokePanel extends Panel {
         return;
       }
       pickCallback();
+      onBlur();
     });
 
     panel.addEventListener('blur', (e) => {

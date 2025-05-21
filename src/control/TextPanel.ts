@@ -113,17 +113,17 @@ class TextPanel extends Panel {
     let nodes: Text[] = [];
     let prevs: Rich[][] = [];
     let nexts: Rich[][] = [];
-    let lvs: RefreshLevel[] = [];
+    let lvs: RefreshLevel[] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
-    const pickCallback = () => {
+    const pickCallback = (independence = false) => {
       // 只有变更才会有next
       if (nodes.length && nexts.length) {
         listener.history.addCommand(new RichCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
-        }), RichCommand.COLOR));
+        }), RichCommand.COLOR), independence);
       }
-      onBlur();
+      // onBlur();
     };
 
     const onBlur = () => {
@@ -244,22 +244,6 @@ class TextPanel extends Panel {
           nexts.push(node.getRich());
         });
       }
-      // if (nodes.length) {
-      //   listener.select.updateSelect(nodes);
-      //   if (key === 'fontSize') {
-      //     listener.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
-      //   }
-      //   else if (key === 'letterSpacing') {
-      //     listener.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
-      //   }
-      //   else if (key === 'paragraphSpacing') {
-      //     listener.emit(Listener.PARAGRAPH_SPACING_NODE, nodes.slice(0));
-      //   }
-      //   else if (key === 'lineHeight') {
-      //     listener.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
-      //   }
-      //   this.show(this.nodes);
-      // }
       this.silence = false;
     };
 
@@ -309,12 +293,6 @@ class TextPanel extends Panel {
         lvs = [];
       }
     };
-
-    // const onBlur = () => {
-    //   if (listener.state === state.EDIT_TEXT) {
-    //     listener.input.focus();
-    //   }
-    // };
 
     fs.addEventListener('input', (e) => {
       onInput(e, 'fontSize');
@@ -456,6 +434,23 @@ class TextPanel extends Panel {
       onSelectChange(e, 'fontWeight');
     });
 
+    const setPrev = () => {
+      if (listener.state === state.EDIT_TEXT && this.nodes.length === 1) {
+        const node = this.nodes[0];
+        const { isMulti } = node.getSortedCursor();
+        if (isMulti) {
+          prevs.splice(0);
+          prevs.push(node.getRich());
+        }
+      }
+      else {
+        prevs.splice(0);
+        this.nodes.forEach(node => {
+          prevs.push(node.getRich());
+        });
+      }
+    };
+
     panel.addEventListener('click', (e) => {
       const el = e.target as HTMLElement;
       const classList = el.classList;
@@ -508,7 +503,10 @@ class TextPanel extends Panel {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
           this.silence = false;
-        }, pickCallback, listener);
+        }, () => {
+          pickCallback(true);
+          setPrev();
+        }, setPrev, listener);
         const pDom = p.domElement.parentElement!;
         if (!listener.input.ignoreBlur.includes(pDom)) {
           listener.input.ignoreBlur.push(pDom);
@@ -646,7 +644,6 @@ class TextPanel extends Panel {
       // 上下对齐
       else if ((classList.contains('top') || classList.contains('bottom') || classList.contains('middle'))
         && !classList.contains('cur')) {
-        pickCallback();
         const nodes = this.nodes.slice(0);
         let value: 'top' | 'middle' | 'bottom' = 'top';
         if (classList.contains('middle')) {

@@ -144,14 +144,14 @@ class FillPanel extends Panel {
     let indexes: number[] = [];
     let index: number;
 
-    const pickCallback = () => {
+    const pickCallback = (independence = false) => {
       // 只有变更才会有next
       if (nexts.length) {
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: indexes[i] };
-        })));
+        })), independence);
       }
-      onBlur();
+      // onBlur();
       listener.gradient.hide();
     };
 
@@ -160,6 +160,20 @@ class FillPanel extends Panel {
       prevs = [];
       nexts = [];
       indexes = [];
+    };
+
+    const setPrev = () => {
+      nodes = this.nodes.slice(0);
+      prevs = [];
+      nodes.forEach(node => {
+        const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+        const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
+        prevs.push({
+          fill: cssFill,
+          fillOpacity,
+          fillEnable,
+        });
+      });
     };
 
     panel.addEventListener('click', (e) => {
@@ -179,17 +193,7 @@ class FillPanel extends Panel {
         picker.keep = true;
         listener.gradient.keep = true;
         // 最开始记录nodes/prevs
-        nodes = this.nodes.slice(0);
-        prevs = [];
-        nodes.forEach(node => {
-          const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
-          const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
-          prevs.push({
-            fill: cssFill,
-            fillOpacity,
-            fillEnable,
-          });
-        });
+        setPrev();
 
         const fill = this.nodes[0].computedStyle.fill[index];
         const onInput = (data: number[] | ComputedGradient | ComputedPattern, fromGradient = false, changeType = false) => {
@@ -250,7 +254,10 @@ class FillPanel extends Panel {
         };
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
-        picker.show(el, fill, 'fillPanel' + index, onInput, pickCallback, listener);
+        picker.show(el, fill, 'fillPanel' + index, onInput, () => {
+          pickCallback(true);
+          setPrev();
+        }, setPrev, listener);
         if (!Array.isArray(fill)) {
           listener.select.hideSelect();
           // onChange特殊化和pickCallback不同，不能清空以及隐藏gradient
@@ -500,6 +507,7 @@ class FillPanel extends Panel {
             node.updateStyle(o);
           });
           pickCallback();
+          onBlur();
           if (nodes.length) {
             listener.emit(Listener.FILL_NODE, nodes.slice(0));
           }
@@ -507,6 +515,7 @@ class FillPanel extends Panel {
       }
       else if (tagName === 'INPUT') {
         pickCallback();
+        onBlur();
       }
     });
 

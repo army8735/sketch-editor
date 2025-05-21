@@ -3,6 +3,8 @@ import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
 import { convert2Css } from '../style/gradient';
 import Listener from './Listener';
 import state from './state';
+// @ts-ignore
+import Picker from './vanilla-picker.js';
 
 let div: HTMLElement;
 const html = `
@@ -23,7 +25,7 @@ const html = `
 
 let picker: any;
 let openFrom: string;
-let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
+// let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
 
 let tempColor: number[] | undefined; // 编辑切换类别时，保存下可以切回去不丢失
 let tempGradient: ComputedGradient | undefined;
@@ -43,7 +45,8 @@ export default {
     data: number[] | ComputedGradient | ComputedPattern,
     from: string,
     onInput: (data: number[] | ComputedGradient | ComputedPattern, fromGradient?: boolean, changeType?: boolean) => void,
-    cb: () => void,
+    onChange: () => void,
+    onBlur: () => void,
     listener: Listener,
   ) {
     // 强制渐变stops顺序排列初始化
@@ -52,11 +55,11 @@ export default {
     // }
     openFrom = from;
     // 已经显示了，之前遗留的回调直接先执行
-    if (callback) {
-      callback();
-      callback = undefined;
-    }
-    callback = cb;
+    // if (callback) {
+    //   callback();
+    //   callback = undefined;
+    // }
+    // callback = cb;
     // 可能发生切换，记录切换前的
     if (Array.isArray(data)) {
       tempColor = data;
@@ -79,9 +82,6 @@ export default {
     line.removeAttribute('style');
     const bg = line.querySelector('.bg') as HTMLElement;
     const con = line.querySelector('.con') as HTMLElement;
-    if (/\d+$/.test(from)) {
-      //
-    }
     // 事件侦听
     {
       type.removeEventListener('click', onClick);
@@ -209,7 +209,7 @@ export default {
             initStops(tempGradient, line);
             this.setLineCur(0);
             onInput(tempGradient, false, true);
-            listener.gradient.show(listener.selected[0], tempGradient, onInput, cb);
+            listener.gradient.show(listener.selected[0], tempGradient, onInput, onChange);
           }
         }
       });
@@ -377,8 +377,7 @@ export default {
     div.style.top = rect.bottom + 10 + 'px';
     div.style.display = 'block';
     if (!picker) {
-      // @ts-ignore
-      picker = new window.Picker({
+      picker = new Picker({
         parent: div,
         popup: false,
       });
@@ -390,7 +389,7 @@ export default {
         listener.select.showSelectNotUpdate();
       }
     };
-    picker.onChange = (color: any) => {
+    picker.onInput = (color: any) => {
       const cur = type.querySelector('.cur') as HTMLElement;
       const classList = cur.classList;
       if (classList.contains('color')) {
@@ -407,6 +406,12 @@ export default {
         bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
         onInput(data);
       }
+    };
+    picker.onChange = () => {
+      onChange();
+    };
+    picker.onBlur = () => {
+      onBlur();
     };
     if (Array.isArray(data)) {
       const c = color2rgbaStr(data);
@@ -443,12 +448,12 @@ export default {
   hide() {
     if (div && div.style.display === 'block') {
       div.style.display = 'none';
-      if (callback) {
-        callback();
-        callback = undefined;
-        tempColor = undefined;
-        tempGradient = undefined;
-      }
+      // if (callback) {
+      //   callback();
+      //   callback = undefined;
+      // }
+      tempColor = undefined;
+      tempGradient = undefined;
     }
   },
   isShow() {
