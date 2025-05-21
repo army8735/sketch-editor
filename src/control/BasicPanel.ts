@@ -394,6 +394,7 @@ class BasicPanel extends Panel {
           listener.history.addCommand(new ResizeCommand(nodes, data));
         }
       }
+      onBlur();
     };
 
     w.addEventListener('input', (e) => {
