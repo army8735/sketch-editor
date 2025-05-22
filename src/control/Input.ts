@@ -167,7 +167,7 @@ export default class Input {
       iterations: Infinity,
     });
 
-    // 点击外部会blur，当来自画布节点内自身且编辑态需自动focus，还有来自textPanel（ignoreBlur）
+    // 点击外部会blur，当来自画布节点内自身且是编辑态需自动focus，还有来自textPanel（ignoreBlur）
     document.addEventListener('click', (e) => {
       if (listener.state === state.EDIT_TEXT) {
         let target = e.target as HTMLElement;
@@ -182,12 +182,11 @@ export default class Input {
           }
           p = p.parentElement;
         }
-        listener.state = state.NORMAL;
         const node = this.node!;
+        listener.cancelEditText();
         node.resetCursor();
         node.afterEdit();
         node.inputStyle = undefined;
-        this.hide();
       }
     });
   }
@@ -210,17 +209,19 @@ export default class Input {
   hide() {
     this.hideCursor();
     this.blur();
-    const empty = !this.node!._content.length;
-    // 删空内容后blur隐藏则是删除文字节点，需先恢复之前内容
-    if (empty) {
-      const history = this.listener.history;
-      const last = history.commands[0];
-      if (last && last instanceof TextCommand && last.nodes[0] === this.node) {
-        last.undo();
+    if (this.node) {
+      const empty = !this.node._content.length;
+      // 删空内容后blur隐藏则是删除文字节点，需先恢复之前内容
+      if (empty) {
+        const history = this.listener.history;
+        const last = history.commands[0];
+        if (last && last instanceof TextCommand && last.nodes[0] === this.node) {
+          last.undo();
+        }
+        this.listener.removeNode();
       }
-      this.listener.removeNode();
+      this.node = undefined;
     }
-    this.node = undefined;
   }
 
   focus() {
