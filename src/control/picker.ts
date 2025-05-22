@@ -25,7 +25,9 @@ const html = `
 
 let picker: any;
 let openFrom: string;
-let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
+// 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook；esc等关闭时也要执行change
+let callback: (() => void) | undefined;
+let hasInput = false; // 上面那个有时无需执行，比如type切换手动change后关闭不能重复
 
 let tempColor: number[] | undefined; // 编辑切换类别时，保存下可以切回去不丢失
 let tempGradient: ComputedGradient | undefined;
@@ -56,6 +58,7 @@ export default {
       callback = undefined;
     }
     callback = onChange;
+    hasInput = false;
     // 可能发生切换，记录切换前的
     if (Array.isArray(data)) {
       tempColor = data;
@@ -107,6 +110,7 @@ export default {
           }
           picker.setColor(c, true);
           onChange();
+          hasInput = false;
           listener.gradient.hide();
         }
         else {
@@ -207,6 +211,7 @@ export default {
             this.setLineCur(0);
             onInput(tempGradient, false, true);
             onChange();
+            hasInput = false;
             listener.gradient.show(listener.selected[0], tempGradient, onInput, onChange);
           }
         }
@@ -316,6 +321,7 @@ export default {
           picker.setColor(o.color, true);
           listener.gradient.setCur(index);
           onInput(data);
+          hasInput = true;
         }
       });
       // 拖拽渐变节点和颜色区域特殊处理，让最外层侦听识别取消隐藏
@@ -341,6 +347,7 @@ export default {
           cur.style.left = p * 100 + '%';
           bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
           onInput(data);
+          hasInput = true;
         }
       });
       // 点击外部自动关闭，拖拽过程除外，利用冒泡顺序，为防止拖拽乱序重新设置
@@ -404,6 +411,7 @@ export default {
         bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
         onInput(data);
       }
+      hasInput = true;
     };
     picker.onChange = () => {
       onChange();
@@ -447,7 +455,9 @@ export default {
     if (div && div.style.display === 'block') {
       div.style.display = 'none';
       if (callback) {
-        callback();
+        if (hasInput) {
+          callback();
+        }
         callback = undefined;
       }
       tempColor = undefined;
@@ -455,7 +465,7 @@ export default {
     }
     // vanilla-picker的undo会触发input，需清空
     if (picker) {
-      picker.onInput = picker.onChange = picker.onBlur = () => {};
+      picker.onInput = picker.onChange = picker.onBlur = undefined;
     }
   },
   isShow() {
