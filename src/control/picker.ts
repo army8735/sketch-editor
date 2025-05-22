@@ -25,7 +25,7 @@ const html = `
 
 let picker: any;
 let openFrom: string;
-// let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
+let callback: (() => void) | undefined; // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook
 
 let tempColor: number[] | undefined; // 编辑切换类别时，保存下可以切回去不丢失
 let tempGradient: ComputedGradient | undefined;
@@ -49,17 +49,13 @@ export default {
     onBlur: () => void,
     listener: Listener,
   ) {
-    // 强制渐变stops顺序排列初始化
-    // if (!Array.isArray(data) && (data as ComputedGradient).stops) {
-    //   (data as ComputedGradient).stops.sort((a, b) => a.offset - b.offset);
-    // }
     openFrom = from;
     // 已经显示了，之前遗留的回调直接先执行
-    // if (callback) {
-    //   callback();
-    //   callback = undefined;
-    // }
-    // callback = cb;
+    if (callback) {
+      callback();
+      callback = undefined;
+    }
+    callback = onChange;
     // 可能发生切换，记录切换前的
     if (Array.isArray(data)) {
       tempColor = data;
@@ -450,10 +446,10 @@ export default {
   hide() {
     if (div && div.style.display === 'block') {
       div.style.display = 'none';
-      // if (callback) {
-      //   callback();
-      //   callback = undefined;
-      // }
+      if (callback) {
+        callback();
+        callback = undefined;
+      }
       tempColor = undefined;
       tempGradient = undefined;
     }
