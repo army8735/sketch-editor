@@ -225,11 +225,10 @@ export default {
       con.removeEventListener('mousedown', onMouseDown);
       con.addEventListener('mousedown', onMouseDown = (e) => {
         // e.preventDefault();
-        // input更改后直接点到这里，change会在本回调后触发导致时序不对，先将遗留的数据触发掉
+        // input更改后直接点到这里，change会在本回调后触发导致时序不对，先将遗留的input数据触发掉
         if (lastInput && callbackInput) {
           callbackInput(lastInput);
           lastInput = undefined;
-          callbackChange && callbackChange();
         }
         const target = e.target as HTMLElement;
         const tagName = target.tagName.toUpperCase();
@@ -337,6 +336,11 @@ export default {
         this.keep = true;
         if (listener.state === state.EDIT_GRADIENT) {
           listener.gradient.keep = true;
+        }
+        // 同con上的stops点击
+        if (lastInput && callbackInput) {
+          callbackInput(lastInput);
+          lastInput = undefined;
         }
       });
       document.removeEventListener('mousemove', onMouseMove);
