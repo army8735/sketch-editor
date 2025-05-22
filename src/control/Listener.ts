@@ -2012,8 +2012,9 @@ export default class Listener extends Event {
     }
     // esc，优先隐藏颜色picker，再编辑文字回到普通，普通取消选择
     else if (keyCode === 27 || code === 'Escape') {
-      contextMenu.hide();
+      contextMenu.hide(); console.log('esc')
       if (picker.isShow()) {
+        picker.hide();
         if (this.state === state.EDIT_GRADIENT) {
           this.cancelEditGradient();
         }
@@ -2264,9 +2265,8 @@ export default class Listener extends Event {
     else if ((keyCode === 90 || code === 'KeyZ') && metaKey) {
       const target = e.target as HTMLElement;
       if (target && isInput) {
-        e.preventDefault();
+        return;
       }
-      e.preventDefault();
       let c: AbstractCommand | undefined;
       if (this.shiftKey) {
         c = this.history.redo();
@@ -2275,6 +2275,7 @@ export default class Listener extends Event {
         c = this.history.undo();
       }
       if (c) {
+        e.preventDefault();
         const nodes = c.nodes.slice(0);
         const olds = this.selected.slice(0);
         let needUpdateSelectEvent = false;
