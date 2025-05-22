@@ -225,104 +225,108 @@ export default {
       con.removeEventListener('mousedown', onMouseDown);
       con.addEventListener('mousedown', onMouseDown = (e) => {
         // e.preventDefault();
-        const target = e.target as HTMLElement;
-        const tagName = target.tagName.toUpperCase();
-        w = bg.clientWidth;
-        // 已有的stop的offset
-        if (tagName === 'SPAN') {
-          con.querySelector('.cur')!.classList.remove('cur');
-          cur = target;
-          cur.classList.add('cur');
-          index = parseInt(cur.title);
-          isDrag = true;
-          startX = e.pageX;
-          initX = parseFloat(cur.style.left) * 0.01;
-          if (tempGradient) {
-            picker.setColor(tempGradient.stops[index].color, true);
+        // 不得已需要input的change先触发
+        setTimeout(() => {
+          const target = e.target as HTMLElement;
+          const tagName = target.tagName.toUpperCase();
+          const classList = target.classList;
+          w = bg.clientWidth;
+          // 已有的stop的offset
+          if (tagName === 'SPAN' && !classList.contains('cur')) {
+            con.querySelector('.cur')!.classList.remove('cur');
+            cur = target;
+            cur.classList.add('cur');
+            index = parseInt(cur.title);
+            isDrag = true;
+            startX = e.pageX;
+            initX = parseFloat(cur.style.left) * 0.01;
+            if (tempGradient) {
+              picker.setColor(tempGradient.stops[index].color, true);
+            }
+            else {
+              picker.setColor((data as ComputedGradient).stops[index].color, true);
+            }
+            listener.gradient.setCur(index);
           }
-          else {
-            picker.setColor((data as ComputedGradient).stops[index].color, true);
-          }
-          listener.gradient.setCur(index);
-        }
-        // 新增一个
-        else if (tagName === 'DIV') {
-          con.querySelector('.cur')!.classList.remove('cur');
-          const p = e.offsetX / w;
-          const span = document.createElement('span');
-          span.style.left = p * 100 + '%';
-          const list = con.querySelectorAll('.con span');
-          con.appendChild(span);
-          const o = {
-            color: [0, 0, 0, 0],
-            offset: p,
-          };
-          for (let i = 0, len = list.length; i < len; i++) {
-            const exist = list[i] as HTMLElement;
-            const x = parseFloat(exist.style.left) * 0.01;
-            if (x >= p) {
-              if (!i) {
+          // 新增一个
+          else if (tagName === 'DIV') {
+            con.querySelector('.cur')!.classList.remove('cur');
+            const p = e.offsetX / w;
+            const span = document.createElement('span');
+            span.style.left = p * 100 + '%';
+            const list = con.querySelectorAll('.con span');
+            con.appendChild(span);
+            const o = {
+              color: [0, 0, 0, 0],
+              offset: p,
+            };
+            for (let i = 0, len = list.length; i < len; i++) {
+              const exist = list[i] as HTMLElement;
+              const x = parseFloat(exist.style.left) * 0.01;
+              if (x >= p) {
+                if (!i) {
+                  if (tempGradient) {
+                    o.color = tempGradient.stops[i].color.slice(0);
+                  }
+                  else {
+                    o.color = (data as ComputedGradient).stops[i].color.slice(0);
+                  }
+                }
+                else {
+                  let prev: number[], next: number[];
+                  if (tempGradient) {
+                    prev = tempGradient.stops[i - 1].color;
+                    next = tempGradient.stops[i].color;
+                  }
+                  else {
+                    prev = (data as ComputedGradient).stops[i - 1].color;
+                    next = (data as ComputedGradient).stops[i].color;
+                  }
+                  const l = parseFloat((list[i - 1] as HTMLElement).style.left) * 0.01;
+                  const d = x - l;
+                  const p2 = (p - l) / d;
+                  o.color = [
+                    prev[0] + (next[0] - prev[0]) * p2,
+                    prev[1] + (next[1] - prev[1]) * p2,
+                    prev[2] + (next[2] - prev[2]) * p2,
+                    (prev[3] ?? 1) + ((next[3] ?? 1) - (prev[3] ?? 1)) * p2,
+                  ];
+                }
+                index = i;
+                break;
+              }
+              else if (i === len - 1) {
                 if (tempGradient) {
                   o.color = tempGradient.stops[i].color.slice(0);
                 }
                 else {
                   o.color = (data as ComputedGradient).stops[i].color.slice(0);
                 }
+                index = len;
               }
-              else {
-                let prev: number[], next: number[];
-                if (tempGradient) {
-                  prev = tempGradient.stops[i - 1].color;
-                  next = tempGradient.stops[i].color;
-                }
-                else {
-                  prev = (data as ComputedGradient).stops[i - 1].color;
-                  next = (data as ComputedGradient).stops[i].color;
-                }
-                const l = parseFloat((list[i - 1] as HTMLElement).style.left) * 0.01;
-                const d = x - l;
-                const p2 = (p - l) / d;
-                o.color = [
-                  prev[0] + (next[0] - prev[0]) * p2,
-                  prev[1] + (next[1] - prev[1]) * p2,
-                  prev[2] + (next[2] - prev[2]) * p2,
-                  (prev[3] ?? 1) + ((next[3] ?? 1) - (prev[3] ?? 1)) * p2,
-                ];
-              }
-              index = i;
-              break;
             }
-            else if (i === len - 1) {
-              if (tempGradient) {
-                o.color = tempGradient.stops[i].color.slice(0);
-              }
-              else {
-                o.color = (data as ComputedGradient).stops[i].color.slice(0);
-              }
-              index = len;
+            // 后面的index++
+            for (let i = index, len = list.length; i < len; i++) {
+              (list[i] as HTMLElement).title = (index + 1).toString();
             }
+            span.title = index.toString();
+            if (tempGradient) {
+              tempGradient.stops.splice(index, 0, o);
+            }
+            else {
+              (data as ComputedGradient).stops.splice(index, 0, o);
+            }
+            cur = span;
+            cur.classList.add('cur');
+            isDrag = true;
+            startX = e.pageX;
+            initX = parseFloat(cur.style.left) * 0.01;
+            picker.setColor(o.color, true);
+            listener.gradient.setCur(index);
+            onInput(data);
+            hasInput = true;
           }
-          // 后面的index++
-          for (let i = index, len = list.length; i < len; i++) {
-            (list[i] as HTMLElement).title = (index + 1).toString();
-          }
-          span.title = index.toString();
-          if (tempGradient) {
-            tempGradient.stops.splice(index, 0, o);
-          }
-          else {
-            (data as ComputedGradient).stops.splice(index, 0, o);
-          }
-          cur = span;
-          cur.classList.add('cur');
-          isDrag = true;
-          startX = e.pageX;
-          initX = parseFloat(cur.style.left) * 0.01;
-          picker.setColor(o.color, true);
-          listener.gradient.setCur(index);
-          onInput(data);
-          hasInput = true;
-        }
+        });
       });
       // 拖拽渐变节点和颜色区域特殊处理，让最外层侦听识别取消隐藏
       div.removeEventListener('mousedown', onMouseDown2);

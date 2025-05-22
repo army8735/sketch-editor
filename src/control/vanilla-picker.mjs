@@ -829,14 +829,13 @@ var Picker = function () {
 
             var editInput = this._domEdit;
             {
-                addEvent(editInput, 'input', function (e) {
-                    that._setColor(this.value, { fromEditor: true, failSilently: true });
-                });
+                addEvent(editInput, 'input', function (e) {});
                 addEvent(editInput, 'change', function (e) {
-                    _this2.onChange && _this2.onChange();
+                    that._setColor(this.value, { fromEditor: true, failSilently: true });
+                    that.onChange && that.onChange();
                 });
                 addEvent(editInput, 'blur', function (e) {
-                    _this2.onBlur && _this2.onBlur();
+                    that.onBlur && that.onBlur();
                 });
 
                 addEvent(editInput, 'focus', function (e) {
@@ -877,7 +876,6 @@ var Picker = function () {
                 }
             };
             addEvent(this._domOkay, 'click', onDoneProxy);
-            onKey(events, dom, ['Enter'], onDoneProxy);
         }
     }, {
         key: '_setPosition',
