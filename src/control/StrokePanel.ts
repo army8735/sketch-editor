@@ -117,7 +117,7 @@ class StrokePanel extends Panel {
         })), independence);
       }
       // onBlur();
-      listener.gradient.hide();
+      // listener.gradient.hide();
     };
 
     const onBlur = () => {

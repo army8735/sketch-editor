@@ -152,7 +152,7 @@ class FillPanel extends Panel {
         })), independence);
       }
       // onBlur();
-      listener.gradient.hide();
+      // listener.gradient.hide();
     };
 
     const onBlur = () => {
