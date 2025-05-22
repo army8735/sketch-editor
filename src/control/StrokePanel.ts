@@ -201,7 +201,7 @@ class StrokePanel extends Panel {
             indexes.push(index);
             node.updateStyle(o);
           });
-          if (!fromGradient) {
+          if (!fromGradient && !Array.isArray(nodes[0].computedStyle.stroke[index])) {
             listener.gradient.update(this.nodes[0], stroke);
           }
           if (nodes.length) {

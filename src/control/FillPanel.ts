@@ -242,7 +242,7 @@ class FillPanel extends Panel {
             indexes.push(index);
             node.updateStyle(o);
           });
-          if (!fromGradient) {
+          if (!fromGradient && !Array.isArray(nodes[0].computedStyle.fill[index])) {
             listener.gradient.update(this.nodes[0], fill, changeType);
           }
           if (nodes.length) {

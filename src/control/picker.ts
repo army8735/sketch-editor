@@ -103,13 +103,14 @@ export default {
             c = tempColor.slice(0);
           }
           else if ((data as ComputedGradient).stops) {
-            c = (data as ComputedGradient).stops[0].color;
+            c = (data as ComputedGradient).stops[0].color.slice(0);
             onInput(c, false, true);
           }
           else {
             onInput(c, false, true);
           }
           picker.setColor(c, true);
+          onChange();
           listener.gradient.hide();
         }
         else {
@@ -455,6 +456,10 @@ export default {
       // }
       tempColor = undefined;
       tempGradient = undefined;
+    }
+    // vanilla-picker的undo会触发input，需清空
+    if (picker) {
+      picker.onInput = picker.onChange = picker.onBlur = () => {};
     }
   },
   isShow() {
