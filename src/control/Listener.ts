@@ -2266,6 +2266,7 @@ export default class Listener extends Event {
       if (target && isInput) {
         e.preventDefault();
       }
+      e.preventDefault();
       let c: AbstractCommand | undefined;
       if (this.shiftKey) {
         c = this.history.redo();
