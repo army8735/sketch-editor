@@ -256,6 +256,7 @@ class FillPanel extends Panel {
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
         listener.cancelEditGradient();
+        picker.hide();
         picker.show(el, fill, 'fillPanel' + index, onInput, () => {
           pickCallback(true);
           setPrev();

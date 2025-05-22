@@ -829,9 +829,10 @@ var Picker = function () {
 
             var editInput = this._domEdit;
             {
-                addEvent(editInput, 'input', function (e) {});
-                addEvent(editInput, 'change', function (e) {
+                addEvent(editInput, 'input', function (e) {
                     that._setColor(this.value, { fromEditor: true, failSilently: true });
+                });
+                addEvent(editInput, 'change', function (e) {
                     that.onChange && that.onChange();
                 });
                 addEvent(editInput, 'blur', function (e) {
@@ -925,7 +926,7 @@ var Picker = function () {
             this._updateUI(flags);
 
             if (this.onInput && !flags.silent) {
-                this.onInput(col);
+                this.onInput(col, !!flags.fromEditor);
             }
         }
     }, {

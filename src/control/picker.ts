@@ -5,6 +5,7 @@ import Listener from './Listener';
 import state from './state';
 // @ts-ignore
 import Picker from './vanilla-picker.mjs';
+import { clone } from '../util/type';
 
 let div: HTMLElement;
 const html = `
@@ -26,8 +27,10 @@ const html = `
 let picker: any;
 let openFrom: string;
 // 多个panel共用一个picker，新的点开老的还没关闭需要自动执行save，留个hook；esc等关闭时也要执行change
-let callback: (() => void) | undefined;
-let hasInput = false; // 上面那个有时无需执行，比如type切换手动change后关闭不能重复
+let callbackInput: ((data: any) => void) | undefined;
+let callbackChange: (() => void) | undefined;
+let hasChange = false; // 上面那个有时无需执行，比如type切换手动change后关闭不能重复
+let lastInput: any; // 记录输入框输入的值，在直接关闭没来及触发change时手动触发一次
 
 let tempColor: number[] | undefined; // 编辑切换类别时，保存下可以切回去不丢失
 let tempGradient: ComputedGradient | undefined;
@@ -52,13 +55,10 @@ export default {
     listener: Listener,
   ) {
     openFrom = from;
-    // 已经显示了，之前遗留的回调直接先执行
-    if (callback) {
-      callback();
-      callback = undefined;
-    }
-    callback = onChange;
-    hasInput = false;
+    lastInput = undefined;
+    callbackInput = onInput;
+    callbackChange = onChange;
+    hasChange = false;
     // 可能发生切换，记录切换前的
     if (Array.isArray(data)) {
       tempColor = data;
@@ -110,7 +110,7 @@ export default {
           }
           picker.setColor(c, true);
           onChange();
-          hasInput = false;
+          hasChange = false;
           listener.gradient.hide();
         }
         else {
@@ -211,7 +211,7 @@ export default {
             this.setLineCur(0);
             onInput(tempGradient, false, true);
             onChange();
-            hasInput = false;
+            hasChange = false;
             listener.gradient.show(listener.selected[0], tempGradient, onInput, onChange);
           }
         }
@@ -225,108 +225,111 @@ export default {
       con.removeEventListener('mousedown', onMouseDown);
       con.addEventListener('mousedown', onMouseDown = (e) => {
         // e.preventDefault();
-        // 不得已需要input的change先触发
-        setTimeout(() => {
-          const target = e.target as HTMLElement;
-          const tagName = target.tagName.toUpperCase();
-          const classList = target.classList;
-          w = bg.clientWidth;
-          // 已有的stop的offset
-          if (tagName === 'SPAN' && !classList.contains('cur')) {
-            con.querySelector('.cur')!.classList.remove('cur');
-            cur = target;
-            cur.classList.add('cur');
-            index = parseInt(cur.title);
-            isDrag = true;
-            startX = e.pageX;
-            initX = parseFloat(cur.style.left) * 0.01;
-            if (tempGradient) {
-              picker.setColor(tempGradient.stops[index].color, true);
-            }
-            else {
-              picker.setColor((data as ComputedGradient).stops[index].color, true);
-            }
-            listener.gradient.setCur(index);
+        // input更改后直接点到这里，change会在本回调后触发导致时序不对，先将遗留的数据触发掉
+        if (lastInput && callbackInput) {
+          callbackInput(lastInput);
+          lastInput = undefined;
+          callbackChange && callbackChange();
+        }
+        const target = e.target as HTMLElement;
+        const tagName = target.tagName.toUpperCase();
+        const classList = target.classList;
+        w = bg.clientWidth;
+        // 已有的stop的offset
+        if (tagName === 'SPAN' && !classList.contains('cur')) {
+          con.querySelector('.cur')!.classList.remove('cur');
+          cur = target;
+          cur.classList.add('cur');
+          index = parseInt(cur.title);
+          isDrag = true;
+          startX = e.pageX;
+          initX = parseFloat(cur.style.left) * 0.01;
+          if (tempGradient) {
+            picker.setColor(tempGradient.stops[index].color, true);
           }
-          // 新增一个
-          else if (tagName === 'DIV') {
-            con.querySelector('.cur')!.classList.remove('cur');
-            const p = e.offsetX / w;
-            const span = document.createElement('span');
-            span.style.left = p * 100 + '%';
-            const list = con.querySelectorAll('.con span');
-            con.appendChild(span);
-            const o = {
-              color: [0, 0, 0, 0],
-              offset: p,
-            };
-            for (let i = 0, len = list.length; i < len; i++) {
-              const exist = list[i] as HTMLElement;
-              const x = parseFloat(exist.style.left) * 0.01;
-              if (x >= p) {
-                if (!i) {
-                  if (tempGradient) {
-                    o.color = tempGradient.stops[i].color.slice(0);
-                  }
-                  else {
-                    o.color = (data as ComputedGradient).stops[i].color.slice(0);
-                  }
-                }
-                else {
-                  let prev: number[], next: number[];
-                  if (tempGradient) {
-                    prev = tempGradient.stops[i - 1].color;
-                    next = tempGradient.stops[i].color;
-                  }
-                  else {
-                    prev = (data as ComputedGradient).stops[i - 1].color;
-                    next = (data as ComputedGradient).stops[i].color;
-                  }
-                  const l = parseFloat((list[i - 1] as HTMLElement).style.left) * 0.01;
-                  const d = x - l;
-                  const p2 = (p - l) / d;
-                  o.color = [
-                    prev[0] + (next[0] - prev[0]) * p2,
-                    prev[1] + (next[1] - prev[1]) * p2,
-                    prev[2] + (next[2] - prev[2]) * p2,
-                    (prev[3] ?? 1) + ((next[3] ?? 1) - (prev[3] ?? 1)) * p2,
-                  ];
-                }
-                index = i;
-                break;
-              }
-              else if (i === len - 1) {
+          else {
+            picker.setColor((data as ComputedGradient).stops[index].color, true);
+          }
+          listener.gradient.setCur(index);
+        }
+        // 新增一个
+        else if (tagName === 'DIV') {
+          con.querySelector('.cur')!.classList.remove('cur');
+          const p = e.offsetX / w;
+          const span = document.createElement('span');
+          span.style.left = p * 100 + '%';
+          const list = con.querySelectorAll('.con span');
+          con.appendChild(span);
+          const o = {
+            color: [0, 0, 0, 0],
+            offset: p,
+          };
+          for (let i = 0, len = list.length; i < len; i++) {
+            const exist = list[i] as HTMLElement;
+            const x = parseFloat(exist.style.left) * 0.01;
+            if (x >= p) {
+              if (!i) {
                 if (tempGradient) {
                   o.color = tempGradient.stops[i].color.slice(0);
                 }
                 else {
                   o.color = (data as ComputedGradient).stops[i].color.slice(0);
                 }
-                index = len;
               }
+              else {
+                let prev: number[], next: number[];
+                if (tempGradient) {
+                  prev = tempGradient.stops[i - 1].color;
+                  next = tempGradient.stops[i].color;
+                }
+                else {
+                  prev = (data as ComputedGradient).stops[i - 1].color;
+                  next = (data as ComputedGradient).stops[i].color;
+                }
+                const l = parseFloat((list[i - 1] as HTMLElement).style.left) * 0.01;
+                const d = x - l;
+                const p2 = (p - l) / d;
+                o.color = [
+                  prev[0] + (next[0] - prev[0]) * p2,
+                  prev[1] + (next[1] - prev[1]) * p2,
+                  prev[2] + (next[2] - prev[2]) * p2,
+                  (prev[3] ?? 1) + ((next[3] ?? 1) - (prev[3] ?? 1)) * p2,
+                ];
+              }
+              index = i;
+              break;
             }
-            // 后面的index++
-            for (let i = index, len = list.length; i < len; i++) {
-              (list[i] as HTMLElement).title = (index + 1).toString();
+            else if (i === len - 1) {
+              if (tempGradient) {
+                o.color = tempGradient.stops[i].color.slice(0);
+              }
+              else {
+                o.color = (data as ComputedGradient).stops[i].color.slice(0);
+              }
+              index = len;
             }
-            span.title = index.toString();
-            if (tempGradient) {
-              tempGradient.stops.splice(index, 0, o);
-            }
-            else {
-              (data as ComputedGradient).stops.splice(index, 0, o);
-            }
-            cur = span;
-            cur.classList.add('cur');
-            isDrag = true;
-            startX = e.pageX;
-            initX = parseFloat(cur.style.left) * 0.01;
-            picker.setColor(o.color, true);
-            listener.gradient.setCur(index);
-            onInput(data);
-            hasInput = true;
           }
-        });
+          // 后面的index++
+          for (let i = index, len = list.length; i < len; i++) {
+            (list[i] as HTMLElement).title = (index + 1).toString();
+          }
+          span.title = index.toString();
+          if (tempGradient) {
+            tempGradient.stops.splice(index, 0, o);
+          }
+          else {
+            (data as ComputedGradient).stops.splice(index, 0, o);
+          }
+          cur = span;
+          cur.classList.add('cur');
+          isDrag = true;
+          startX = e.pageX;
+          initX = parseFloat(cur.style.left) * 0.01;
+          picker.setColor(o.color, true);
+          listener.gradient.setCur(index);
+          onInput(data);
+          hasChange = true;
+        }
       });
       // 拖拽渐变节点和颜色区域特殊处理，让最外层侦听识别取消隐藏
       div.removeEventListener('mousedown', onMouseDown2);
@@ -351,7 +354,7 @@ export default {
           cur.style.left = p * 100 + '%';
           bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
           onInput(data);
-          hasInput = true;
+          hasChange = true;
         }
       });
       // 点击外部自动关闭，拖拽过程除外，利用冒泡顺序，为防止拖拽乱序重新设置
@@ -398,24 +401,43 @@ export default {
         listener.select.showSelectNotUpdate();
       }
     };
-    picker.onInput = (color: any) => {
+    picker.onInput = (color: any, fromEditor: boolean) => {
+      console.log('from', fromEditor)
+      hasChange = true;
+      lastInput = undefined;
       const cur = type.querySelector('.cur') as HTMLElement;
       const classList = cur.classList;
+      // 当前是纯色
       if (classList.contains('color')) {
-        onInput(color.rgba);
+        if (fromEditor) {
+          lastInput = color.rgba;
+        }
+        else {
+          onInput(color.rgba);
+        }
       }
-      // color切到gradient后，有tempGradient，原本data是最初传入的数组不能用
+      // color切到gradient后，有tempGradient，onInput原本data是最初传入的color数组不能用
       else if (tempGradient) {
         tempGradient.stops[index].color = color.rgba;
-        bg.style.background = getCssFillStroke(tempGradient, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
-        onInput(tempGradient);
+        if (fromEditor) {
+          lastInput = clone(tempGradient);
+        }
+        else {
+          bg.style.background = getCssFillStroke(tempGradient, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
+          onInput(tempGradient);
+        }
       }
+      // 都没有则是初始gradient状态
       else {
         (data as ComputedGradient).stops[index].color = color.rgba;
-        bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
-        onInput(data);
+        if (fromEditor) {
+          lastInput = data;
+        }
+        else {
+          bg.style.background = getCssFillStroke(data, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
+          onInput(data);
+        }
       }
-      hasInput = true;
     };
     picker.onChange = () => {
       onChange();
@@ -458,12 +480,15 @@ export default {
   hide() {
     if (div && div.style.display === 'block') {
       div.style.display = 'none';
-      if (callback) {
-        if (hasInput) {
-          callback();
-        }
-        callback = undefined;
+      if (callbackInput && lastInput) {
+        callbackInput(lastInput);
       }
+      if (callbackChange && hasChange) {
+        callbackChange();
+      }
+      lastInput = undefined;
+      callbackInput = undefined;
+      callbackChange = undefined;
       tempColor = undefined;
       tempGradient = undefined;
     }
