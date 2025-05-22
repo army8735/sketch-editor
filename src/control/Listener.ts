@@ -2014,20 +2014,19 @@ export default class Listener extends Event {
     else if (keyCode === 27 || code === 'Escape') {
       contextMenu.hide();
       if (picker.isShow()) {
-        picker.hide();
         if (this.state === state.EDIT_GRADIENT) {
-          this.select.showSelectNotUpdate();
-          this.state = state.NORMAL;
-          this.emit(Listener.STATE_CHANGE, state.EDIT_GRADIENT, this.state);
+          this.cancelEditGradient();
         }
         else if (this.state === state.EDIT_GEOM) {
-          this.select.showSelect(this.selected);
-          this.state = state.NORMAL;
-          this.emit(Listener.STATE_CHANGE, state.EDIT_GEOM, this.state);
+          this.cancelEditGeom();
         }
         else if (this.state === state.EDIT_TEXT) {
+          picker.hide();
           this.input.focus();
         }
+      }
+      else if (this.state === state.EDIT_GRADIENT) {
+        this.cancelEditGradient();
       }
       else if (this.state === state.EDIT_TEXT) {
         this.cancelEditText();
