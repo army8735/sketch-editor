@@ -213,6 +213,9 @@ export default class Listener extends Event {
   }
 
   active(nodes: Node[]) {
+    // 从tree点击切换，取消可能的编辑
+    this.cancelEditText();
+    this.cancelEditGradient();
     this.selected.splice(0);
     this.selected.push(...nodes);
     // 一般从tree点击切换，在编辑矢量切换到其它矢量依旧保持编辑状态
