@@ -534,6 +534,7 @@ export default class Listener extends Event {
           else {
             // 持续编辑更新文本的编辑光标并提前退出
             if (this.state === state.EDIT_TEXT) {
+              picker.hide(); // 可能输入了颜色还没更改点了别的地方，需要先触发掉
               const text = selected[0] as Text;
               if (this.shiftKey) {
                 text.setCursorEndByAbsCoords(x, y);
@@ -541,13 +542,16 @@ export default class Listener extends Event {
                 this.input.hideCursor();
               }
               else {
-                const { isMulti, start } = text.cursor;
+                const { isMulti, startLineBox, startTextBox, startString } = text.cursor;
                 text.resetCursor();
                 const p = text.setCursorStartByAbsCoords(x, y);
                 this.input.updateCursor(p);
                 this.input.showCursor();
-                // 没有变化不触发事件
-                if (text.cursor.isMulti === isMulti && text.cursor.start === start) {
+                // 没有变化不触发事件，换行可能start相同所以用3个属性对比
+                if (text.cursor.isMulti === isMulti
+                  && text.cursor.startLineBox === startLineBox
+                  && text.cursor.startTextBox === startTextBox
+                  && text.cursor.startString === startString) {
                   return;
                 }
               }

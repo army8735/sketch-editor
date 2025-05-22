@@ -402,7 +402,6 @@ export default {
       }
     };
     picker.onInput = (color: any, fromEditor: boolean) => {
-      console.log('from', fromEditor)
       hasChange = true;
       lastInput = undefined;
       const cur = type.querySelector('.cur') as HTMLElement;
