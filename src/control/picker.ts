@@ -209,6 +209,7 @@ export default {
             initStops(tempGradient, line);
             this.setLineCur(0);
             onInput(tempGradient, false, true);
+            onChange();
             listener.gradient.show(listener.selected[0], tempGradient, onInput, onChange);
           }
         }

@@ -211,6 +211,7 @@ class StrokePanel extends Panel {
         };
         // 取消可能的其它编辑态
         listener.cancelEditGeom();
+        listener.cancelEditGradient();
         picker.show(el, stroke, 'strokePanel' + index, onInput, () => {
           pickCallback(true);
           setPrev();

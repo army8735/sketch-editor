@@ -1,4 +1,3 @@
-import * as uuid from 'uuid';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import Root from '../node/Root';
@@ -2608,6 +2607,7 @@ export default class Listener extends Event {
 
   cancelEditGradient() {
     if (this.state === state.EDIT_GRADIENT) {
+      this.gradient.hide();
       this.select.showSelectNotUpdate();
       this.state = state.NORMAL;
       this.emit(Listener.STATE_CHANGE, state.EDIT_GRADIENT, this.state);
