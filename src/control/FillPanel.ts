@@ -242,6 +242,7 @@ class FillPanel extends Panel {
             indexes.push(index);
             node.updateStyle(o);
           });
+          // 可能picker发生类型切换当前不是gradient了
           if (!fromGradient && !Array.isArray(nodes[0].computedStyle.fill[index])) {
             listener.gradient.update(this.nodes[0], fill, changeType);
           }

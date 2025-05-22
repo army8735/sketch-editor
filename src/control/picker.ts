@@ -224,7 +224,7 @@ export default {
       let cur = con.querySelector('.cur') as HTMLElement;
       con.removeEventListener('mousedown', onMouseDown);
       con.addEventListener('mousedown', onMouseDown = (e) => {
-        e.preventDefault();
+        // e.preventDefault();
         const target = e.target as HTMLElement;
         const tagName = target.tagName.toUpperCase();
         w = bg.clientWidth;
