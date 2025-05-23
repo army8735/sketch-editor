@@ -443,6 +443,11 @@ export default {
       }
     };
     picker.onChange = () => {
+      // 同con上的点击
+      if (lastInput && callbackInput) {
+        callbackInput(lastInput);
+        lastInput = undefined;
+      }
       onChange();
     };
     picker.onBlur = () => {

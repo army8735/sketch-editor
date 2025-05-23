@@ -1968,6 +1968,9 @@ export default class Listener extends Event {
     const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase());
     // backspace/delete
     if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
+      if (isInput) {
+        return;
+      }
       if (this.state === state.EDIT_GEOM) {
         if (this.geometry.hasEditPoint()) {
           this.geometry.delVertex();
@@ -2012,7 +2015,7 @@ export default class Listener extends Event {
     }
     // esc，优先隐藏颜色picker，再编辑文字回到普通，普通取消选择
     else if (keyCode === 27 || code === 'Escape') {
-      contextMenu.hide(); console.log('esc')
+      contextMenu.hide();
       if (picker.isShow()) {
         picker.hide();
         if (this.state === state.EDIT_GRADIENT) {

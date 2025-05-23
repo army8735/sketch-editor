@@ -20,7 +20,7 @@ module.exports = {
       .click('.sketch-editor-picker .line .con span:last-child')
       .pause(20)
       .assert.cssProperty('#side .fill-panel .line[title="0"] .color .picker-btn b', 'backgroundImage', 'linear-gradient(rgb(255, 153, 0) 0%, rgb(0, 0, 255) 100%)')
-      .updateValue('.picker_editor input', '#6600FFFF')
+      .updateValue('.picker_editor input', ['#6600FFFF', browser.Keys.ENTER])
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
       .pause(20)

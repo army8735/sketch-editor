@@ -17,7 +17,7 @@ module.exports = {
 
       .click('#side .fill-panel .color .picker-btn b')
       .click('.sketch-editor-picker .type .color')
-      .updateValue('.picker_editor input', '#00FF00FF')
+      .updateValue('.picker_editor input', ['#00FF00FF', browser.Keys.ENTER])
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
       .pause(20)
@@ -63,7 +63,7 @@ module.exports = {
       .click('.sketch-editor-picker .type .linear')
       .assert.cssClassPresent('.sketch-editor-picker .type .color', ['color'])
       .assert.cssClassPresent('.sketch-editor-picker .type .linear', ['linear', 'cur'])
-      .updateValue('.picker_editor input', '#FFFF00FF')
+      .updateValue('.picker_editor input', ['#FFFF00FF', browser.Keys.ENTER])
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
       .pause(20)
