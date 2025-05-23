@@ -443,13 +443,13 @@ export default {
       }
     };
     picker.onChange = () => {
+      hasChange = false;
       // 同con上的点击
       if (lastInput && callbackInput) {
         callbackInput(lastInput);
         lastInput = undefined;
       }
       onChange();
-      hasChange = false;
     };
     picker.onBlur = () => {
       onBlur();
@@ -495,13 +495,13 @@ export default {
       if (callbackChange && hasChange) {
         callbackChange();
       }
-      lastInput = undefined;
-      callbackInput = undefined;
-      callbackChange = undefined;
-      tempColor = undefined;
-      tempGradient = undefined;
-      hasChange = false;
     }
+    lastInput = undefined;
+    callbackInput = undefined;
+    callbackChange = undefined;
+    tempColor = undefined;
+    tempGradient = undefined;
+    hasChange = false;
     // vanilla-picker的undo会触发input，需清空
     if (picker) {
       picker.onInput = picker.onChange = picker.onBlur = undefined;
