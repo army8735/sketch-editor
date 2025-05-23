@@ -479,6 +479,7 @@ class TextPanel extends Panel {
           if (listener.state === state.EDIT_TEXT && nodes.length === 1) {
             const node = nodes[0];
             const { isMulti, start, end } = node.getSortedCursor();
+            picker.aaa.push('onInputA' + isMulti)
             if (isMulti) {
               node.updateRangeStyle(start, end - start, {
                 color: data as number[],
@@ -495,6 +496,7 @@ class TextPanel extends Panel {
           }
           // 非编辑则全range更新
           else {
+            picker.aaa.push('onInputB')
             nodes.forEach(node => {
               node.updateRangeStyle(0, node._content.length, {
                 color: data as number[],
@@ -506,7 +508,7 @@ class TextPanel extends Panel {
           if (nodes.length) {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
-          picker.aaa.push('onInput2' + nexts.length)
+          picker.aaa.push('onInputC' + nexts.length)
           this.silence = false;
         }, () => {
           pickCallback(true);

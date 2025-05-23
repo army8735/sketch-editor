@@ -227,7 +227,6 @@ const o = {
       let cur = con.querySelector('.cur') as HTMLElement;
       con.removeEventListener('mousedown', onMouseDown);
       con.addEventListener('mousedown', onMouseDown = (e) => {
-        console.log('down' + !!lastInput);
         o.aaa.push('down' + !!lastInput);
         // e.preventDefault();
         // input更改后直接点到这里，change会在本回调后触发导致时序不对，先将遗留的input数据触发掉
@@ -450,7 +449,6 @@ const o = {
       }
     };
     picker.onChange = () => {
-      console.log('change' + !!lastInput + hasChange);
       o.aaa.push('change' + !!lastInput + hasChange + !!callbackInput);
       hasChange = false;
       // 同con上的点击
@@ -496,7 +494,6 @@ const o = {
     return picker;
   },
   hide() {
-    console.log('hide' + !!lastInput + hasChange)
     o.aaa.push('hide' + !!lastInput + hasChange + (div?.style.display === 'block'));
     if (div && div.style.display === 'block') {
       div.style.display = 'none';
