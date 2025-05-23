@@ -183,7 +183,6 @@ export default class Input {
           }
           p = p.parentElement;
         }
-        picker.aaa.push('cccc')
         // 如果不是focus的需要处理blur
         const node = this.node!;
         listener.cancelEditText();

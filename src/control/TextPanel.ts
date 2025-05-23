@@ -136,7 +136,7 @@ class TextPanel extends Panel {
     };
 
     const onInput = (e: Event, key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
-      this.silence = true; picker.aaa.push('iiii')
+      this.silence = true;
       const input = e.target as HTMLInputElement;
       const value = parseFloat(input.value) || 0;
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
@@ -146,7 +146,7 @@ class TextPanel extends Panel {
       }
       nexts = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
-      if (listener.state === state.EDIT_TEXT && this.nodes.length === 1) {
+      if (listener.state === state.EDIT_TEXT) {
         const node = this.nodes[0];
         const { isMulti, start, end } = node.getSortedCursor();
         if (isMulti) {
@@ -351,7 +351,7 @@ class TextPanel extends Panel {
         }
         select.disabled = false;
         const data: RichData[] = [];
-        if (listener.state === state.EDIT_TEXT && this.nodes.length === 1) {
+        if (listener.state === state.EDIT_TEXT) {
           const node = nodes[0];
           const { isMulti, start, end } = node.getSortedCursor();
           if (isMulti) {
@@ -393,7 +393,7 @@ class TextPanel extends Panel {
           option.remove();
         }
         const data: RichData[] = [];
-        if (listener.state === state.EDIT_TEXT && this.nodes.length === 1) {
+        if (listener.state === state.EDIT_TEXT) {
           const node = nodes[0];
           const { isMulti, start, end } = node.getSortedCursor();
           if (isMulti) {
@@ -437,7 +437,7 @@ class TextPanel extends Panel {
     });
 
     const setPrev = () => {
-      if (listener.state === state.EDIT_TEXT && this.nodes.length === 1) {
+      if (listener.state === state.EDIT_TEXT) {
         const node = this.nodes[0];
         const { isMulti } = node.getSortedCursor();
         if (isMulti) {
@@ -471,13 +471,12 @@ class TextPanel extends Panel {
         prevs = nodes.map(item => item.getRich());
         const color = this.nodes[0].computedStyle.color;
         picker.hide();
-        picker.aaa.push('state' + listener.state);
         const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
-          picker.aaa.push('onInput' + listener.state + ',' + nodes.length);
+          picker.aaa.push('onInput ' + this.nodes.length + ',' + nodes.length);
           this.silence = true;
           nexts = [];
           // 编辑文本状态下选中部分的更新
-          if (listener.state === state.EDIT_TEXT && nodes.length === 1) {
+          if (listener.state === state.EDIT_TEXT) {
             const node = nodes[0];
             const { isMulti, start, end } = node.getSortedCursor();
             picker.aaa.push('onInputA' + isMulti)
@@ -594,7 +593,7 @@ class TextPanel extends Panel {
         }
         const data: RichData[] = [];
         // 编辑状态下特殊处理，只有\n造成的lineBox才会局部生效，否则向首尾扩展直至整个text
-        if (nodes.length === 1 && listener.state === state.EDIT_TEXT) {
+        if (listener.state === state.EDIT_TEXT) {
           const node = nodes[0];
           const { content } = node;
           const cursor = node.getSortedCursor();
@@ -752,7 +751,7 @@ class TextPanel extends Panel {
     });
     const texts = nodes.filter(item => item instanceof Text) as Text[];
     this.nodes = texts;
-    const isEditText = this.listener.state === state.EDIT_TEXT && nodes.length === 1;
+    const isEditText = this.listener.state === state.EDIT_TEXT;
     const o = isEditText && texts[0]._content ? getEditTextInfo(texts[0]) : getTextInfo(texts);
     {
       const select = panel.querySelector('.ff select') as HTMLSelectElement;
