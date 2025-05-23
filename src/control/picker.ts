@@ -451,7 +451,7 @@ const o = {
     };
     picker.onChange = () => {
       console.log('change' + !!lastInput + hasChange);
-      o.aaa.push('change' + !!lastInput + hasChange);
+      o.aaa.push('change' + !!lastInput + hasChange + !!callbackInput);
       hasChange = false;
       // 同con上的点击
       if (lastInput && callbackInput) {
@@ -497,7 +497,7 @@ const o = {
   },
   hide() {
     console.log('hide' + !!lastInput + hasChange)
-    o.aaa.push('hide' + !!lastInput + hasChange);
+    o.aaa.push('hide' + !!lastInput + hasChange + (div?.style.display === 'block'));
     if (div && div.style.display === 'block') {
       div.style.display = 'none';
       if (callbackInput && lastInput) {

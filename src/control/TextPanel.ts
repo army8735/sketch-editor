@@ -471,6 +471,7 @@ class TextPanel extends Panel {
         const color = this.nodes[0].computedStyle.color;
         picker.hide();
         const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
+          picker.aaa.push('onInput')
           this.silence = true;
           nexts = [];
           // 编辑文本状态下选中部分的更新
