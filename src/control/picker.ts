@@ -500,6 +500,7 @@ export default {
       callbackChange = undefined;
       tempColor = undefined;
       tempGradient = undefined;
+      hasChange = false;
     }
     // vanilla-picker的undo会触发input，需清空
     if (picker) {
