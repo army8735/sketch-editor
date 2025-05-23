@@ -128,6 +128,7 @@ class TextPanel extends Panel {
     };
 
     const onBlur = () => {
+      picker.aaa.push('onBlur')
       nodes = [];
       prevs = [];
       nexts = [];
@@ -505,6 +506,7 @@ class TextPanel extends Panel {
           if (nodes.length) {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
+          picker.aaa.push('onInput2' + nexts.length)
           this.silence = false;
         }, () => {
           pickCallback(true);
