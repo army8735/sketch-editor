@@ -43,8 +43,11 @@ let onMouseDown: (e: MouseEvent) => void;
 let onMouseDown2: (e: MouseEvent) => void;
 let onMouseMove: (e: MouseEvent) => void;
 
-export default {
+const aaa: string[] = [];
+
+const o = {
   keep: false,
+  aaa,
   show(
     el: HTMLElement,
     data: number[] | ComputedGradient | ComputedPattern,
@@ -443,9 +446,7 @@ export default {
       }
     };
     picker.onChange = () => {
-      if (window.aaa) {
-        window.aaa.push('change' + !!lastInput + hasChange);
-      }
+      o.aaa.push('change' + !!lastInput + hasChange);
       hasChange = false;
       // 同con上的点击
       if (lastInput && callbackInput) {
@@ -490,9 +491,7 @@ export default {
     return picker;
   },
   hide() {
-    if (window.aaa) {
-      window.aaa.push('hide' + !!lastInput + hasChange);
-    }
+    o.aaa.push('hide' + !!lastInput + hasChange);
     if (div && div.style.display === 'block') {
       div.style.display = 'none';
       if (callbackInput && lastInput) {
@@ -586,3 +585,5 @@ function initStops(data: ComputedGradient, line: HTMLElement) {
   });
   con.appendChild(fragment);
 }
+
+export default o;
