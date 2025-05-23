@@ -117,7 +117,6 @@ class TextPanel extends Panel {
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = (independence = false) => {
-      picker.aaa.push('pcb' + nodes.length + ',' + nexts.length + ',' + listener.state);
       // 只有变更才会有next
       if (nodes.length && nexts.length) {
         listener.history.addCommand(new RichCommand(nodes, prevs.map((prev, i) => {
@@ -128,7 +127,6 @@ class TextPanel extends Panel {
     };
 
     const onBlur = () => {
-      picker.aaa.push('onBlur')
       nodes = [];
       prevs = [];
       nexts = [];
@@ -470,19 +468,14 @@ class TextPanel extends Panel {
         nodes = this.nodes.slice(0);
         prevs = nodes.map(item => item.getRich());
         const color = nodes[0].computedStyle.color;
-        picker.aaa.push('aaa ' + this.nodes.length + ',' + nodes.length);
         picker.hide();
-        picker.aaa.push('bbb ' + this.nodes.length + ',' + nodes.length);
         const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
-          picker.aaa.push('onInput ' + this.nodes.length + ',' + nodes.length + ',' + listener.state);
           this.silence = true;
           nexts = [];
           // 编辑文本状态下选中部分的更新
           if (listener.state === state.EDIT_TEXT) {
-            picker.aaa.push('onInputA')
             const node = nodes[0];
             const { isMulti, start, end } = node.getSortedCursor();
-            picker.aaa.push('onInputB' + isMulti)
             if (isMulti) {
               node.updateRangeStyle(start, end - start, {
                 color: data as number[],
@@ -499,7 +492,6 @@ class TextPanel extends Panel {
           }
           // 非编辑则全range更新
           else {
-            picker.aaa.push('onInputC')
             nodes.forEach(node => {
               node.updateRangeStyle(0, node._content.length, {
                 color: data as number[],
@@ -511,7 +503,6 @@ class TextPanel extends Panel {
           if (nodes.length) {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
-          picker.aaa.push('onInputD' + nexts.length)
           this.silence = false;
         }, () => {
           pickCallback(true);

@@ -43,11 +43,8 @@ let onMouseDown: (e: MouseEvent) => void;
 let onMouseDown2: (e: MouseEvent) => void;
 let onMouseMove: (e: MouseEvent) => void;
 
-const aaa: string[] = [];
-
 const o = {
   keep: false,
-  aaa,
   show(
     el: HTMLElement,
     data: number[] | ComputedGradient | ComputedPattern,
@@ -227,7 +224,6 @@ const o = {
       let cur = con.querySelector('.cur') as HTMLElement;
       con.removeEventListener('mousedown', onMouseDown);
       con.addEventListener('mousedown', onMouseDown = (e) => {
-        o.aaa.push('down' + !!lastInput);
         // e.preventDefault();
         // input更改后直接点到这里，change会在本回调后触发导致时序不对，先将遗留的input数据触发掉
         if (lastInput && callbackInput) {
@@ -403,7 +399,6 @@ const o = {
       });
     }
     picker.onDone = () => {
-      o.aaa.push('onDone');
       this.hide();
       if (listener.state === state.EDIT_GRADIENT) {
         listener.state = state.NORMAL;
@@ -411,7 +406,6 @@ const o = {
       }
     };
     picker.onInput = (color: any, fromEditor: boolean) => {
-      o.aaa.push('input');
       hasChange = true;
       lastInput = undefined;
       const cur = type.querySelector('.cur') as HTMLElement;
@@ -449,7 +443,6 @@ const o = {
       }
     };
     picker.onChange = () => {
-      o.aaa.push('change' + !!lastInput + hasChange + !!callbackInput);
       hasChange = false;
       // 同con上的点击
       if (lastInput && callbackInput) {
@@ -494,7 +487,6 @@ const o = {
     return picker;
   },
   hide() {
-    o.aaa.push('hide' + !!lastInput + hasChange + (div?.style.display === 'block'));
     if (div && div.style.display === 'block') {
       div.style.display = 'none';
       if (callbackInput && lastInput) {
