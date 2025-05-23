@@ -471,6 +471,7 @@ class TextPanel extends Panel {
         prevs = nodes.map(item => item.getRich());
         const color = this.nodes[0].computedStyle.color;
         picker.hide();
+        picker.aaa.push('state' + listener.state);
         const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
           picker.aaa.push('onInput')
           this.silence = true;
