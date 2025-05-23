@@ -2603,6 +2603,7 @@ export default class Listener extends Event {
 
   cancelEditText(node?: Node) {
     if (this.state === state.EDIT_TEXT) {
+      picker.aaa.push('cancel')
       picker.hide(); // 可能遗留的更改需要先应用
       const text = (node || this.selected[0]) as Text;
       if (text) {
