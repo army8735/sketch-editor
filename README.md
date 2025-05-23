@@ -14,10 +14,6 @@ npm install sketch-editor
 ```html
 <script src="https://gw.alipayobjects.com/os/lib/pdfjs-dist/3.11.174/build/pdf.min.js"></script>
 ```
-如果需要颜色选择器功能，需要前置引入`vanilla-picker`库，也可以使用cdn文件：
-```html
-<script src="https://gw.alipayobjects.com/os/lib/vanilla-picker/2.12.3/dist/vanilla-picker.min.js"></script>
-```
 拿到sketch文件的ArrayBuffer后：
 ```tsx
 import sketchEditor from 'sketch-editor';
