@@ -449,6 +449,7 @@ export default {
         lastInput = undefined;
       }
       onChange();
+      hasChange = false;
     };
     picker.onBlur = () => {
       onBlur();
