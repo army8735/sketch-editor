@@ -111,12 +111,12 @@ class StrokePanel extends Panel {
     let index: number;
 
     const pickCallback = (independence = false) => {
-      if (nexts && nexts.length) {
+      if (nodes.length && nexts.length) {
         listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: indexes[i] };
         })), independence);
+        onBlur();
       }
-      onBlur();
       // listener.gradient.hide();
     };
 

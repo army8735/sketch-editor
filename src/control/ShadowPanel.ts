@@ -71,12 +71,12 @@ class ShadowPanel extends Panel {
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = (independence = false) => {
       // 只有变更才会有next
-      if (nexts.length) {
+      if (nodes.length && nexts.length) {
         listener.history.addCommand(new ShadowCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         })), independence);
+        onBlur();
       }
-      onBlur();
     };
 
     const onBlur = () => {

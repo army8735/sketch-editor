@@ -146,12 +146,12 @@ class FillPanel extends Panel {
 
     const pickCallback = (independence = false) => {
       // 只有变更才会有next
-      if (nexts.length) {
+      if (nodes.length && nexts.length) {
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: indexes[i] };
         })), independence);
+        onBlur();
       }
-      onBlur();
       // listener.gradient.hide();
     };
 

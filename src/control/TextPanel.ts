@@ -123,8 +123,8 @@ class TextPanel extends Panel {
         listener.history.addCommand(new RichCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         }), RichCommand.COLOR), independence);
+        onBlur();
       }
-      onBlur();
     };
 
     const onBlur = () => {
@@ -474,14 +474,15 @@ class TextPanel extends Panel {
         picker.hide();
         picker.aaa.push('bbb ' + this.nodes.length + ',' + nodes.length);
         const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
-          picker.aaa.push('onInput ' + this.nodes.length + ',' + nodes.length);
+          picker.aaa.push('onInput ' + this.nodes.length + ',' + nodes.length + ',' + listener.state);
           this.silence = true;
           nexts = [];
           // 编辑文本状态下选中部分的更新
           if (listener.state === state.EDIT_TEXT) {
+            picker.aaa.push('onInputA')
             const node = nodes[0];
             const { isMulti, start, end } = node.getSortedCursor();
-            picker.aaa.push('onInputA' + isMulti)
+            picker.aaa.push('onInputB' + isMulti)
             if (isMulti) {
               node.updateRangeStyle(start, end - start, {
                 color: data as number[],
@@ -498,7 +499,7 @@ class TextPanel extends Panel {
           }
           // 非编辑则全range更新
           else {
-            picker.aaa.push('onInputB')
+            picker.aaa.push('onInputC')
             nodes.forEach(node => {
               node.updateRangeStyle(0, node._content.length, {
                 color: data as number[],
@@ -510,7 +511,7 @@ class TextPanel extends Panel {
           if (nodes.length) {
             listener.emit(Listener.COLOR_NODE, nodes.slice(0));
           }
-          picker.aaa.push('onInputC' + nexts.length)
+          picker.aaa.push('onInputD' + nexts.length)
           this.silence = false;
         }, () => {
           pickCallback(true);
