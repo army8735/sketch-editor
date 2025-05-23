@@ -15,7 +15,7 @@ module.exports = {
       .mouseButtonUp(0)
       .assert.value('#side .text-panel .fs input', '72')
       .click('#side .text-panel .picker-btn b')
-      .updateValue('.picker_editor input', '#0000FFFF')
+      .updateValue('.picker_editor input', ['#0000FFFF', browser.Keys.ENTER])
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
       .pause(20)
