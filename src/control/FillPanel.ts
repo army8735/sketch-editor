@@ -145,6 +145,7 @@ class FillPanel extends Panel {
     let index: number;
 
     const pickCallback = (independence = false) => {
+      picker.aaa.push('pcb' + nexts.length)
       // 只有变更才会有next
       if (nexts.length) {
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
