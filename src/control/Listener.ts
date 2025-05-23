@@ -2264,9 +2264,10 @@ export default class Listener extends Event {
     // z，undo/redo
     else if ((keyCode === 90 || code === 'KeyZ') && metaKey) {
       const target = e.target as HTMLElement;
-      if (target && isInput) {
+      if (target && isInput && target !== this.input.inputEl) {
         return;
       }
+      e.preventDefault();
       let c: AbstractCommand | undefined;
       if (this.shiftKey) {
         c = this.history.redo();
@@ -2275,7 +2276,6 @@ export default class Listener extends Event {
         c = this.history.undo();
       }
       if (c) {
-        e.preventDefault();
         const nodes = c.nodes.slice(0);
         const olds = this.selected.slice(0);
         let needUpdateSelectEvent = false;
