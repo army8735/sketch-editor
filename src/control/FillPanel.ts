@@ -145,6 +145,7 @@ class FillPanel extends Panel {
     let index: number;
 
     const pickCallback = (independence = false) => {
+      console.log('pcb' + nexts.length)
       picker.aaa.push('pcb' + nexts.length)
       // 只有变更才会有next
       if (nexts.length) {
