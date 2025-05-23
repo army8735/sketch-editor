@@ -229,7 +229,7 @@ function toTree() {
 }
 
 function toHistory() {
-  input.value = JSON.stringify([count++, listener.history.commands.length, listener.history.commandsR.length]);
+  input.value = JSON.stringify([count++, listener.history.commands.length, listener.history.commandsR.length, window.aaa]);
 }
 
 window.onerror = function(e) {

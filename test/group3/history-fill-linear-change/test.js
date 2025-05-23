@@ -25,6 +25,7 @@ module.exports = {
       // .assert.value('#base64', '[2,1,0]')
       .assert.cssProperty('#side .fill-panel .line[title="0"] .color .picker-btn b', 'backgroundImage', 'linear-gradient(rgb(255, 153, 0) 0%, rgb(0, 0, 255) 100%)')
       .updateValue('.picker_editor input', ['#6600FFFF', browser.Keys.ENTER])
+      .pause(20)
       .click('#button8')
       .assert.value('#base64', '[2,2,0]')
       // .keys(browser.Keys.ESCAPE)
