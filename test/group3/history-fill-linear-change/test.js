@@ -19,6 +19,7 @@ module.exports = {
 
       .click('#side .fill-panel .color .picker-btn b')
       .updateValue('.picker_editor input', '#FF9900FF')
+      .pause(20)
       .click('.sketch-editor-picker .line .con span:last-child')
       .pause(20)
       // .click('#button8')

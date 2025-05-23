@@ -153,7 +153,7 @@ class FillPanel extends Panel {
           return { prev, next: nexts[i], index: indexes[i] };
         })), independence);
       }
-      // onBlur();
+      onBlur();
       // listener.gradient.hide();
     };
 
@@ -512,7 +512,6 @@ class FillPanel extends Panel {
             node.updateStyle(o);
           });
           pickCallback();
-          onBlur();
           if (nodes.length) {
             listener.emit(Listener.FILL_NODE, nodes.slice(0));
           }
@@ -520,7 +519,6 @@ class FillPanel extends Panel {
       }
       else if (tagName === 'INPUT') {
         pickCallback();
-        onBlur();
       }
     });
 
