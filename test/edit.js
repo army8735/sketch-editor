@@ -228,6 +228,10 @@ function toTree() {
   input.value = JSON.stringify(list);
 }
 
+function toHistory() {
+  input.value = JSON.stringify([count++, listener.history.commands.length, listener.history.commandsR.length, sketchEditor.control.picker.aaa]);
+}
+
 window.onerror = function(e) {
   input.value = e.toString();
   requestAnimationFrame(function () {
@@ -320,6 +324,11 @@ fetch('./sketch.sketch')
         if (button7) {
           button7.addEventListener('click', () => {
             toTree();
+          });
+        }
+        if (button8) {
+          button8.addEventListener('click', () => {
+            toHistory();
           });
         }
       });
