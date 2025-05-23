@@ -534,6 +534,7 @@ class TextPanel extends Panel {
       // 尺寸固定模式
       else if ((classList.contains('auto') || classList.contains('fw') || classList.contains('fwh'))
         && !classList.contains('cur')) {
+        const nodes = this.nodes.slice(0);
         let next: TextProps['textBehaviour'] = 'auto';
         if (classList.contains('fw')) {
           next = 'autoH';
@@ -572,7 +573,7 @@ class TextPanel extends Panel {
           data.push(rd);
         });
         listener.history.addCommand(new ResizeCommand(nodes, data));
-        listener.select.updateSelect(nodes.slice(0));
+        listener.select.updateSelect(nodes);
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
         dom.querySelector('.wh .cur')?.classList.remove('cur');
         classList.add('cur');
@@ -581,6 +582,7 @@ class TextPanel extends Panel {
       // 左右对齐
       else if ((classList.contains('left') || classList.contains('right') || classList.contains('center') || el.classList.contains('justify'))
         && !classList.contains('cur')) {
+        const nodes = this.nodes.slice(0);
         let value = TEXT_ALIGN.LEFT;
         if (classList.contains('right')) {
           value = TEXT_ALIGN.RIGHT;
@@ -651,6 +653,7 @@ class TextPanel extends Panel {
       // 上下对齐
       else if ((classList.contains('top') || classList.contains('bottom') || classList.contains('middle'))
         && !classList.contains('cur')) {
+        const nodes = this.nodes.slice(0);
         let value: 'top' | 'middle' | 'bottom' = 'top';
         if (classList.contains('middle')) {
           value = 'middle';
