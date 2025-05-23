@@ -117,7 +117,7 @@ class TextPanel extends Panel {
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = (independence = false) => {
-      picker.aaa.push('pcb' + nexts.length);
+      picker.aaa.push('pcb' + nexts.length + ',' + listener.state);
       // 只有变更才会有next
       if (nodes.length && nexts.length) {
         listener.history.addCommand(new RichCommand(nodes, prevs.map((prev, i) => {
@@ -473,7 +473,7 @@ class TextPanel extends Panel {
         picker.hide();
         picker.aaa.push('state' + listener.state);
         const p = picker.show(el, color, 'textPanel', (data: number[] | ComputedGradient | ComputedPattern) => {
-          picker.aaa.push('onInput')
+          picker.aaa.push('onInput' + listener.state);
           this.silence = true;
           nexts = [];
           // 编辑文本状态下选中部分的更新
