@@ -123,7 +123,7 @@ class TextPanel extends Panel {
           return { prev, next: nexts[i] };
         }), RichCommand.COLOR), independence);
       }
-      // onBlur();
+      onBlur();
     };
 
     const onBlur = () => {

@@ -76,7 +76,7 @@ class ShadowPanel extends Panel {
           return { prev, next: nexts[i] };
         })), independence);
       }
-      // onBlur();
+      onBlur();
     };
 
     const onBlur = () => {
@@ -375,7 +375,6 @@ class ShadowPanel extends Panel {
 
     panel.addEventListener('change', () => {
       pickCallback();
-      onBlur();
     });
 
     panel.addEventListener('blur', (e) => {

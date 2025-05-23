@@ -116,7 +116,7 @@ class StrokePanel extends Panel {
           return { prev, next: nexts[i], index: indexes[i] };
         })), independence);
       }
-      // onBlur();
+      onBlur();
       // listener.gradient.hide();
     };
 
@@ -447,7 +447,6 @@ class StrokePanel extends Panel {
         return;
       }
       pickCallback();
-      onBlur();
     });
 
     panel.addEventListener('blur', (e) => {
