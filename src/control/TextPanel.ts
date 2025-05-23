@@ -136,7 +136,7 @@ class TextPanel extends Panel {
     };
 
     const onInput = (e: Event, key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
-      this.silence = true;
+      this.silence = true; picker.aaa.push('iiii')
       const input = e.target as HTMLInputElement;
       const value = parseFloat(input.value) || 0;
       // 连续多次只有首次记录节点和prev值，但每次都更新next值
