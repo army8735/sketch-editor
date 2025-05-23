@@ -411,7 +411,7 @@ const o = {
       }
     };
     picker.onInput = (color: any, fromEditor: boolean) => {
-      o.aaa.push('onInput');
+      o.aaa.push('input');
       hasChange = true;
       lastInput = undefined;
       const cur = type.querySelector('.cur') as HTMLElement;
