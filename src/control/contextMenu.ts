@@ -17,6 +17,9 @@ const htmlCanvas = `
   <div class="split"></div>
   <div class="item remove">删除</div>
   <div class="split"></div>
+  <div class="item prev">前置一层</div>
+  <div class="item next">后置一层</div>
+  <div class="split"></div>
   <div class="item lock">锁定<span></span>个图层</div>
   <div class="item un-lock">解锁<span></span>个图层</div>
   <div class="item hide">隐藏<span></span>个图层</div>
@@ -171,6 +174,7 @@ function init(listener: Listener) {
 function hide() {
   if (canvasDiv && canvasDiv.style.display === 'block') {
     canvasDiv.style.display = 'none';
+    canvasDiv.className = 'sketch-editor-context-menu';
     return true;
   }
   return false;
@@ -226,11 +230,11 @@ const o = {
         classList.add('gray-with');
       }
     }
-    let hasBreakMask = nodes.filter(item => item.computedStyle.breakMask);
+    const hasBreakMask = nodes.filter(item => item.computedStyle.breakMask);
     if (hasBreakMask.length) {
       classList.add('break');
     }
-    let hasLocked = nodes.filter(item => item.props.isLocked);
+    const hasLocked = nodes.filter(item => item.isLocked);
     if (hasLocked.length === nodes.length) {
       classList.add('locked');
       canvasDiv.querySelector('.un-lock span')!.innerHTML = hasLocked.length.toString();
@@ -238,13 +242,21 @@ const o = {
     else {
       canvasDiv.querySelector('.lock span')!.innerHTML = nodes.length.toString();
     }
-    let hasHidden = nodes.filter(item => item.computedStyle.visibility === VISIBILITY.HIDDEN);
+    const hasHidden = nodes.filter(item => item.computedStyle.visibility === VISIBILITY.HIDDEN);
     if (hasHidden.length === nodes.length) {
       classList.add('hidden');
       canvasDiv.querySelector('.show span')!.innerHTML = hasHidden.length.toString();
     }
     else {
       canvasDiv.querySelector('.hide span')!.innerHTML = nodes.length.toString();
+    }
+    const hasPrev = nodes.every(item => item.prev);
+    if (!hasPrev) {
+      classList.add('no-prev');
+    }
+    const hasNext = nodes.every(item => item.next);
+    if (!hasNext) {
+      classList.add('no-next');
     }
     canvasDiv.style.left = x + 'px';
     canvasDiv.style.top = y + 'px';
@@ -253,6 +265,8 @@ const o = {
   },
   showTree(x: number, y: number, listener: Listener) {
     this.showCanvas(x, y, listener);
+    const classList = canvasDiv.classList;
+    classList.add('only-tree');
   },
   showOk(x: number, y: number, listener: Listener) {
     init(listener);

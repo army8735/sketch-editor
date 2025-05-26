@@ -2658,7 +2658,7 @@
     }
   }
 
-  .ok {
+  .ok, .prev, .next {
     display: none;
   }
 
@@ -2766,6 +2766,26 @@
 
     .ok, .version {
       display: block;
+    }
+  }
+
+  &.only-tree {
+    .prev, .next {
+      display: block;
+    }
+  }
+
+  &.no-prev {
+    .prev {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+  }
+
+  &.no-next {
+    .next {
+      opacity: 0.3;
+      pointer-events: none;
     }
   }
 }
