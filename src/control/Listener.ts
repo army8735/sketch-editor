@@ -869,34 +869,32 @@ export default class Listener extends Event {
               let hasChange = false;
               geometry.nodes.forEach((node) => {
                 const res = getFrameVertexes(node, x, y, x + dx * dpi, y + dy * dpi);
-                if (res.length) {
-                  if (!geometry.nodes.includes(node)) {
-                    geometry.nodes.push(node);
-                  }
-                  const j = geometry.nodes.indexOf(node);
-                  const idxes = geometry.idxes[j];
-                  if (res.join(',') !== idxes.sort((a, b) => a - b).join(',')) {
-                    idxes.splice(0);
-                    idxes.push(...res);
-                    // 清空已有的
-                    const div = geometry.panel.querySelector(`div.item[idx="${j}"]`) as HTMLElement;
-                    div.querySelectorAll('div.cur')?.forEach(item => {
-                      item.classList.remove('cur');
-                    });
-                    div.querySelectorAll('div.f')?.forEach(item => {
-                      item.classList.remove('f');
-                    });
-                    div.querySelectorAll('div.t')?.forEach(item => {
-                      item.classList.remove('t');
-                    });
-                    res.forEach(i => {
-                      const vt = div.querySelector(`div.vt[title="${i}"]`) as HTMLElement;
-                      vt.classList.add('cur');
-                      vt.nextElementSibling?.classList.add('t');
-                      vt.previousElementSibling?.classList.add('f');
-                    });
-                    hasChange = true;
-                  }
+                if (!geometry.nodes.includes(node)) {
+                  geometry.nodes.push(node);
+                }
+                const j = geometry.nodes.indexOf(node);
+                const idxes = geometry.idxes[j];
+                if (res.join(',') !== idxes.sort((a, b) => a - b).join(',')) {
+                  idxes.splice(0);
+                  idxes.push(...res);
+                  // 清空已有的
+                  const div = geometry.panel.querySelector(`div.item[idx="${j}"]`) as HTMLElement;
+                  div.querySelectorAll('div.cur')?.forEach(item => {
+                    item.classList.remove('cur');
+                  });
+                  div.querySelectorAll('div.f')?.forEach(item => {
+                    item.classList.remove('f');
+                  });
+                  div.querySelectorAll('div.t')?.forEach(item => {
+                    item.classList.remove('t');
+                  });
+                  res.forEach(i => {
+                    const vt = div.querySelector(`div.vt[title="${i}"]`) as HTMLElement;
+                    vt.classList.add('cur');
+                    vt.nextElementSibling?.classList.add('t');
+                    vt.previousElementSibling?.classList.add('f');
+                  });
+                  hasChange = true;
                 }
               });
               if (hasChange) {
@@ -2113,7 +2111,6 @@ export default class Listener extends Event {
     }
     // 移动，普通的节点移动和矢量顶点侦听，文字光标是特殊的聚焦input框侦听
     else if (keyCode >= 37 && keyCode <= 40 || ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(code)) {
-      const target = e.target as HTMLElement;
       if (target && !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
         e.preventDefault();
         let x = 0;
@@ -2227,21 +2224,25 @@ export default class Listener extends Event {
     }
     // a全选
     else if ((keyCode === 65 || code === 'KeyA') && metaKey) {
-      const target = e.target as HTMLElement;
       // 编辑文字状态特殊处理
       if (this.state === state.EDIT_TEXT && target === this.input.inputEl) {
         e.preventDefault();
         this.input.node!.selectAll();
         this.input.hideCursor();
       }
-      else if (target && !isInput) {
+      else if (!isInput) {
         e.preventDefault();
-        this.selectAll();
+        if (this.state === state.NORMAL) {
+          this.selectAll();
+        }
+        else if (this.state === state.EDIT_GEOM) {
+          this.geometry.selectAll();
+        }
       }
     }
     // c复制/x剪切
     else if ((keyCode === 67 || code === 'KeyC' || keyCode === 88 || code === 'KeyX') && metaKey) {
-      if (!isInput) {
+      if (!isInput && this.state === state.NORMAL) {
         this.clone();
         if ((keyCode === 88 || code === 'KeyX') && !this.options.disabled?.remove) {
           this.removeNode();
@@ -2266,7 +2267,6 @@ export default class Listener extends Event {
     }
     // z，undo/redo
     else if ((keyCode === 90 || code === 'KeyZ') && metaKey) {
-      const target = e.target as HTMLElement;
       if (target && isInput && target !== this.input.inputEl) {
         return;
       }

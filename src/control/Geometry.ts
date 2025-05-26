@@ -825,6 +825,34 @@ export default class Geometry {
     });
     this.listener.emit(Listener.SELECT_POINT, nodes, points);
   }
+
+  selectAll() {
+    const t: number[][] = [];
+    let equal = true;
+    this.nodes.forEach((item, i) => {
+      const arr: number[] = [];
+      const points = item.points;
+      for (let i = 0, len = points.length; i < len; i++) {
+        arr.push(i);
+      }
+      t.push(arr);
+      if (equal && (this.idxes[i] || []).join(',') !== arr.join(',')) {
+        equal = false;
+      }
+    });
+    if (!equal) {
+      this.idxes.splice(0);
+      this.idxes.push(...t);
+      this.panel.querySelectorAll('.f,.t')?.forEach(item => {
+        item.classList.remove('f');
+        item.classList.remove('t');
+      });
+      this.panel.querySelectorAll('div.vt')?.forEach(item => {
+        item.classList.add('cur');
+      });
+      this.emitSelectPoint();
+    }
+  }
 }
 
 function getPolylineCoords(node: Polyline, idx: number, scale: number) {
