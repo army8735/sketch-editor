@@ -540,13 +540,18 @@ export default class Geometry {
     });
   }
 
-  show(nodes: Polyline[]) {
+  show(nodes: Polyline[], idx?: number[][]) {
     this.nodes.splice(0);
     this.nodes.push(...nodes);
     this.idxes.splice(0);
-    nodes.forEach(() => {
-      this.idxes.push([]);
-    });
+    if (idx) {
+      this.idxes.push(...idx);
+    }
+    else {
+      nodes.forEach(() => {
+        this.idxes.push([]);
+      });
+    }
     this.panel.innerHTML = '';
     this.nodes.forEach((node) => {
       getPointsDspByAbs(node);

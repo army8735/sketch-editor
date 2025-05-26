@@ -2483,9 +2483,26 @@ export default class Listener extends Event {
         }
         else if (c instanceof PointCommand) {
           this.emit(Listener.SELECT_NODE, nodes.slice(0));
-          // 编辑态特殊，强制选择这些节点
+          // 编辑态特殊，强制选择这些节点，如果一直处在编辑态中且node没变过，选中idx的顶点
           if (this.state === state.EDIT_GEOM) {
-            this.geometry.show(nodes.slice(0) as Polyline[]);
+            let equal = true;
+            if (nodes.length !== this.geometry.nodes.length) {
+              equal = false;
+            }
+            if (equal) {
+              for (let i = 0, len = nodes.length; i < len; i++) {
+                if (nodes[i] !== this.geometry.nodes[i]) {
+                  equal = false;
+                  break;
+                }
+              }
+            }
+            if (equal) {
+              this.geometry.show(nodes.slice(0) as Polyline[], this.geometry.idxes.slice(0));
+            }
+            else {
+              this.geometry.show(nodes.slice(0) as Polyline[]);
+            }
           }
           // 非编辑态选择它们
           else {

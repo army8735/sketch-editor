@@ -16,6 +16,7 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .assert.cssClassPresent('#main .geometry .item[idx="1"] .vt[title="1"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="0"] .vt[title="1"]', ['vt'])
       .keys(browser.Keys.META)
       .moveToElement('#main .geometry .item[idx="0"] .vt[title="1"]', 0, 0)
       .mouseButtonDown(0)
@@ -42,6 +43,25 @@ module.exports = {
       .keys(browser.Keys.NULL)
       .click('#button6')
       .assert.value('#base64', '[[2,[{"x":0,"y":0,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0,"tx":0,"ty":0,"absX":0,"absY":0,"absTx":0,"absTy":0,"absFx":0,"absFy":0},{"x":0.9,"y":0,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0.9,"fy":0,"tx":0.9,"ty":0,"absX":90,"absY":0,"absTx":90,"absTy":0,"absFx":90,"absFy":0},{"x":1,"y":1,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":1,"fy":1,"tx":1,"ty":1,"absX":100,"absY":100,"absTx":100,"absTy":100,"absFx":100,"absFy":100},{"x":0,"y":1,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":1,"tx":0,"ty":1,"absX":0,"absY":100,"absTx":0,"absTy":100,"absFx":0,"absFy":100}]],[2,[{"x":0,"y":0,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0,"tx":0,"ty":0,"absX":0,"absY":0,"absTx":0,"absTy":0,"absFx":0,"absFy":0},{"x":0.9,"y":0,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0.9,"fy":0,"tx":0.9,"ty":0,"absX":90,"absY":0,"absTx":90,"absTy":0,"absFx":90,"absFy":0},{"x":1,"y":1,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":1,"fy":1,"tx":1,"ty":1,"absX":100,"absY":100,"absTx":100,"absTy":100,"absFx":100,"absFy":100},{"x":0,"y":1,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":1,"tx":0,"ty":1,"absX":0,"absY":100,"absTx":0,"absTy":100,"absFx":0,"absFy":100}]]]')
+
+      .keys(browser.Keys.META)
+      .keys('z')
+      .keys(browser.Keys.NULL)
+      .assert.cssClassPresent('#main .geometry .item[idx="0"] .vt[title="1"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="1"] .vt[title="1"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="1"] .vt[title="0"]', ['vt'])
+
+      .keys(browser.Keys.META)
+      .keys('a')
+      .keys(browser.Keys.NULL)
+      .assert.cssClassPresent('#main .geometry .item[idx="0"] .vt[title="0"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="0"] .vt[title="1"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="0"] .vt[title="2"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="0"] .vt[title="3"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="1"] .vt[title="0"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="1"] .vt[title="1"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="1"] .vt[title="2"]', ['vt', 'cur'])
+      .assert.cssClassPresent('#main .geometry .item[idx="1"] .vt[title="3"]', ['vt', 'cur'])
 
       .end();
   }
