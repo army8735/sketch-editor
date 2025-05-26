@@ -78,6 +78,7 @@ class RoundPanel extends Panel {
         }
       });
       range.placeholder = number.placeholder = '';
+      range.style.setProperty('--p', (value * 100 / (+range.max)).toString());
       number.value = range.value;
       listener.emit(Listener.ROUND_NODE, nodes.slice(0));
       this.silence = false;
@@ -100,10 +101,13 @@ class RoundPanel extends Panel {
         }
         else {
           hasRefresh = true;
-          scan3(node, value, polylines, nodes[i] = nodes[i] || [], prevPoints[i] = prevPoints[i] || [], isFirst, number.placeholder, listener);
+          const t = scan3(node, value, polylines, nodes[i] = nodes[i] || [], prevPoints[i] = prevPoints[i] || [], isFirst, number.placeholder, listener);
           if (!i) {
             if (number.placeholder) {
               number.value = '';
+            }
+            else {
+              range.value = number.value = t.toString();
             }
           }
         }
@@ -114,6 +118,7 @@ class RoundPanel extends Panel {
           parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
         }
       });
+      range.style.setProperty('--p', ((+range.value) * 100 / (+range.max)).toString());
       listener.emit(Listener.ROUND_NODE, nodes.slice(0));
       this.silence = false;
     });
@@ -172,7 +177,7 @@ class RoundPanel extends Panel {
     });
     ws.sort((a, b) => a - b);
     hs.sort((a, b) => a - b);
-    const min = Math.min(ws[0], hs[0]);
+    const min = Math.min(ws[0], hs[0]) * 0.5;
     const r = panel.querySelector('input[type=range]') as HTMLInputElement;
     const n = panel.querySelector('input[type=number]') as HTMLInputElement;
     r.setAttribute('max', min.toString());
@@ -185,7 +190,7 @@ class RoundPanel extends Panel {
     else {
       const c = toPrecision(rs[0], 2).toString();
       r.value = c;
-      r.style.setProperty('--p', c);
+      r.style.setProperty('--p', (rs[0] * 100 / min).toString());
       n.value = c;
     }
   }
@@ -239,13 +244,15 @@ function scan2(node: Node, value: number, polylines: Polyline[], nodes: Polyline
 
 // 同上，在number触发input时使用
 function scan3(node: Node, value: number, polylines: Polyline[], nodes: Polyline[], prevPoints: Point[][], isFirst: boolean, placeholder: string, listener: Listener) {
+  let firstReturn = true;
+  let res = 0;
   if (node instanceof Polyline) {
     if (isFirst) {
       polylines.push(node);
       nodes.push(node);
       prevPoints.push(clone(node.points));
     }
-    node.points.forEach(point => {
+    node.points.forEach((point) => {
       let d = 0;
       if (placeholder) {
         d = value;
@@ -270,14 +277,23 @@ function scan3(node: Node, value: number, polylines: Polyline[], nodes: Polyline
         }
       }
       point.cornerRadius += d;
+      if (firstReturn) {
+        firstReturn = false;
+        res = point.cornerRadius;
+      }
     });
     node.refresh();
   }
   else if (node instanceof ShapeGroup) {
     node.children.forEach(child => {
-      scan3(child, value, polylines, nodes, prevPoints, isFirst, placeholder, listener);
+      const t = scan3(child, value, polylines, nodes, prevPoints, isFirst, placeholder, listener);
+      if (firstReturn) {
+        firstReturn = false;
+        res = t;
+      }
     });
   }
+  return res;
 }
 
 export default RoundPanel;
