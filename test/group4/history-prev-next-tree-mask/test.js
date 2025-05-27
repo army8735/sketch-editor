@@ -14,16 +14,17 @@ module.exports = {
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .pause(20)
-      .click('#button2')
-      .assert.value('#base64', '')
       .assert.elementPresent('#tree dl[uuid="A54F2CDE-531F-4A9C-9E6F-45FDC0003865"] .mask')
+      .click('#button1')
+      .assert.value('#base64', '')
 
       .keys(browser.Keys.META)
       .keys('z')
       .keys(browser.Keys.NULL)
-      .click('#button2')
-      .assert.value('#base64', '')
+      .pause(20)
       .assert.not.elementPresent('#tree dl[uuid="A54F2CDE-531F-4A9C-9E6F-45FDC0003865"] .mask')
+      .click('#button1')
+      .assert.value('#base64', '')
 
       .end();
   }
