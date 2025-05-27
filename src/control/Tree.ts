@@ -482,12 +482,16 @@ export default class Tree {
           const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
           if (dl) {
             const dd = dl.parentElement!;
-            const uuid2 = prev[i]?.uuid;
+            const n = prev[i];
+            const uuid2 = n?.uuid;
             if (uuid2) {
               const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
               if (dl2) {
                 const dd2 = dl2.parentElement!;
                 dd.before(dd2);
+                if (!item.mask) {
+                  dl.querySelector('.mask')?.remove();
+                }
               }
             }
           }
@@ -508,6 +512,14 @@ export default class Tree {
               if (dl2) {
                 const dd2 = dl2.parentElement!;
                 dd.after(dd2);
+                if (item.mask) {
+                  const m = dl.querySelector('.mask');
+                  if (!m) {
+                    const span = document.createElement('span');
+                    span.className = 'mask';
+                    dl.querySelector('dt')?.prepend(span);
+                  }
+                }
               }
             }
           }
