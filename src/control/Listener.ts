@@ -70,6 +70,8 @@ import {
   getPointsAbsByDsp
 } from '../tools/polyline';
 import { createText } from '../tools/text';
+import PrevCommand from '../history/PrevCommand';
+import NextCommand from '../history/NextCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1835,6 +1837,7 @@ export default class Listener extends Event {
   }
 
   rename(names: string[], nodes = this.selected) {
+    if (nodes.length) {
     const data = nodes.map((item, i) => {
       const prev = item.name || '';
       const next = names[i];
@@ -1847,6 +1850,7 @@ export default class Listener extends Event {
     });
     this.history.addCommand(new RenameCommand(nodes.slice(0), data));
     this.emit(Listener.RENAME_NODE, nodes.slice(0), data);
+    }
   }
 
   removeNode(nodes = this.selected) {
@@ -1881,6 +1885,22 @@ export default class Listener extends Event {
       this.history.addCommand(new RemoveCommand(nodes2, data));
       this.emit(Listener.REMOVE_NODE, nodes2.slice(0));
       this.emit(Listener.SELECT_NODE, []);
+    }
+  }
+
+  prev(nodes = this.selected) {
+    if (nodes.length) {
+      const data = PrevCommand.operate(nodes);
+      this.history.addCommand(new PrevCommand(nodes.slice(0), data));
+      this.emit(Listener.PREV_NODE, nodes.slice(0), data.slice(0));
+    }
+  }
+
+  next(nodes = this.selected) {
+    if (nodes.length) {
+      const data = NextCommand.operate(nodes);
+      this.history.addCommand(new NextCommand(nodes.slice(0), data));
+      this.emit(Listener.NEXT_NODE, nodes.slice(0), data.slice(0));
     }
   }
 
@@ -2428,6 +2448,22 @@ export default class Listener extends Event {
           const breakMask = nodes[0].computedStyle.breakMask;
           this.emit(Listener.BREAK_MASK_NODE, nodes.slice(0), breakMask);
         }
+        else if (c instanceof PrevCommand) {
+          if (this.shiftKey) {
+            this.emit(Listener.PREV_NODE, nodes.slice(0), c.data.slice(0));
+          }
+          else {
+            this.emit(Listener.NEXT_NODE, nodes.slice(0), c.data.slice(0));
+          }
+        }
+        else if (c instanceof NextCommand) {
+          if (this.shiftKey) {
+            this.emit(Listener.NEXT_NODE, nodes.slice(0), c.data.slice(0));
+          }
+          else {
+            this.emit(Listener.PREV_NODE, nodes.slice(0), c.data.slice(0));
+          }
+        }
         else if (c instanceof RichCommand) {
           if (c.type === RichCommand.TEXT_ALIGN) {
             this.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
@@ -2706,6 +2742,8 @@ export default class Listener extends Event {
   static COLOR_ADJUST_NODE = 'COLOR_ADJUST_NODE';
   static REMOVE_NODE = 'REMOVE_NODE';
   static ADD_NODE = 'ADD_NODE';
+  static PREV_NODE = 'PREV_NODE';
+  static NEXT_NODE = 'NEXT_NODE';
   static GROUP_NODE = 'GROUP_NODE';
   static UN_GROUP_NODE = 'UN_GROUP_NODE';
   static BOOL_GROUP_NODE = 'BOOL_GROUP_NODE';

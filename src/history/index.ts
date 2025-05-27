@@ -24,6 +24,8 @@ import ConstrainProportionCommand from './ConstrainProportionCommand';
 import PointCommand from './PointCommand';
 import BoolGroupCommand from './BoolGroupCommand';
 import FlattenCommand from './FlattenCommand';
+import PrevCommand from './PrevCommand';
+import NextCommand from './NextCommand';
 
 export default {
   History,
@@ -52,4 +54,6 @@ export default {
   PointCommand,
   BoolGroupCommand,
   FlattenCommand,
+  PrevCommand,
+  NextCommand,
 };

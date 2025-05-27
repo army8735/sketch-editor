@@ -17,9 +17,9 @@ const htmlCanvas = `
   <div class="split"></div>
   <div class="item remove">删除</div>
   <div class="split"></div>
-<!--  <div class="item prev">前置一层</div>-->
-<!--  <div class="item next">后置一层</div>-->
-<!--  <div class="split"></div>-->
+  <div class="item prev">后置一层</div>
+  <div class="item next">前置一层</div>
+  <div class="split"></div>
   <div class="item lock">锁定<span></span>个图层</div>
   <div class="item un-lock">解锁<span></span>个图层</div>
   <div class="item hide">隐藏<span></span>个图层</div>
@@ -164,6 +164,12 @@ function init(listener: Listener) {
           listener.cancelEditGradient();
         }
         listener.state = state.NORMAL;
+      }
+      else if (classList.contains('prev')) {
+        listener.prev();
+      }
+      else if (classList.contains('next')) {
+        listener.next();
       }
     });
   }

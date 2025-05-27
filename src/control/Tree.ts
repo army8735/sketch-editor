@@ -129,12 +129,15 @@ export default class Tree {
     listener.on(Listener.HOVER_NODE, (node: Node) => {
       this.hover(node);
     });
+
     listener.on(Listener.UN_HOVER_NODE, () => {
       this.unHover();
     });
+
     listener.on(Listener.SELECT_NODE, (nodes: Node[]) => {
       this.select(nodes);
     });
+
     listener.on(Listener.REMOVE_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
         const uuid = item.uuid;
@@ -146,6 +149,7 @@ export default class Tree {
         }
       });
     });
+
     listener.on(Listener.ADD_NODE, (nodes: Node[], selected?: Node[]) => {
       nodes.forEach((item) => {
         const res = genNodeTree(item, item.struct.lv);
@@ -169,6 +173,7 @@ export default class Tree {
       });
       this.select(selected || nodes);
     });
+
     listener.on([Listener.GROUP_NODE, Listener.BOOL_GROUP_NODE], (groups: Group[], nodes: Node[][]) => {
       groups.forEach((group, i) => {
         const res = genNodeTree(group, group.struct.lv, true);
@@ -210,8 +215,8 @@ export default class Tree {
           }
         }
       });
-      // this.select(groups); SELECT事件后续触发
     });
+
     listener.on([Listener.UN_GROUP_NODE, Listener.UN_BOOL_GROUP_NODE], (nodes: Node[][], groups: Group[]) => {
       nodes.forEach((items, i) => {
         const uuid = groups[i].uuid;
@@ -247,12 +252,8 @@ export default class Tree {
           }
         }
       });
-      const list: Node[] = [];
-      nodes.forEach(item => {
-        list.push(...item);
-      });
-      // this.select(list); SELECT事件后续触发
     });
+
     listener.on(Listener.MASK_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
         const uuid = item.uuid;
@@ -287,6 +288,7 @@ export default class Tree {
         }
       });
     });
+
     listener.on(Listener.BREAK_MASK_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
         const uuid = item.uuid;
@@ -336,6 +338,7 @@ export default class Tree {
         }
       });
     });
+
     listener.on(Listener.RENAME_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
         const uuid = item.uuid;
@@ -347,6 +350,7 @@ export default class Tree {
         }
       });
     });
+
     listener.on(Listener.LOCK_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
         const uuid = item.uuid;
@@ -371,6 +375,7 @@ export default class Tree {
         }
       });
     });
+
     listener.on(Listener.VISIBLE_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
         const uuid = item.uuid;
@@ -389,6 +394,7 @@ export default class Tree {
         }
       });
     });
+
     listener.on(Listener.ART_BOARD_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
         const uuid = item.uuid;
@@ -435,6 +441,7 @@ export default class Tree {
         }
       });
     });
+
     listener.on(Listener.TEXT_CONTENT_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
         const uuid = item.uuid;
@@ -451,6 +458,7 @@ export default class Tree {
         }
       });
     });
+
     listener.on([Listener.FLATTEN_NODE, Listener.UN_FLATTEN_NODE], (add: Node[], remove: Node[]) => {
       add.forEach((item, i) => {
         const res = genNodeTree(item, item.struct.lv);
@@ -463,6 +471,46 @@ export default class Tree {
           const sibling = dl.parentElement!;
           sibling.before(dd);
           sibling.remove();
+        }
+      });
+    });
+
+    listener.on(Listener.PREV_NODE, (nodes: Node[], prev: (Node | undefined)[]) => {
+      nodes.forEach((item, i) => {
+        const uuid = item.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            const dd = dl.parentElement!;
+            const uuid2 = prev[i]?.uuid;
+            if (uuid2) {
+              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+              if (dl2) {
+                const dd2 = dl2.parentElement!;
+                dd.before(dd2);
+              }
+            }
+          }
+        }
+      });
+    });
+
+    listener.on(Listener.NEXT_NODE, (nodes: Node[], next: (Node | undefined)[]) => {
+      nodes.forEach((item, i) => {
+        const uuid = item.uuid;
+        if (uuid) {
+          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+          if (dl) {
+            const dd = dl.parentElement!;
+            const uuid2 = next[i]?.uuid;
+            if (uuid2) {
+              const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+              if (dl2) {
+                const dd2 = dl2.parentElement!;
+                dd.after(dd2);
+              }
+            }
+          }
         }
       });
     });
