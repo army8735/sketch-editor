@@ -10,7 +10,7 @@ module.exports = {
       .moveToElement('#tree .name[title="1"]', 5, 5)
       .mouseButtonDown(2)
       .mouseButtonUp(2)
-      .moveToElement('.sketch-editor-context-menu .item.prev', 5, 5)
+      .moveToElement('.sketch-editor-context-menu .item.next', 5, 5)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .pause(20)
