@@ -67,7 +67,7 @@ class OpacityPanel extends Panel {
       number.placeholder = '';
     });
     range.addEventListener('change', (e) => {
-      if (nodes.length) {
+      if (nodes.length && nexts.length) {
         listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => {
           return {
             prev: {

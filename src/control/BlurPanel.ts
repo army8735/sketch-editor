@@ -297,15 +297,15 @@ class BlurPanel extends Panel {
     };
 
     const onChange = () => {
-      if (nodes.length) {
+      if (nodes.length && nexts.length) {
         listener.history.addCommand(new BlurCommand(nodes, prevs.map((prev, i) => {
           return {
             prev,
             next: nexts[i],
           };
         })));
+        onBlur();
       }
-      onBlur();
     };
 
     const onBlur = () => {

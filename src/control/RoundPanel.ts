@@ -54,10 +54,14 @@ class RoundPanel extends Panel {
             next: nodes[i].map(item => clone(item.points)),
           };
         })));
-        polylines = [];
-        nodes = [];
-        prevPoints = [];
+        onBlur();
       }
+    };
+
+    const onBlur = () => {
+      polylines = [];
+      nodes = [];
+      prevPoints = [];
     };
 
     const range = panel.querySelector('input[type="range"]') as HTMLInputElement;
@@ -123,6 +127,7 @@ class RoundPanel extends Panel {
       this.silence = false;
     });
     number.addEventListener('change', () => onChange());
+    number.addEventListener('blur', () => onBlur());
 
     listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
       // 出现或消失
