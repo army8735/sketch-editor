@@ -1344,6 +1344,7 @@ export default class Listener extends Event {
         this.emit(Listener.ADD_NODE, [node]);
         this.state = state.NORMAL;
         this.emit(Listener.STATE_CHANGE, old, this.state);
+        this.emit(Listener.SELECT_NODE, [node]);
       }
     }
     else if (this.isMouseMove) {

@@ -171,7 +171,7 @@ export default class Tree {
           }
         }
       });
-      this.select(selected || nodes);
+      // this.select(selected || nodes);
     });
 
     listener.on([Listener.GROUP_NODE, Listener.BOOL_GROUP_NODE], (groups: Group[], nodes: Node[][]) => {
