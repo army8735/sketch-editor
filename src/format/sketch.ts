@@ -84,11 +84,14 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
     if (!item.fontData || !item.fontData._ref) {
       return false;
     }
-    const fontFamilyName = item.fontFamilyName;
-    if (font.hasRegister(fontFamilyName)) {
+    // const fontFamilyName = item.fontFamilyName;
+    // if (font.hasRegister(fontFamilyName)) {
+    //   return false;
+    // }
+    const postscriptName = item.postscriptNames[0];
+    if (postscriptName && font.hasRegister(postscriptName)) {
       return false;
     }
-    const postscriptName = item.postscriptNames[0];
     return !!postscriptName;
   });
   if (fontReferences.length) {
@@ -172,10 +175,10 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
       name: page.name,
       nameIsFixed: page.nameIsFixed,
       index,
-      constrainProportions: page.frame.constrainProportions,
+      constrainProportions: page.frame.constrainProportions || false,
       rule: {
-        baseX: page.horizontalRulerData.base,
-        baseY: page.verticalRulerData.base,
+        baseX: page.horizontalRulerData?.base || 0,
+        baseY: page.verticalRulerData?.base || 0,
       },
       style: {
         width: PAGE_W,
