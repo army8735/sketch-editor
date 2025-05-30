@@ -29,6 +29,7 @@ module.exports = {
       .click('#button7')
       .assert.value('#base64', '[3,{"name":"编组","children":[{"name":"2","children":[]},{"name":"1","children":[]}]},{"name":"ab","children":[{"name":"矩形","children":[]}]}]')
       .assert.elementPresent('#tree .name[title="矩形"]')
+      .assert.cssProperty('#side .round-panel', 'display', 'block')
 
       .keys(browser.Keys.META)
       .keys('z')
