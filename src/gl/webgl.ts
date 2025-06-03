@@ -626,7 +626,6 @@ export function drawTint(
   program: WebGLProgram,
   texture: WebGLTexture,
   tint: number[],
-  opacity: number,
 ) {
   const { pointBuffer, a_position, texBuffer, a_texCoords } = preSingle(gl, program);
   // 纹理单元
@@ -635,7 +634,6 @@ export function drawTint(
   gl.uniform1i(u_texture, 0);
   const u_tint = gl.getUniformLocation(program, 'u_tint');
   const color = color2gl(tint);
-  color[3] *= opacity;
   gl.uniform4f(u_tint, color[0] * color[3], color[1] * color[3], color[2] * color[3], color[3]);
   // 渲染并销毁
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

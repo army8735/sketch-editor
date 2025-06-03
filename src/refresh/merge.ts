@@ -52,6 +52,7 @@ export type Merge = {
   subList: Merge[]; // 子节点在可视范围外无需merge但父节点在内需要强制子节点merge
   isNew: boolean; // 新生成的merge，老的要么有merge结果，要么可视范围外有tempBbox
   isTop: boolean; // 是否是最上层，当嵌套时子Merge不是顶层
+  tint?: number[];
 };
 
 export function genMerge(
@@ -68,6 +69,9 @@ export function genMerge(
   const { structs, width: W, height: H } = root;
   const mergeList: Merge[] = [];
   const mergeHash: Merge[] = [];
+  // group的tint，最顶层生效，内嵌递归忽略，处于这个group下的非位图需生成tint
+  let tint: number[] | undefined;
+  const tintIndex: boolean[] = [];
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, lv, total, next } = structs[i];
     const { refreshLevel, computedStyle } = node;
@@ -94,27 +98,32 @@ export function genMerge(
       mixBlendMode,
       fill,
       fillEnable,
+      fillOpacity,
       hueRotate,
       saturate,
       brightness,
       contrast,
     } = computedStyle;
     // 特殊的group可以指定唯一的fill用作tint色调功能
-    const isGroup = node.isGroup;
-    let isGroupTint = false;
-    if (isGroup) {
+    if (!tint && node instanceof Group && !(node instanceof ShapeGroup)) {
       if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
-        isGroupTint = true;
+        tint = fill[0];
+        tint[3] *= fillOpacity[0];
+        tintIndex[i + total] = true;
       }
     }
+    const needTint = !!tint
+      && !node.textureTint[scaleIndex]?.available
+      && (node instanceof Geom
+        || node instanceof Text
+        || node instanceof ShapeGroup);
     // 非单节点透明需汇总子树，有mask的也需要，已经存在的无需汇总
     const needTotal =
-      ((opacity > 0 && opacity < 1) ||
-        mixBlendMode !== MIX_BLEND_MODE.NORMAL ||
-        isGroupTint) &&
-      total > 0 &&
-      !node.isShapeGroup &&
-      (!textureTotal[scaleIndex] || !textureTotal[scaleIndex]!.available);
+      ((opacity > 0 && opacity < 1)
+        || mixBlendMode !== MIX_BLEND_MODE.NORMAL)
+      && total > 0
+      && !(node instanceof ShapeGroup)
+      && (!textureTotal[scaleIndex] || !textureTotal[scaleIndex]!.available);
     let needShadow = false;
     for (let i = 0, len = shadow.length; i < len; i++) {
       if (shadowEnable[i] && shadow[i].color[3] > 0) {
@@ -160,7 +169,7 @@ export function genMerge(
     const needColor =
       hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
     // 记录汇总的同时以下标为k记录个类hash
-    if (needTotal || needShadow || needBlur || needMask || needColor) {
+    if (needTotal || needShadow || needBlur || needMask || needColor || needTint) {
       const t: Merge = {
         i,
         lv,
@@ -170,6 +179,7 @@ export function genMerge(
         subList: [],
         isNew: false,
         isTop: true, // 后续遍历检查时子的置false
+        tint,
       };
       mergeList.push(t);
       mergeHash[i] = t;
@@ -177,6 +187,9 @@ export function genMerge(
     // shapeGroup需跳过子节点，忽略子矢量的一切
     if (node instanceof ShapeGroup || textureTotal[scaleIndex]?.available) {
       i += total;
+    }
+    if (tintIndex[i]) {
+      tint = undefined;
     }
     if (textureMask[scaleIndex]?.available) {
       i += next;
@@ -191,7 +204,7 @@ export function genMerge(
       return b.lv - a.lv;
     });
   }
-  // console.warn('mergeList', mergeList.slice(0));
+  console.warn('mergeList', mergeList.slice(0));
   // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
@@ -236,7 +249,7 @@ export function genMerge(
   const mergeRecord: { bbox: Float64Array, m: Float64Array }[] = [];
   // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
   for (let j = 0, len = mergeList.length; j < len; j++) {
-    const { i, lv, total, node, valid, isNew } = mergeList[j];
+    const { i, lv, total, node, valid, isNew, tint } = mergeList[j];
     const { maskMode, visibility, opacity } = node.computedStyle;
     // 过滤可视范围外的，如果新生成的，则要统计可能存在mask影响后续节点数量
     if (!valid) {
@@ -301,6 +314,24 @@ export function genMerge(
       );
       if (t) {
         node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] = t;
+        res = t;
+        firstMerge = false;
+      }
+    }
+    // tint
+    if (tint) {
+      const t = genTint(
+        gl,
+        root,
+        node,
+        tint,
+        W,
+        H,
+        scale,
+        scaleIndex,
+      );
+      if (t) {
+        node.textureTint[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
         firstMerge = false;
       }
@@ -752,29 +783,12 @@ function genFilter(
     shadow,
     shadowEnable,
     blur,
-    fill,
-    fillEnable,
-    fillOpacity,
     hueRotate,
     saturate,
     brightness,
     contrast,
   } = node.computedStyle;
   const source = node.textureTarget[scaleIndex]!;
-  // group特殊的tint，即唯一的fill颜色用作色调tint替换当前非透明像素，shapeGroup是普通的矢量填充
-  if (node instanceof Group && !(node instanceof ShapeGroup)) {
-    if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
-      res = genTint(
-        gl,
-        root,
-        source,
-        fill[0] as number[],
-        fillOpacity[0],
-        W,
-        H,
-      );
-    }
-  }
   const sd: ComputedShadow[] = [];
   shadow.forEach((item, i) => {
     if (shadowEnable[i] && item.color[3] > 0) {
@@ -1736,13 +1750,19 @@ function genColorByMatrix(
 function genTint(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
-  textureTarget: TextureCache,
+  node: Node,
   tint: number[],
-  opacity: number,
   W: number,
   H: number,
+  scale: number,
+  scaleIndex: number,
 ) {
-  const { bbox, list } = textureTarget;
+  // 缓存仍然还在直接返回，无需重新生成
+  if (node.textureTint[scaleIndex]?.available) {
+    return node.textureTint[scaleIndex];
+  }
+  const target = node.textureTarget[scaleIndex]!;
+  const { bbox, list } = target;
   const programs = root.programs;
   const tintProgram = programs.tintProgram;
   gl.useProgram(tintProgram);
@@ -1765,7 +1785,7 @@ function genTint(
     else {
       frameBuffer = genFrameBufferWithTexture(gl, tex, w, h);
     }
-    t && drawTint(gl, tintProgram, t, tint, opacity);
+    t && drawTint(gl, tintProgram, t, tint);
     listR.push({
       bbox: bbox.slice(0),
       w,

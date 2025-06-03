@@ -3,10 +3,13 @@ import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JNode, Override, Props, TAG_NAME } from '../format';
 import { RefreshLevel } from '../refresh/level';
-import { StyleUnit } from '../style/define';
+import { Style, StyleUnit } from '../style/define';
 import Container from './Container';
 import Node from './Node';
+import Text from './Text';
+import Geom from './geom/Geom';
 import { clone } from '../util/type';
+import ShapeGroup from './geom/ShapeGroup';
 
 const EPS = 1e-4;
 
@@ -137,6 +140,28 @@ class Group extends Container {
     if (this.adjustPosAndSize()) {
       this.checkPosSizeUpward();
     }
+  }
+
+  override updateFormatStyle(style: Partial<Style>, cb?: (sync: boolean) => void) {
+    const res = super.updateFormatStyle(style, cb);
+    const keys = res.keys;
+    if (keys.includes('fill') || keys.includes('fillEnable') || keys.includes('fillOpacity')) {
+      const root = this.root!;
+      const struct = this.struct;
+      const total = struct.total;
+      const structs = root.structs;
+      let i = structs.indexOf(struct);
+      if (i > -1) {
+        i++;
+        for(let len = i + total; i < len; i++) {
+          const node = structs[i].node;
+          if (node instanceof Text || node instanceof Geom || node instanceof ShapeGroup) {
+            node.clearTint();
+          }
+        }
+      }
+    }
+    return res;
   }
 
   override clone(override?: Record<string, Override[]>) {

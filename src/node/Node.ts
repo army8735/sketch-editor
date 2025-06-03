@@ -100,6 +100,7 @@ class Node extends Event {
   textureTotal: Array<TextureCache | undefined>; // 局部子树缓存
   textureFilter: Array<TextureCache | undefined>; // 有filter时的缓存
   textureMask: Array<TextureCache | undefined>; // 作为mask时的缓存
+  textureTint: Array<TextureCache | undefined>; // tint的缓存
   textureTarget: Array<TextureCache | undefined>; // 指向自身所有缓存中最优先的那个
   textureOutline: Array<TextureCache | undefined>; // 轮廓mask特殊使用
   tempOpacity: number; // 局部根节点merge汇总临时用到的2个
@@ -168,6 +169,7 @@ class Node extends Event {
     this.textureTotal = [];
     this.textureFilter = [];
     this.textureMask = [];
+    this.textureTint = [];
     this.textureTarget = [];
     this.textureOutline = [];
     // merge过程中相对于merge顶点作为局部根节点时暂存的数据
@@ -586,6 +588,7 @@ class Node extends Event {
       this.tempBbox = undefined;
       this.textureFilter.forEach((item) => item?.release());
       this.textureMask.forEach((item) => item?.release());
+      this.textureTint.forEach((item) => item?.release());
       this.resetTextureTarget();
     }
   }
@@ -779,10 +782,13 @@ class Node extends Event {
   }
 
   resetTextureTarget() {
-    const { textureMask, textureFilter, textureTotal, textureCache } = this;
+    const { textureTint, textureMask, textureFilter, textureTotal, textureCache } = this;
     // 组可能没有自身内容但有total
     for (let i = 0, len = Math.max(textureCache.length, textureTotal.length); i < len; i++) {
-      if (textureMask[i]?.available) {
+      if (textureTint[i]?.available) {
+        this.textureTarget[i] = textureTint[i];
+      }
+      else if (textureMask[i]?.available) {
         this.textureTarget[i] = textureMask[i];
       }
       else if (textureFilter[i]?.available) {
@@ -817,6 +823,7 @@ class Node extends Event {
     this.textureTotal.forEach((item) => item?.release());
     this.textureFilter.forEach((item) => item?.release());
     this.textureMask.forEach((item) => item?.release());
+    this.textureTint.forEach((item) => item?.release());
     this.textureOutline.forEach((item) => item?.release());
   }
 
@@ -837,6 +844,7 @@ class Node extends Event {
     this.textureMask.forEach((item) => item?.release());
     this.resetTextureTarget();
     this.struct.next = 0;
+    this.refreshLevel |= RefreshLevel.MASK;
     // mask切换影响父级组的bbox
     if (upwards) {
       let p = this.parent;
@@ -850,6 +858,12 @@ class Node extends Event {
         p = p.parent;
       }
     }
+  }
+
+  clearTint() {
+    this.textureTint.forEach((item) => item?.release());
+    this.resetTextureTarget();
+    this.refreshLevel |= RefreshLevel.TINT;
   }
 
   remove(cb?: (sync: boolean) => void) {
