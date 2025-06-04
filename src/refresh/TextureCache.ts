@@ -64,7 +64,7 @@ class TextureCache {
 
   release() {
     if (!this.available) {
-      return;
+      return false;
     }
     this.available = false;
     // this.gl.deleteTexture(this.texture);
@@ -73,17 +73,18 @@ class TextureCache {
         this.gl.deleteTexture(item.t);
       }
     });
+    return true;
   }
 
   releaseImg(id: string, url: string) {
     if (!this.available) {
-      return;
+      return false;
     }
     this.available = false;
     const o = HASH[id];
     const item = o[url];
     if (!item) {
-      return;
+      return false;
     }
     item.count--;
     if (!item.count) {
@@ -96,6 +97,7 @@ class TextureCache {
         }
       });
     }
+    return true;
   }
 
   static getInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, cache: CanvasCache, bbox: Float64Array) {

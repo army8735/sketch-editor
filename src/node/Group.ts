@@ -157,6 +157,12 @@ class Group extends Container {
           const node = structs[i].node;
           if (node instanceof Text || node instanceof Geom || node instanceof ShapeGroup) {
             node.clearTint();
+            // 如果节点有mask、filter，需清理重新生成，同时向上清理total
+            if (node.mask) {
+              node.mask.clearMask();
+            }
+            node.clearCache();
+            node.clearCacheUpward();
           }
         }
       }

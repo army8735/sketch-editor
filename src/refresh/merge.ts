@@ -204,7 +204,7 @@ export function genMerge(
       return b.lv - a.lv;
     });
   }
-  console.warn('mergeList', mergeList.slice(0));
+  // console.warn('mergeList', mergeList.slice(0));
   // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
@@ -267,7 +267,25 @@ export function genMerge(
       break;
     }
     let res: TextureCache | undefined;
-    // 先尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
+    // tint优先级最高，仅单个限定节点（矢量/文字）会有，对自身内容的色调改变
+    if (tint) {
+      const t = genTint(
+        gl,
+        root,
+        node,
+        tint,
+        W,
+        H,
+        scale,
+        scaleIndex,
+      );
+      if (t) {
+        node.textureTint[scaleIndex] = node.textureTarget[scaleIndex] = t;
+        res = t;
+        firstMerge = false;
+      }
+    }
+    // 尝试生成此节点汇总纹理，无论是什么效果，都是对汇总后的起效，单个节点的绘制等于本身纹理缓存
     if (!node.textureTotal[scaleIndex]?.available) {
       const t = genTotal(
         gl,
@@ -281,7 +299,8 @@ export function genMerge(
         scale,
         scaleIndex,
       );
-      if (t) {
+      // 这里判断特殊，因为单节点genTotal可能返回了cache自身，同时有tint，不能让cache覆盖了tint
+      if (t && !res) {
         node.textureTotal[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
         firstMerge = false;
@@ -314,24 +333,6 @@ export function genMerge(
       );
       if (t) {
         node.textureMask[scaleIndex] = node.textureTarget[scaleIndex] = t;
-        res = t;
-        firstMerge = false;
-      }
-    }
-    // tint
-    if (tint) {
-      const t = genTint(
-        gl,
-        root,
-        node,
-        tint,
-        W,
-        H,
-        scale,
-        scaleIndex,
-      );
-      if (t) {
-        node.textureTint[scaleIndex] = node.textureTarget[scaleIndex] = t;
         res = t;
         firstMerge = false;
       }
@@ -485,7 +486,7 @@ function genTotal(
 ) {
   // 缓存仍然还在直接返回，无需重新生成
   if (node.textureTotal[scaleIndex]?.available) {
-    // bitmap的total都是自己
+    // bitmap的total默认都是自己的cache，区分出来
     if (force) {
       if (node.textureTotal[scaleIndex] !== node.textureCache[scaleIndex]) {
         return node.textureTotal[scaleIndex];
@@ -504,7 +505,7 @@ function genTotal(
   // 单个叶子节点也不需要，就是本身节点的内容
   if ((!total || (node instanceof ShapeGroup)) && !force) {
     let target = node.textureCache[scaleIndex];
-    if ((!target || !target.available) && node.hasContent) {
+    if (!target?.available && node.hasContent) {
       node.genTexture(gl, scale, scaleIndex);
       target = node.textureCache[scaleIndex];
     }
@@ -581,7 +582,7 @@ function genTotal(
     assignMatrix(node2.tempMatrix, matrix);
     let target2 = node2.textureTarget[scaleIndex];
     // 可能没生成，存在于一开始在可视范围外的节点情况，且当时也没有进行合成
-    if (!target2 && node2.hasContent) {
+    if (!target2?.available && node2.hasContent) {
       node2.genTexture(gl, scale, scaleIndex);
       target2 = node2.textureTarget[scaleIndex];
     }
@@ -1761,7 +1762,17 @@ function genTint(
   if (node.textureTint[scaleIndex]?.available) {
     return node.textureTint[scaleIndex];
   }
-  const target = node.textureTarget[scaleIndex]!;
+  if (!node.textureCache[scaleIndex]?.available) {
+
+  }
+  let target = node.textureTarget[scaleIndex];
+  if (!target?.available && node.hasContent) {
+    node.genTexture(gl, scale, scaleIndex);
+    target = node.textureCache[scaleIndex];
+  }
+  if (!target?.available) {
+    return;
+  }
   const { bbox, list } = target;
   const programs = root.programs;
   const tintProgram = programs.tintProgram;
@@ -2281,7 +2292,7 @@ function genMask(
         }
         let target2 = node2.textureTarget[scaleIndex];
         // 可能没生成，存在于一开始在可视范围外的节点情况，且当时也没有进行合成
-        if (!target2 && node2.hasContent) {
+        if (!target2?.available && node2.hasContent) {
           node2.genTexture(gl, scale, scaleIndex);
           target2 = node2.textureTarget[scaleIndex];
         }

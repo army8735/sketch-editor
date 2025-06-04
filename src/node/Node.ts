@@ -820,10 +820,26 @@ class Node extends Event {
       });
     }
     // 可能total就是cache自身，前面includeSelf已经判断过，无论哪种情况都可以不关心
-    this.textureTotal.forEach((item) => item?.release());
-    this.textureFilter.forEach((item) => item?.release());
-    this.textureMask.forEach((item) => item?.release());
-    this.textureTint.forEach((item) => item?.release());
+    this.textureTotal.forEach((item) => {
+      if (item?.release()) {
+        this.refreshLevel |= RefreshLevel.CACHE;
+      }
+    });
+    this.textureFilter.forEach((item) => {
+      if (item?.release()) {
+        this.refreshLevel |= RefreshLevel.FILTER;
+      }
+    });
+    this.textureMask.forEach((item) => {
+      if (item?.release()) {
+        this.refreshLevel |= RefreshLevel.MASK;
+      }
+    });
+    this.textureTint.forEach((item) => {
+      if (item?.release()) {
+        this.refreshLevel |= RefreshLevel.TINT;
+      }
+    });
     this.textureOutline.forEach((item) => item?.release());
   }
 
