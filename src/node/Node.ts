@@ -77,6 +77,7 @@ class Node extends Event {
   mask?: Node; // 如果被mask遮罩，指向对方引用
   parent?: Container;
   isDestroyed: boolean;
+  isMounted: boolean;
   struct: Struct;
   refreshLevel: RefreshLevel;
   _opacity: number; // 世界透明度
@@ -146,6 +147,7 @@ class Node extends Event {
     this.minWidth = 0.5;
     this.minHeight = 0.5;
     this.isDestroyed = true;
+    this.isMounted = false;
     this.struct = {
       node: this,
       num: 0,
@@ -207,6 +209,7 @@ class Node extends Event {
 
   // layout后触发，渲染之前
   didMount() {
+    this.isMounted = true;
   }
 
   lay(data: LayoutData) {
@@ -1534,6 +1537,12 @@ class Node extends Event {
       else if (left.u === StyleUnit.PERCENT) {
         left.v += (dx1 * 100) / pw;
       }
+      else if (width.u === StyleUnit.PX) {
+        width.v = dx2 + this.width - dx1;
+      }
+      else if (width.u === StyleUnit.PERCENT) {
+        width.v = (dx2 + this.width - dx1) * 100 / parent.width;
+      }
       computedStyle.left += dx1;
     }
     if (dx2) {
@@ -1560,6 +1569,12 @@ class Node extends Event {
       }
       else if (top.u === StyleUnit.PERCENT) {
         top.v += (dy1 * 100) / ph;
+      }
+      else if (height.u === StyleUnit.PX) {
+        height.v = dy2 + this.height - dy1;
+      }
+      else if (height.u === StyleUnit.PERCENT) {
+        height.v = (dy2 + this.height - dy1) * 100 / parent.height;
       }
       computedStyle.top += dy1;
     }

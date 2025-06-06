@@ -220,59 +220,72 @@ class Text extends Node {
   }
 
   override didMount() {
+    const isMounted = this.isMounted;
     super.didMount();
-    const textBehaviour = (this.props as TextProps).textBehaviour;
-    const { style, computedStyle, width, height, lineBoxList } = this;
-    // 特殊逻辑，由于字体的不确定性，自动尺寸的文本框在其它环境下中心点对齐可能会偏差，因此最初的尺寸位置需记录，
-    // 待布局后css标准化，双击编辑文本有改变后会重回正常尺寸
-    if (textBehaviour === 'auto' || textBehaviour === 'autoH') {
-      let check = false;
-      const update: any = {};
-      if (textBehaviour === 'auto' && style.width.u !== StyleUnit.AUTO) {
-        let max = 0;
-        lineBoxList.forEach(item => {
-          max = Math.max(max, item.width);
-        });
-        const d = max - width;
-        if (d) {
+    // 首次布局特殊逻辑，由于字体的不确定性，自动尺寸的文本框在其它环境下中心点对齐可能会偏差，因此最初先按自动布局，
+    // 完成后这里和css的width/height对比进行差值计算偏移，并还原对应的w/h为auto。
+    if (!isMounted) {
+      const textBehaviour = (this.props as TextProps).textBehaviour;
+      const { style, computedStyle, parent } = this;
+      const {
+        left,
+        right,
+        top,
+        bottom,
+        width,
+        height,
+        transformOrigin,
+      } = style;
+      let reset = false;
+      if (textBehaviour === 'auto'
+        && width.u !== StyleUnit.AUTO
+        && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO)) {
+        this.style.width = { v: 0, u: StyleUnit.AUTO };
+        let d = 0;
+        if (width.u === StyleUnit.PX) {
+          d = this.width - width.v;
+        }
+        else if (width.u === StyleUnit.PERCENT) {
+          d = this.width - width.v * 0.01 * parent!.width;
+        }
+        if (d && transformOrigin[0].u === StyleUnit.PERCENT) {
           if (computedStyle.textAlign === TEXT_ALIGN.LEFT) {
-            this.adjustPosAndSizeSelf(d * 0.5, 0, 0, 0);
+            const v = d * transformOrigin[0].v * 0.01;
+            this.adjustPosAndSizeSelf(v, 0, v, 0);
+            reset = true;
           }
           else if (computedStyle.textAlign === TEXT_ALIGN.RIGHT) {
-            this.adjustPosAndSizeSelf(-d * 0.5, 0, 0, 0);
+            const v = d * transformOrigin[0].v * 0.01;
+            this.adjustPosAndSizeSelf(-v, 0, -v, 0);
+            reset = true;
           }
-          update.width = 'auto';
-          check = true;
-        }
-        else {
-          this.style.width = {
-            v: 0,
-            u: StyleUnit.AUTO,
-          };
         }
       }
-      if (this.style.height.u !== StyleUnit.AUTO) {
-        let last = lineBoxList[lineBoxList.length - 1];
-        const d = last ? (last.y + last.height - height) : -height;
-        if (d) {
+      if ((textBehaviour === 'auto' || textBehaviour === 'autoH')
+        && height.u !== StyleUnit.AUTO
+        && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO)) {
+        this.style.height = { v: 0, u: StyleUnit.AUTO };
+        let d = 0;
+        if (height.u === StyleUnit.PX) {
+          d = this.height - height.v;
+        }
+        else if (height.u === StyleUnit.PERCENT) {
+          d = this.height - height.v * 0.01 * parent!.height;
+        }
+        if (d && transformOrigin[1].u === StyleUnit.PERCENT) {
           if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.TOP) {
-            this.adjustPosAndSizeSelf(0, d * 0.5, 0, 0);
+            const v = d * transformOrigin[1].v * 0.01;
+            this.adjustPosAndSizeSelf(0, v, 0, v);
+            reset = true;
           }
           else if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
-            this.adjustPosAndSizeSelf(0, -d * 0.5, 0, 0);
+            const v = d * transformOrigin[1].v * 0.01;
+            this.adjustPosAndSizeSelf(0, -v, 0, -v);
+            reset = true;
           }
-          update.height = 'auto';
-          check = true;
-        }
-        else {
-          this.style.height = {
-            v: 0,
-            u: StyleUnit.AUTO,
-          };
         }
       }
-      if (check) {
-        this.updateStyle(update);
+      if (reset) {
         this.checkPosSizeUpward();
       }
     }
@@ -289,10 +302,27 @@ class Text extends Node {
       width,
       height,
     } = style;
-    const autoW = width.u === StyleUnit.AUTO
+    let autoW = width.u === StyleUnit.AUTO
       && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
-    const autoH = height.u === StyleUnit.AUTO
+    let autoH = height.u === StyleUnit.AUTO
       && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
+    /**
+     * 首次布局需考虑由于字体的不确定性，导致自动尺寸的文本框在其它环境下中心点对齐可能会偏差，
+     * 此时数据width是固定尺寸，视为非固定即autoW/autoH，在didMount()时机再做调整（向上影响尺寸位置）。
+     */
+    if (!this.isMounted) {
+      const textBehaviour = (this.props as TextProps).textBehaviour;
+      if (textBehaviour === 'auto'
+        && width.u !== StyleUnit.AUTO
+        && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO)) {
+        autoW = true;
+      }
+      if ((textBehaviour === 'auto' || textBehaviour === 'autoH')
+        && height.u !== StyleUnit.AUTO
+        && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO)) {
+        autoH = true;
+      }
+    }
     let i = 0;
     let length = content.length;
     let perW: number;
@@ -476,11 +506,27 @@ class Text extends Node {
         continue;
       }
       // 预估法获取测量结果
-      const {
+      let {
         hypotheticalNum: num,
         rw,
         newLine,
       } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
+      // if (content === '意外保障金') {
+      //   if (W - x === 139) {
+      //     if (i) {
+      //       rw = 30;
+      //     }
+      //     else {
+      //       num = 4;
+      //       rw = 120;
+      //       newLine = true;
+      //     }
+      //   }
+      //   else {
+      //     rw = 150;
+      //   }
+      // }
+      // console.log(i, len, content, W - x, perW, letterSpacing, ';', num, rw, newLine);
       const textBox = new TextBox(
         x,
         y,
@@ -497,6 +543,7 @@ class Text extends Node {
         letterSpacing,
         textDecoration,
       );
+      // console.log(i, num, content.slice(i, i + num), letterSpacing, rw, textBox);
       lineBox.add(textBox);
       i += num;
       maxW = Math.max(maxW, Math.ceil(rw + x));
