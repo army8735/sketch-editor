@@ -152,7 +152,14 @@ class TextPanel extends Panel {
             prevs.push(node.getRich());
           }
           // 按上下可能是多个值的情况
-          if (!isInput) {
+          if (isInput) {
+            // 输入等onchange
+            const lv = node.updateRangeStyleData(start, end - start, {
+              [key]: value,
+            });
+            lvs.push(lv);
+          }
+          else {
             node.rich.forEach((rich, i) => {
               if (rich.location < end && rich.location + rich.length > start) {
                 let d = 0;
@@ -184,13 +191,6 @@ class TextPanel extends Panel {
             });
             lvs.push(RefreshLevel.NONE);
           }
-          else {
-            // 输入等onchange
-            const lv = node.updateRangeStyleData(start, end - start, {
-              [key]: value,
-            });
-            lvs.push(lv);
-          }
           nexts.push(node.getRich());
           node.setCursorByIndex(start);
           node.setCursorByIndex(end, true);
@@ -208,7 +208,14 @@ class TextPanel extends Panel {
             prevs.push(node.getRich());
           }
           // 按上下可能是多个值的情况
-          if (!isInput) {
+          if (isInput) {
+            const lv = node.updateRangeStyleData(0, node._content.length, {
+              [key]: value,
+            });
+            lvs.push(lv);
+          }
+          // 输入统一改为单个值比较简单等onchange
+          else {
             let d = 0;
             if (input.placeholder) {
               d = value > 0 ? 1 : -1;
@@ -234,13 +241,6 @@ class TextPanel extends Panel {
               });
             });
             lvs.push(RefreshLevel.NONE);
-          }
-          // 输入统一改为单个值比较简单等onchange
-          else {
-            const lv = node.updateRangeStyleData(0, node._content.length, {
-              [key]: value,
-            });
-            lvs.push(lv);
           }
           nexts.push(node.getRich());
         });
@@ -287,7 +287,6 @@ class TextPanel extends Panel {
         else if (key === 'lineHeight') {
           listener.emit(Listener.LINE_HEIGHT_NODE, nodes.slice(0));
         }
-        this.show(this.nodes);
         nodes = [];
         prevs = [];
         nexts = [];
@@ -381,7 +380,6 @@ class TextPanel extends Panel {
           listener.history.addCommand(new RichCommand(nodes, data, RichCommand.FONT_FAMILY));
           listener.select.updateSelect(nodes);
           listener.emit(Listener.FONT_FAMILY_NODE, nodes.slice(0));
-          this.show(this.nodes);
         }
       }
       else if (key === 'fontWeight') {

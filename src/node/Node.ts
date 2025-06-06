@@ -1153,8 +1153,13 @@ class Node extends Event {
     return keys;
   }
 
-  refresh(lv = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
-    this.root?.addUpdate(this, [], lv, false, false, cb);
+  refresh(data: RefreshLevel | string[] = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
+    if (Array.isArray(data)) {
+      this.root?.addUpdate(this, data, undefined, false, false, cb);
+    }
+    else {
+      this.root?.addUpdate(this, [], data, false, false, cb);
+    }
   }
 
   getStyle() {
