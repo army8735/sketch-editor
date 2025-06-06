@@ -13,8 +13,7 @@ import picker from './picker';
 import state from './state';
 import Panel from './Panel';
 import { Rich, TextProps } from '../format';
-import fontInfo, { FontData } from '../style/font';
-import font from '../style/font';
+import font, { FontData } from '../style/font';
 import inject from '../util/inject';
 import { color2rgbaStr } from '../style/css';
 import { RefreshLevel } from '../refresh/level';
@@ -183,6 +182,7 @@ class TextPanel extends Panel {
                 });
               }
             });
+            lvs.push(RefreshLevel.NONE);
           }
           else {
             // 输入等onchange
@@ -233,6 +233,7 @@ class TextPanel extends Panel {
                 [key]: getRichKeyValue(rich, key, d),
               });
             });
+            lvs.push(RefreshLevel.NONE);
           }
           // 输入统一改为单个值比较简单等onchange
           else {
@@ -252,7 +253,7 @@ class TextPanel extends Panel {
         // 输入fontSize等如果只触发input，不会刷新，需等change才会；按箭头则直接change事件
         if (lvs.length) {
           nodes.forEach((node, i) => {
-            if (lvs[i]) {
+            if (lvs[i] !== RefreshLevel.NONE) {
               node.refresh(lvs[i]);
             }
           });
@@ -963,7 +964,7 @@ function getRichKeyValue(rich: Rich, key: 'fontSize' | 'letterSpacing' | 'lineHe
   let p = rich[key];
   // 0表示auto，需从fontFamily何fontSize自动计算
   if (!p && key === 'lineHeight') {
-    const data = fontInfo.data[rich.fontFamily];
+    const data = font.data[rich.fontFamily];
     if (data) {
       p = rich.fontSize * data.lhr;
     }
