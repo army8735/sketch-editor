@@ -10,7 +10,7 @@ import { ComputedGradient, ComputedPattern } from '../style/define';
 import { color2rgbaStr, getCssFillStroke, getCssStrokePosition } from '../style/css';
 import Panel from './Panel';
 import { StrokeStyle } from '../format';
-import StrokeCommand, { StrokeData } from '../history/StrokeCommand';
+import StrokeCommand from '../history/StrokeCommand';
 import state from './state';
 
 const html = `
@@ -107,6 +107,7 @@ class StrokePanel extends Panel {
     let nodes: Node[] = [];
     let prevs: StrokeStyle[] = [];
     let nexts: StrokeStyle[] = [];
+    let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
     let indexes: number[] = [];
     let index: number;
 
@@ -117,13 +118,13 @@ class StrokePanel extends Panel {
         })), independence);
         onBlur();
       }
-      // listener.gradient.hide();
     };
 
     const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
+      keys = [];
       indexes = [];
     };
 
@@ -364,6 +365,7 @@ class StrokePanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      keys = [];
       const n = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
@@ -386,15 +388,17 @@ class StrokePanel extends Panel {
         };
         nexts.push(o);
         const prev = prevs[i].strokeWidth[index];
-        let next = n;
-        let d = 0;
         if (isInput) {
-          d = next - prev;
-          if (!i) {
+          o.strokeWidth[index] = n;
+          const k = node.updateStyleData(o);
+          keys.push(k);
+          if (input.placeholder) {
             input.placeholder = '';
           }
         }
         else {
+          let next = n;
+          let d = 0;
           // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
           if (next === 0) {
             next = -1;
@@ -425,13 +429,13 @@ class StrokePanel extends Panel {
           next = prev + d;
           next = Math.max(next, 0);
           next = Math.min(next, 100);
+          if (d) {
+            o.strokeWidth[index] = next;
+            node.updateStyle(o);
+          }
           if (!i) {
             input.value = input.placeholder ? '' : next.toString();
           }
-        }
-        if (d) {
-          o.strokeWidth[index] = next;
-          node.updateStyle(o);
         }
       });
       if (nodes.length) {
@@ -445,6 +449,13 @@ class StrokePanel extends Panel {
       const tagName = input.tagName.toUpperCase();
       if (tagName !== 'INPUT') {
         return;
+      }
+      if (keys.length) {
+        nodes.forEach((node, i) => {
+          if (keys[i].length) {
+            node.refresh(keys[i]);
+          }
+        });
       }
       pickCallback();
     });

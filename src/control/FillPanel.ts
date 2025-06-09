@@ -12,7 +12,6 @@ import Panel from './Panel';
 import { FillStyle } from '../format';
 import FillCommand from '../history/FillCommand';
 import state from './state';
-import { RefreshLevel } from '../refresh/level';
 
 const html = `
   <h4 class="panel-title">填充</h4>
