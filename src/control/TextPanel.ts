@@ -142,6 +142,7 @@ class TextPanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      lvs = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       if (listener.state === state.EDIT_TEXT) {
         const node = this.nodes[0];

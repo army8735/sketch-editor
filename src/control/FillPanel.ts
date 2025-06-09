@@ -10,8 +10,9 @@ import Listener from './Listener';
 import { ComputedGradient, ComputedPattern, GRADIENT, PATTERN_FILL_TYPE } from '../style/define';
 import Panel from './Panel';
 import { FillStyle } from '../format';
-import FillCommand, { FillData } from '../history/FillCommand';
+import FillCommand from '../history/FillCommand';
 import state from './state';
+import { RefreshLevel } from '../refresh/level';
 
 const html = `
   <h4 class="panel-title">填充</h4>
@@ -141,6 +142,7 @@ class FillPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: FillStyle[] = [];
     let nexts: FillStyle[] = [];
+    let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
     let indexes: number[] = [];
     let index: number;
 
@@ -152,13 +154,13 @@ class FillPanel extends Panel {
         })), independence);
         onBlur();
       }
-      // listener.gradient.hide();
     };
 
     const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
+      keys = [];
       indexes = [];
     };
 
@@ -339,34 +341,35 @@ class FillPanel extends Panel {
     });
 
     // 颜色input防止无效输入，undo/redo干扰输入
-    panel.addEventListener('keydown', (e) => {
-      const target = e.target as HTMLInputElement;
-      if (target.tagName.toUpperCase() === 'INPUT' && target.type === 'text') {
-        const { keyCode, code } = e;
-        if (e.metaKey || listener.isWin && e.ctrlKey || e.shiftKey || e.altKey) {
-        }
-        else if (keyCode >= 48 && keyCode <= 57 // 0-9
-          || /Digit\d/.test(code)
-          || keyCode >= 37 && keyCode <= 40 // 上下左右
-          || ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(code)
-          || keyCode >= 65 && keyCode <= 90 // a-z
-          || /Key[A-Z]/.test(code)
-          || keyCode === 8 // backspace
-          || code === 'Backspace'
-          || keyCode === 46 // delete
-          || code === 'Delete'
-          || keyCode === 27 // esc
-          || code === 'Escape'
-          || keyCode === 13 // enter
-          || code === 'Enter'
-          || keyCode === 20 // capslock
-          || code === 'CapsLock'
-        ) {}
-        else {
-          e.preventDefault();
-        }
-      }
-    });
+    // panel.addEventListener('keydown', (e) => {
+    //   const target = e.target as HTMLInputElement;
+    //   if (target.tagName.toUpperCase() === 'INPUT' && target.type === 'text') {
+    //     const { keyCode, code } = e;
+    //     if (e.metaKey || listener.isWin && e.ctrlKey || e.shiftKey || e.altKey) {
+    //     }
+    //     else if (keyCode >= 48 && keyCode <= 57 // 0-9
+    //       || /Digit\d/.test(code)
+    //       || keyCode >= 37 && keyCode <= 40 // 上下左右
+    //       || ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(code)
+    //       || keyCode >= 65 && keyCode <= 90 // a-z
+    //       || /Key[A-Z]/.test(code)
+    //       || keyCode === 8 // backspace
+    //       || code === 'Backspace'
+    //       || keyCode === 46 // delete
+    //       || code === 'Delete'
+    //       || keyCode === 27 // esc
+    //       || code === 'Escape'
+    //       || keyCode === 13 // enter
+    //       || code === 'Enter'
+    //       || keyCode === 20 // capslock
+    //       || code === 'CapsLock'
+    //     ) {
+    //     }
+    //     else {
+    //       e.preventDefault();
+    //     }
+    //   }
+    // });
 
     panel.addEventListener('input', (e) => {
       this.silence = true;
@@ -379,6 +382,7 @@ class FillPanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      keys = [];
       if (input.type === 'text') {
         const value = color2rgbaInt(input.value);
         this.nodes.forEach((node, i) => {
@@ -399,7 +403,8 @@ class FillPanel extends Panel {
           };
           nexts.push(o);
           o.fill[index] = value;
-          node.updateStyle(o);
+          const k = node.updateStyleData(o);
+          keys.push(k);
         });
         input.placeholder = '';
         const b = line.querySelector('.picker-btn b') as HTMLElement;
@@ -426,15 +431,17 @@ class FillPanel extends Panel {
           };
           nexts.push(o);
           const prev = prevs[i].fillOpacity[index] * 100;
-          let next = n;
-          let d = 0;
           if (isInput) {
-            d = next - prev;
-            if (!i) {
+            o.fillOpacity[index] = n * 0.01;
+            const k = node.updateStyleData(o);
+            keys.push(k);
+            if (input.placeholder) {
               input.placeholder = '';
             }
           }
           else {
+            let next = n;
+            let d = 0;
             // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
             if (next === 0) {
               next = -1;
@@ -457,13 +464,13 @@ class FillPanel extends Panel {
             next = prev + d;
             next = Math.max(next, 0);
             next = Math.min(next, 100);
+            if (d) {
+              o.fillOpacity[index] = next * 0.01;
+              node.updateStyle(o);
+            }
             if (!i) {
               input.value = input.placeholder ? '' : next.toString();
             }
-          }
-          if (d) {
-            o.fillOpacity[index] = next * 0.01;
-            node.updateStyle(o);
           }
         });
       }
@@ -516,6 +523,13 @@ class FillPanel extends Panel {
         }
       }
       else if (tagName === 'INPUT') {
+        if (keys.length) {
+          nodes.forEach((node, i) => {
+            if (keys[i].length) {
+              node.refresh(keys[i]);
+            }
+          });
+        }
         pickCallback();
       }
     });
