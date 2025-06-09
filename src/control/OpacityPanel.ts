@@ -34,11 +34,13 @@ class OpacityPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: number[] = [];
     let nexts: number[] = [];
+    let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
 
     const onBlur = () => {
       nodes = [];
       prevs = [];
       nexts = [];
+      keys = [];
     };
 
     range.addEventListener('input', (e) => {
@@ -91,19 +93,28 @@ class OpacityPanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      keys = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const n = Math.min(100, Math.max(0, parseFloat(number.value) || 0));
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.opacity * 100;
-        let next = n;
-        let d = 0;
+        if (isFirst) {
+          nodes.push(node);
+          prevs.push(prev * 0.01);
+        }
         if (isInput) {
-          d = next - prev;
-          if (!i) {
+          nexts.push(n * 0.01);
+          const k = node.updateStyleData({
+            opacity: n * 0.01,
+          });
+          keys.push(k);
+          if (number.placeholder) {
             number.placeholder = '';
           }
         }
         else {
+          let next = n;
+          let d = 0;
           // 由于min/max限制，在极小值的时候下键获取的值不再是-1而是0，仅会发生在multi情况，单个直接被限制min/max不会有input事件
           if (next === 0) {
             next = -1;
@@ -126,19 +137,15 @@ class OpacityPanel extends Panel {
           next = prev + d;
           next = Math.max(next, 0);
           next = Math.min(next, 100);
+          nexts.push(next * 0.01);
+          if (prev !== next) {
+            node.updateStyle({
+              opacity: next * 0.01,
+            });
+          }
           if (!i) {
             number.value = number.placeholder ? '' : next.toString();
           }
-        }
-        if (d && prev !== next) {
-          node.updateStyle({
-            opacity: next * 0.01,
-          });
-          if (isFirst) {
-            nodes.push(node);
-            prevs.push(prev * 0.01);
-          }
-          nexts.push(next * 0.01);
         }
       });
       range.value = number.value || '0';
@@ -150,6 +157,13 @@ class OpacityPanel extends Panel {
     });
     number.addEventListener('change', (e) => {
       if (nodes.length) {
+        if (keys.length) {
+          nodes.forEach((node, i) => {
+            if (keys[i].length) {
+              node.refresh(keys[i]);
+            }
+          });
+        }
         listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => ({
           prev: {
             opacity: prev,
