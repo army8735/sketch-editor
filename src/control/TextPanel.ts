@@ -203,7 +203,7 @@ class TextPanel extends Panel {
         }
       }
       else {
-        this.nodes.forEach((node) => {
+        this.nodes.forEach((node, i) => {
           if (isFirst) {
             nodes.push(node);
             prevs.push(node.getRich());
@@ -214,6 +214,9 @@ class TextPanel extends Panel {
               [key]: value,
             });
             lvs.push(lv);
+            if (input.placeholder) {
+              input.placeholder = '';
+            }
           }
           // 输入统一改为单个值比较简单等onchange
           else {
@@ -242,6 +245,10 @@ class TextPanel extends Panel {
               });
             });
             lvs.push(RefreshLevel.NONE);
+            if (!i) {
+              const next = d + prevs[0][0][key];
+              input.value = input.placeholder ? '' : next.toString();
+            }
           }
           nexts.push(node.getRich());
         });
