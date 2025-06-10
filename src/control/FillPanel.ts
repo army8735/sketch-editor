@@ -442,13 +442,11 @@ class FillPanel extends Panel {
           }
         });
       }
-      if (nodes.length) {
-        listener.emit(Listener.FILL_NODE, nodes.slice(0));
-      }
       this.silence = false;
     });
 
     panel.addEventListener('change', (e) => {
+      this.silence = true;
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       if (tagName === 'SELECT') {
@@ -498,8 +496,10 @@ class FillPanel extends Panel {
             }
           });
         }
+        listener.emit(Listener.FILL_NODE, nodes.slice(0));
         pickCallback();
       }
+      this.silence = false;
     });
 
     panel.addEventListener('blur', (e) => {

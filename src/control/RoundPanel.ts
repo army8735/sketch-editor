@@ -84,10 +84,14 @@ class RoundPanel extends Panel {
       range.placeholder = number.placeholder = '';
       range.style.setProperty('--p', (value * 100 / (+range.max)).toString());
       number.value = range.value;
-      listener.emit(Listener.ROUND_NODE, nodes.slice(0));
+      if (nodes.length) {
+        listener.emit(Listener.ROUND_NODE, this.nodes.slice(0));
+      }
       this.silence = false;
     });
-    range.addEventListener('change', () => onChange());
+    range.addEventListener('change', () => {
+      onChange();
+    });
 
     number.addEventListener('input', (e) => {
       this.silence = true;
@@ -123,10 +127,16 @@ class RoundPanel extends Panel {
         }
       });
       range.style.setProperty('--p', ((+range.value) * 100 / (+range.max)).toString());
-      listener.emit(Listener.ROUND_NODE, nodes.slice(0));
       this.silence = false;
     });
-    number.addEventListener('change', () => onChange());
+    number.addEventListener('change', () => {
+      this.silence = true;
+      if (nodes.length) {
+        listener.emit(Listener.ROUND_NODE, this.nodes.slice(0));
+      }
+      onChange();
+      this.silence = false;
+    });
     number.addEventListener('blur', () => onBlur());
 
     listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {

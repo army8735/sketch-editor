@@ -67,6 +67,7 @@ class ShadowPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: ShadowStyle[] = [];
     let nexts: ShadowStyle[] = [];
+    let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = (independence = false) => {
@@ -83,6 +84,7 @@ class ShadowPanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
+      keys = [];
     };
 
     const setPrev = () => {
@@ -311,6 +313,7 @@ class ShadowPanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      keys = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       this.nodes.forEach((node, i) => {
         if (isFirst) {
@@ -328,8 +331,19 @@ class ShadowPanel extends Panel {
         };
         nexts.push(o);
         const p = parseFloat(prevs[i].shadow[index].split(' ')[type]);
-        let next = n;
-        if (!isInput) {
+        if (isInput) {
+          if (o.shadow[index]) {
+            const arr = o.shadow[index].split(' ');
+            arr[type] = n.toString();
+            o.shadow[index] = arr.join(' ');
+            const k = node.updateStyleData(o);
+            keys.push(k);
+          }
+          if (input.placeholder) {
+            input.placeholder = '';
+          }
+        }
+        else {
           let d = 0;
           if (input.placeholder) {
             d = n > 0 ? 1 : -1;
@@ -349,7 +363,13 @@ class ShadowPanel extends Panel {
               d *= 0.1;
             }
           }
-          next = p + d;
+          const next = p + d;
+          if (o.shadow[index]) {
+            const arr = o.shadow[index].split(' ');
+            arr[type] = next.toString();
+            o.shadow[index] = arr.join(' ');
+            node.updateStyle(o);
+          }
           if (!input.placeholder) {
             input.value = Math.round(next).toString();
           }
@@ -357,24 +377,22 @@ class ShadowPanel extends Panel {
             input.value = '';
           }
         }
-        else {
-          input.placeholder = '';
-        }
-        if (o.shadow[index]) {
-          const arr = o.shadow[index].split(' ');
-          arr[type] = next.toString();
-          o.shadow[index] = arr.join(' ');
-          node.updateStyle(o);
-        }
       });
-      if (nodes.length) {
-        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
-      }
       this.silence = false;
     });
 
     panel.addEventListener('change', () => {
+      this.silence = true;
+      if (keys.length) {
+        nodes.forEach((node, i) => {
+          if (keys[i].length) {
+            node.refresh(keys[i]);
+          }
+        });
+      }
+      listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
       pickCallback();
+      this.silence = false;
     });
 
     panel.addEventListener('blur', (e) => {

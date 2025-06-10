@@ -438,13 +438,11 @@ class StrokePanel extends Panel {
           }
         }
       });
-      if (nodes.length) {
-        listener.emit(Listener.STROKE_NODE, nodes.slice(0));
-      }
       this.silence = false;
     });
 
     panel.addEventListener('change', (e) => {
+      this.silence = true;
       const input = e.target as HTMLInputElement;
       const tagName = input.tagName.toUpperCase();
       if (tagName !== 'INPUT') {
@@ -457,7 +455,9 @@ class StrokePanel extends Panel {
           }
         });
       }
+      listener.emit(Listener.STROKE_NODE, nodes.slice(0));
       pickCallback();
+      this.silence = false;
     });
 
     panel.addEventListener('blur', (e) => {

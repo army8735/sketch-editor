@@ -36,6 +36,27 @@ class OpacityPanel extends Panel {
     let nexts: number[] = [];
     let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
 
+    const onChange = () => {
+      if (nodes.length && nexts.length) {
+        if (keys.length) {
+          nodes.forEach((node, i) => {
+            if (keys[i].length) {
+              node.refresh(keys[i]);
+            }
+          });
+        }
+        listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => ({
+          prev: {
+            opacity: prev,
+          },
+          next: {
+            opacity: nexts[i],
+          },
+        }))));
+        onBlur();
+      }
+    };
+
     const onBlur = () => {
       nodes = [];
       prevs = [];
@@ -43,7 +64,8 @@ class OpacityPanel extends Panel {
       keys = [];
     };
 
-    range.addEventListener('input', (e) => {
+    range.addEventListener('input', () => {
+      this.silence = true;
       // 连续多个只有首次记录节点和prev值，但每次都更新next值
       const isFirst = !nodes.length;
       if (isFirst) {
@@ -67,23 +89,12 @@ class OpacityPanel extends Panel {
       range.style.setProperty('--p', range.value);
       number.value = range.value;
       number.placeholder = '';
-    });
-    range.addEventListener('change', (e) => {
-      if (nodes.length && nexts.length) {
-        listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => {
-          return {
-            prev: {
-              opacity: prev,
-            },
-            next: {
-              opacity: nexts[i],
-            },
-          };
-        })));
+      if (nodes.length) {
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
-        onBlur();
       }
+      this.silence = false;
     });
+    range.addEventListener('change', () => onChange());
 
     number.addEventListener('input', (e) => {
       this.silence = true;
@@ -150,29 +161,15 @@ class OpacityPanel extends Panel {
       });
       range.value = number.value || '0';
       range.style.setProperty('--p', range.value);
+      this.silence = false;
+    });
+    number.addEventListener('change', () => {
+      this.silence = true;
       if (nodes.length) {
         listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
       }
+      onChange();
       this.silence = false;
-    });
-    number.addEventListener('change', (e) => {
-      if (nodes.length) {
-        if (keys.length) {
-          nodes.forEach((node, i) => {
-            if (keys[i].length) {
-              node.refresh(keys[i]);
-            }
-          });
-        }
-        listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => ({
-          prev: {
-            opacity: prev,
-          },
-          next: {
-            opacity: nexts[i],
-          },
-        }))));
-      }
     });
     number.addEventListener('blur', () => onBlur());
 
