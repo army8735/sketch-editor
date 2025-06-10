@@ -34,16 +34,13 @@ class OpacityPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: number[] = [];
     let nexts: number[] = [];
-    let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
+    let hasRefresh = true; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
 
     const onChange = () => {
       if (nodes.length && nexts.length) {
-        if (keys.length) {
-          nodes.forEach((node, i) => {
-            if (keys[i].length) {
-              node.refresh(keys[i]);
-            }
-          });
+        if (!hasRefresh) {
+          hasRefresh = true;
+          root.asyncDraw();
         }
         listener.history.addCommand(new OpacityCommand(nodes, prevs.map((prev, i) => ({
           prev: {
@@ -53,6 +50,7 @@ class OpacityPanel extends Panel {
             opacity: nexts[i],
           },
         }))));
+        listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
         onBlur();
       }
     };
@@ -61,7 +59,6 @@ class OpacityPanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
-      keys = [];
     };
 
     range.addEventListener('input', () => {
@@ -72,6 +69,7 @@ class OpacityPanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      hasRefresh = true;
       this.nodes.forEach((node) => {
         const prev = node.computedStyle.opacity;
         const next = parseFloat(range.value) * 0.01;
@@ -104,8 +102,8 @@ class OpacityPanel extends Panel {
         prevs = [];
       }
       nexts = [];
-      keys = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      hasRefresh = !isInput;
       const n = Math.min(100, Math.max(0, parseFloat(number.value) || 0));
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.opacity * 100;
@@ -115,10 +113,9 @@ class OpacityPanel extends Panel {
         }
         if (isInput) {
           nexts.push(n * 0.01);
-          const k = node.updateStyleData({
+          node.updateStyle({
             opacity: n * 0.01,
-          });
-          keys.push(k);
+          }, true);
           if (number.placeholder) {
             number.placeholder = '';
           }
@@ -163,14 +160,7 @@ class OpacityPanel extends Panel {
       range.style.setProperty('--p', range.value);
       this.silence = false;
     });
-    number.addEventListener('change', () => {
-      this.silence = true;
-      if (nodes.length) {
-        listener.emit(Listener.OPACITY_NODE, nodes.slice(0));
-      }
-      onChange();
-      this.silence = false;
-    });
+    number.addEventListener('change', () => onChange());
     number.addEventListener('blur', () => onBlur());
 
     listener.on([

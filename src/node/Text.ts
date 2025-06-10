@@ -2822,10 +2822,14 @@ class Text extends Node {
     return Object.assign({}, this.cursor);
   }
 
-  updateRangeStyle(location: number, length: number, st: ModifyRichStyle) {
+  updateRangeStyle(location: number, length: number, st: ModifyRichStyle, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
+    if (typeof cb === 'boolean') {
+      noRefresh = cb;
+      cb = undefined;
+    }
     const lv = this.updateRangeStyleData(location, length, st);
     if (lv) {
-      this.refresh(lv);
+      this.refresh(lv, cb, noRefresh);
     }
     return lv;
   }

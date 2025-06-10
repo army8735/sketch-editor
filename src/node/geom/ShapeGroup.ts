@@ -732,11 +732,11 @@ class ShapeGroup extends Group {
     // });
   }
 
-  override refresh(lv: RefreshLevel = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
+  override refresh(lv: RefreshLevel = RefreshLevel.REPAINT, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
     if (lv >= RefreshLevel.REPAINT) {
       this.coords = undefined;
     }
-    super.refresh(lv, cb);
+    super.refresh(lv, cb, noRefresh);
   }
 
   toSvg(max: number) {

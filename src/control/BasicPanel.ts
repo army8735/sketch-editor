@@ -14,6 +14,7 @@ import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import ConstrainProportionCommand, { ConstrainProportionData } from '../history/ConstrainProportionCommand';
 import { JStyle } from '../format';
 import state from './state';
+import ArtBoard from '../node/ArtBoard';
 
 const html = `
   <div class="line">
@@ -74,6 +75,8 @@ class BasicPanel extends Panel {
     let cssStyle: JStyle[] = [];
     let prevNumber: number[] = [];
     let nextNumber: number[] = [];
+    let abs: (ArtBoard | undefined)[] = [];
+    let hasRefresh = true; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
 
     const onInputPos = (e: Event, isXOrY = true) => {
       this.silence = true;
@@ -82,10 +85,12 @@ class BasicPanel extends Panel {
         originStyle = [];
         computedStyle = [];
         prevNumber = [];
+        abs = [];
       }
       nextNumber = [];
       const value = parseFloat(isXOrY ? x.value : y.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      hasRefresh = !isInput;
       this.nodes.forEach((node, i) => {
         if (isFirst) {
           nodes.push(node);
@@ -126,30 +131,30 @@ class BasicPanel extends Panel {
           next = prev + d;
         }
         nextNumber.push(next);
-        const oldAb = node.artBoard;
-        let ab;
+        abs[i] = node.artBoard;
         // 和拖拽一样只更新translate，在change事件才计算定位和生成命令
         if (isXOrY) {
-          ab = MoveCommand.update(node, computedStyle[i], d, 0);
+          MoveCommand.update(node, computedStyle[i], d, 0, isInput);
         }
         else {
-          ab = MoveCommand.update(node, computedStyle[i], 0, d);
-        }
-        if (oldAb !== ab) {
-          listener.emit(Listener.ART_BOARD_NODE, [node]);
+          MoveCommand.update(node, computedStyle[i], 0, d, isInput);
         }
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
-        listener.emit(Listener.MOVE_NODE, nodes.slice(0));
-        this.show(this.nodes);
       }
       this.silence = false;
     }
 
     const onChangePos = (isXOrY = true) => {
+      this.silence = true;
       if (nodes.length) {
+        if (!hasRefresh) {
+          hasRefresh = true;
+          root.asyncDraw();
+        }
         const data: MoveData[] = [];
+        const list: Node[] = [];
         nodes.forEach((node, i) => {
           const d = nextNumber[i] - prevNumber[i];
           if (isXOrY) {
@@ -161,10 +166,19 @@ class BasicPanel extends Panel {
             data.push({ dx: 0, dy: d });
           }
           node.checkPosSizeUpward();
+          if (abs[i] !== node.artBoard) {
+            list.push(node);
+          }
         });
         listener.history.addCommand(new MoveCommand(nodes, data));
+        if (list.length) {
+          listener.emit(Listener.ART_BOARD_NODE, list);
+        }
+        listener.emit(Listener.MOVE_NODE, nodes.slice(0));
       }
+      this.show(nodes);
       onBlur();
+      this.silence = false;
     };
 
     const onBlur = () => {
@@ -174,6 +188,7 @@ class BasicPanel extends Panel {
       cssStyle = [];
       prevNumber = [];
       nextNumber = [];
+      abs = [];
     };
 
     x.addEventListener('input', (e) => {
@@ -242,17 +257,20 @@ class BasicPanel extends Panel {
         nextNumber.push(next);
         node.updateStyle({
           rotateZ: computedStyle[i].rotateZ + d,
-        });
+        }, isInput);
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
-        listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
-        this.show(this.nodes);
       }
       this.silence = false;
     });
-    r.addEventListener('change', (e) => {
+    r.addEventListener('change', () => {
+      this.silence = true;
       if (nodes.length) {
+        if (!hasRefresh) {
+          hasRefresh = true;
+          root.asyncDraw();
+        }
         listener.history.addCommand(new RotateCommand(nodes, prevNumber.map((prev, i) => ({
           prev: {
             rotateZ: prev,
@@ -261,11 +279,11 @@ class BasicPanel extends Panel {
             rotateZ: nextNumber[i],
           },
         }))));
-        nodes = [];
-        computedStyle = [];
-        prevNumber = [];
-        nextNumber = [];
+        listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
       }
+      this.show(this.nodes);
+      onBlur();
+      this.silence = false;
     });
     r.addEventListener('blur', () => onBlur());
 
@@ -292,6 +310,7 @@ class BasicPanel extends Panel {
       nextNumber = [];
       const value = parseFloat(isWOrH ? w.value : h.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      hasRefresh = !isInput;
       this.nodes.forEach((node, i) => {
         if (isFirst) {
           nodes.push(node);
@@ -338,18 +357,22 @@ class BasicPanel extends Panel {
           next = prev + d;
         }
         nextNumber.push(next);
-        ResizeCommand.updateStyle(node, computedStyle[i], cssStyle[i], isWOrH ? d : 0, isWOrH ? 0 : d, isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B, shift);
+        ResizeCommand.updateStyle(node, computedStyle[i], cssStyle[i], isWOrH ? d : 0, isWOrH ? 0 : d,
+          isWOrH ? CONTROL_TYPE.R : CONTROL_TYPE.B, shift, false, false, false, isInput);
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
-        listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
-        this.show(this.nodes);
       }
       this.silence = false;
     };
 
     const onChangeSize = (isWOrH = true) => {
+      this.silence = true;
       if (nodes.length) {
+        if (!hasRefresh) {
+          hasRefresh = true;
+          root.asyncDraw();
+        }
         let shift = listener.shiftKey;
         if (!shift) {
           // 有一个是固定宽高比的，整体都是
@@ -363,7 +386,7 @@ class BasicPanel extends Panel {
         const data: ResizeData[] = [];
         nodes.forEach((node, i) => {
           const p = node.parent;
-          if (p && p.isGroup && p instanceof Group) {
+          if (p && p instanceof Group) {
             p.fixedPosAndSize = false;
           }
           node.endSizeChange(originStyle[i]);
@@ -393,8 +416,11 @@ class BasicPanel extends Panel {
         if (nodes.length && data.length) {
           listener.history.addCommand(new ResizeCommand(nodes, data));
         }
+        listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       }
+      this.show(nodes);
       onBlur();
+      this.silence = false;
     };
 
     w.addEventListener('input', (e) => {

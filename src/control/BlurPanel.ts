@@ -82,16 +82,21 @@ class BlurPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: BlurStyle[] = [];
     let nexts: BlurStyle[] = [];
-    let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
+    let hasRefresh = false; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
 
     const onChange = () => {
       if (nodes.length && nexts.length) {
+        if (!hasRefresh) {
+          hasRefresh = true;
+          root.asyncDraw();
+        }
         listener.history.addCommand(new BlurCommand(nodes, prevs.map((prev, i) => {
           return {
             prev,
             next: nexts[i],
           };
         })));
+        listener.emit(Listener.BLUR_NODE, nodes.slice(0));
         onBlur();
       }
     };
@@ -100,10 +105,10 @@ class BlurPanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
-      keys = [];
     };
 
     btn.addEventListener('click', () => {
+      this.silence = true;
       const isAdd = btn.classList.contains('add');
       if (isAdd) {
         btn.classList.remove('add');
@@ -131,8 +136,10 @@ class BlurPanel extends Panel {
         nexts.push(next);
         node.updateStyle(next);
       });
-      this.show(this.nodes);
+      hasRefresh = true;
       onChange();
+      this.show(this.nodes);
+      this.silence = false;
     });
 
     select.addEventListener('change', () => {
@@ -160,7 +167,7 @@ class BlurPanel extends Panel {
         nexts.push(next);
         node.updateStyle(next);
       });
-      listener.emit(Listener.BLUR_NODE, nodes.slice(0));
+      hasRefresh = true;
       onChange();
       this.show(this.nodes);
       this.silence = false;
@@ -176,6 +183,7 @@ class BlurPanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      hasRefresh = true;
       this.nodes.forEach((node) => {
         if (isFirst) {
           nodes.push(node);
@@ -214,9 +222,6 @@ class BlurPanel extends Panel {
       }
       number.value = value;
       number.placeholder = '';
-      if (nodes.length) {
-        listener.emit(Listener.BLUR_NODE, nodes.slice(0));
-      }
       this.silence = false;
     };
 
@@ -228,7 +233,7 @@ class BlurPanel extends Panel {
         prevs = [];
       }
       nexts = [];
-      keys = [];
+      hasRefresh = !isInput;
       const n = parseFloat(number.value) || 0;
       this.nodes.forEach((node, i) => {
         const blur = node.computedStyle.blur;
@@ -298,13 +303,7 @@ class BlurPanel extends Panel {
           };
         }
         nexts.push(o!);
-        if (isInput) {
-          const k = node.updateStyleData(o!);
-          keys.push(k);
-        }
-        else {
-          node.updateStyle(o!);
-        }
+        node.updateStyle(o!, isInput);
       });
       range.value = number.value || '0';
       if (!number.placeholder) {
@@ -330,19 +329,7 @@ class BlurPanel extends Panel {
     radiusNumber.addEventListener('input', (e) => {
       onNumberInput(radiusRange, radiusNumber, 'radius', e instanceof InputEvent, 50, 0);
     });
-    radiusNumber.addEventListener('change', () => {
-      this.silence = true;
-      if (keys.length) {
-        nodes.forEach((node, i) => {
-          if (keys[i].length) {
-            node.refresh(keys[i]);
-          }
-        });
-      }
-      listener.emit(Listener.BLUR_NODE, nodes.slice(0));
-      onChange();
-      this.silence = false;
-    });
+    radiusNumber.addEventListener('change', () => onChange());
     radiusNumber.addEventListener('blur', () => onBlur());
 
     angleRange.addEventListener('input', () => {
@@ -353,19 +340,7 @@ class BlurPanel extends Panel {
     angleNumber.addEventListener('input', (e) => {
       onNumberInput(angleRange, angleNumber, 'angle', e instanceof InputEvent, 180, -180);
     });
-    angleNumber.addEventListener('change', () => {
-      this.silence = true;
-      if (keys.length) {
-        nodes.forEach((node, i) => {
-          if (keys[i].length) {
-            node.refresh(keys[i]);
-          }
-        });
-      }
-      listener.emit(Listener.BLUR_NODE, nodes.slice(0));
-      onChange();
-      this.silence = false;
-    });
+    angleNumber.addEventListener('change', () => onChange());
     angleNumber.addEventListener('blur', () => onBlur());
 
     saturationRange.addEventListener('input', () => {
@@ -376,19 +351,7 @@ class BlurPanel extends Panel {
     saturationNumber.addEventListener('input', (e) => {
       onNumberInput(saturationRange, saturationNumber, 'saturation', e instanceof InputEvent, 100, -100);
     });
-    saturationNumber.addEventListener('change', () => {
-      this.silence = true;
-      if (keys.length) {
-        nodes.forEach((node, i) => {
-          if (keys[i].length) {
-            node.refresh(keys[i]);
-          }
-        });
-      }
-      listener.emit(Listener.BLUR_NODE, nodes.slice(0));
-      onChange();
-      this.silence = false;
-    });
+    saturationNumber.addEventListener('change', () => onChange());
     saturationNumber.addEventListener('blur', () => onBlur());
 
     listener.on([

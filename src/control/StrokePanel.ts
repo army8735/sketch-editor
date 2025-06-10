@@ -107,7 +107,7 @@ class StrokePanel extends Panel {
     let nodes: Node[] = [];
     let prevs: StrokeStyle[] = [];
     let nexts: StrokeStyle[] = [];
-    let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
+    let hasRefresh = true; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
     let indexes: number[] = [];
     let index: number;
 
@@ -116,6 +116,7 @@ class StrokePanel extends Panel {
         listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: indexes[i] };
         })), independence);
+        listener.emit(Listener.STROKE_NODE, nodes.slice(0));
         onBlur();
       }
     };
@@ -124,7 +125,6 @@ class StrokePanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
-      keys = [];
       indexes = [];
     };
 
@@ -365,9 +365,9 @@ class StrokePanel extends Panel {
         prevs = [];
       }
       nexts = [];
-      keys = [];
       const n = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      hasRefresh = !isInput;
       this.nodes.forEach((node, i) => {
         if (isFirst) {
           nodes.push(node);
@@ -390,8 +390,7 @@ class StrokePanel extends Panel {
         const prev = prevs[i].strokeWidth[index];
         if (isInput) {
           o.strokeWidth[index] = n;
-          const k = node.updateStyleData(o);
-          keys.push(k);
+          node.updateStyle(o, true);
           if (input.placeholder) {
             input.placeholder = '';
           }
@@ -448,14 +447,10 @@ class StrokePanel extends Panel {
       if (tagName !== 'INPUT') {
         return;
       }
-      if (keys.length) {
-        nodes.forEach((node, i) => {
-          if (keys[i].length) {
-            node.refresh(keys[i]);
-          }
-        });
+      if (!hasRefresh) {
+        hasRefresh = true;
+        root.asyncDraw();
       }
-      listener.emit(Listener.STROKE_NODE, nodes.slice(0));
       pickCallback();
       this.silence = false;
     });

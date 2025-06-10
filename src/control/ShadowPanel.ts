@@ -67,7 +67,7 @@ class ShadowPanel extends Panel {
     let nodes: Node[] = [];
     let prevs: ShadowStyle[] = [];
     let nexts: ShadowStyle[] = [];
-    let keys: string[][] = []; // 输入的input不刷新记录等change，按上下箭头一起触发不需要记录
+    let hasRefresh = true; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
 
     // 选择颜色会刷新但不产生步骤，关闭颜色面板后才callback产生
     const pickCallback = (independence = false) => {
@@ -76,6 +76,7 @@ class ShadowPanel extends Panel {
         listener.history.addCommand(new ShadowCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         })), independence);
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         onBlur();
       }
     };
@@ -84,7 +85,6 @@ class ShadowPanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
-      keys = [];
     };
 
     const setPrev = () => {
@@ -313,8 +313,8 @@ class ShadowPanel extends Panel {
         prevs = [];
       }
       nexts = [];
-      keys = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      hasRefresh = !isInput;
       this.nodes.forEach((node, i) => {
         if (isFirst) {
           nodes.push(node);
@@ -340,8 +340,7 @@ class ShadowPanel extends Panel {
             const arr = o.shadow[index].split(' ');
             arr[type] = n.toString();
             o.shadow[index] = arr.join(' ');
-            const k = node.updateStyleData(o);
-            keys.push(k);
+            node.updateStyle(o, true);
           }
           if (input.placeholder) {
             input.placeholder = '';
@@ -387,14 +386,10 @@ class ShadowPanel extends Panel {
 
     panel.addEventListener('change', () => {
       this.silence = true;
-      if (keys.length) {
-        nodes.forEach((node, i) => {
-          if (keys[i]?.length) {
-            node.refresh(keys[i]);
-          }
-        });
+      if (!hasRefresh) {
+        hasRefresh = true;
+        root.asyncDraw();
       }
-      listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
       pickCallback();
       this.silence = false;
     });

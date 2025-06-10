@@ -41,12 +41,12 @@ class MoveCommand extends AbstractCommand {
     });
   }
 
-  static update(node: Node, computedStyle: ComputedStyle, dx: number, dy: number) {
+  static update(node: Node, computedStyle: ComputedStyle, dx: number, dy: number, noRefresh = false) {
     const oldAb = node.artBoard;
     node.updateStyle({
       translateX: computedStyle.translateX + dx,
       translateY: computedStyle.translateY + dy,
-    });
+    }, noRefresh);
     const rect = node.getBoundingClientRect();
     // 检查移动后是否改变画板所属，优先看是否在老画板上
     if (oldAb) {
@@ -65,6 +65,7 @@ class MoveCommand extends AbstractCommand {
           const r = child.getBoundingClientRect();
           if (isConvexPolygonOverlapRect(r.left, r.top, r.right, r.bottom, rect.points)) {
             moveAppend([node], child);
+            node.artBoard = child;
             return child;
           }
         }

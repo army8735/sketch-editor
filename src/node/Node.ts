@@ -1069,26 +1069,30 @@ class Node extends Event {
     return keys;
   }
 
-  updateFormatStyle(style: Partial<Style>, cb?: (sync: boolean) => void) {
+  updateFormatStyle(style: Partial<Style>, cb?: ((sync: boolean) => void), noRefresh = false) {
     const keys = this.updateFormatStyleData(style);
     // 无变更
     if (!keys.length) {
       cb && cb(true);
       return { keys, lv: RefreshLevel.NONE };
     }
-    const lv = this.root?.addUpdate(this, keys, undefined, false, false, cb);
+    const lv = this.root?.addUpdate(this, keys, undefined, false, false, cb, noRefresh);
     return { keys, lv };
   }
 
-  // 只更新样式不触发刷新
+  // 只更新样式不触发影响计算和后续刷新
   updateStyleData(style: Partial<JStyle>) {
     const formatStyle = normalize(style);
     return this.updateFormatStyleData(formatStyle);
   }
 
-  updateStyle(style: Partial<JStyle>, cb?: (sync: boolean) => void) {
+  updateStyle(style: Partial<JStyle>, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
     const formatStyle = normalize(style);
-    return this.updateFormatStyle(formatStyle, cb);
+    if (typeof cb === 'boolean') {
+      noRefresh = cb;
+      cb = undefined;
+    }
+    return this.updateFormatStyle(formatStyle, cb, noRefresh);
   }
 
   updateProps(props: any, cb?: (sync: boolean) => void) {
@@ -1153,13 +1157,12 @@ class Node extends Event {
     return keys;
   }
 
-  refresh(data: RefreshLevel | string[] = RefreshLevel.REPAINT, cb?: (sync: boolean) => void) {
-    if (Array.isArray(data)) {
-      this.root?.addUpdate(this, data, undefined, false, false, cb);
+  refresh(data: RefreshLevel = RefreshLevel.REPAINT, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
+    if (typeof cb === 'boolean') {
+      noRefresh = cb;
+      cb = undefined;
     }
-    else {
-      this.root?.addUpdate(this, [], data, false, false, cb);
-    }
+    this.root?.addUpdate(this, [], data, false, false, cb, noRefresh);
   }
 
   getStyle() {

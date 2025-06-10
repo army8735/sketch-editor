@@ -9,6 +9,7 @@ import state from './state';
 import { Point } from '../format';
 import { clone } from '../util/type';
 import RoundCommand from '../history/RoundCommand';
+import { RefreshLevel } from '../refresh/level';
 
 const html = `
   <h4 class="panel-title">圆角</h4>
@@ -37,15 +38,13 @@ class RoundPanel extends Panel {
     let polylines: Polyline[] = []; // 所有polyline和shapeGroup的子孙polyline，合并并打平
     let nodes: Polyline[][] = []; // 所有polyline和shapeGroup的子孙polyline，合并不打平
     let prevPoints: Point[][][] = []; // 同上
-    let hasRefresh = false; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
+    let hasRefresh = true; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
 
     const onChange = () => {
       if (polylines.length) {
         if (!hasRefresh) {
           hasRefresh = true;
-          this.nodes.forEach(node => {
-            node.refresh();
-          });
+          root.asyncDraw();
         }
         listener.history.addCommand(new RoundCommand(this.nodes.slice(0), this.nodes.map((item, i) => {
           return {
@@ -98,9 +97,9 @@ class RoundPanel extends Panel {
       const value = parseFloat(number.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
+      hasRefresh = !isInput;
       this.nodes.forEach((node, i) => {
         if (isInput) {
-          hasRefresh = false;
           scan2(node, value, polylines, nodes[i] = nodes[i] || [], prevPoints[i] = prevPoints[i] || [], isFirst);
           if (!i) {
             range.placeholder = number.placeholder = '';
@@ -108,7 +107,6 @@ class RoundPanel extends Panel {
           }
         }
         else {
-          hasRefresh = true;
           const t = scan3(node, value, polylines, nodes[i] = nodes[i] || [], prevPoints[i] = prevPoints[i] || [], isFirst, number.placeholder, listener);
           if (!i) {
             if (number.placeholder) {
@@ -132,6 +130,10 @@ class RoundPanel extends Panel {
     number.addEventListener('change', () => {
       this.silence = true;
       if (nodes.length) {
+        if (!hasRefresh) {
+          hasRefresh = true;
+          root.asyncDraw();
+        }
         listener.emit(Listener.ROUND_NODE, this.nodes.slice(0));
       }
       onChange();
@@ -246,9 +248,7 @@ function scan2(node: Node, value: number, polylines: Polyline[], nodes: Polyline
     node.points.forEach(point => {
       point.cornerRadius = value;
     });
-    if (refresh) {
-      node.refresh();
-    }
+    node.refresh(RefreshLevel.REPAINT, !refresh);
   }
   else if (node instanceof ShapeGroup) {
     node.children.forEach(child => {
