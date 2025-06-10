@@ -26,7 +26,8 @@ module.exports = {
       .assert.value('#side .basic-panel .x', '9.13')
       .assert.value('#side .basic-panel .y', '9.13')
 
-      .updateValue('#side .basic-panel .r', ['10', browser.Keys.ENTER])
+      .updateValue('#side .basic-panel .r', ['25', browser.Keys.ENTER])
+      .assert.value('#side .basic-panel .r', '25')
       .pause(20)
       .click('#button2')
       .assert.value('#base64', '')
