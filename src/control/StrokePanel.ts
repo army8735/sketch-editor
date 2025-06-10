@@ -216,8 +216,10 @@ class StrokePanel extends Panel {
         listener.cancelEditGradient();
         picker.hide();
         picker.show(el, stroke, 'strokePanel' + index, onInput, () => {
+          this.silence = true;
           pickCallback(true);
           setPrev();
+          this.silence = false;
         }, setPrev, listener);
         if (!Array.isArray(stroke)) {
           listener.select.hideSelect();

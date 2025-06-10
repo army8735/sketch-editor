@@ -254,8 +254,10 @@ class FillPanel extends Panel {
         listener.cancelEditGradient();
         picker.hide();
         picker.show(el, fill, 'fillPanel' + index, onInput, () => {
+          this.silence = true;
           pickCallback(true);
           setPrev();
+          this.silence = false;
         }, setPrev, listener);
         if (!Array.isArray(fill)) {
           listener.select.hideSelect();

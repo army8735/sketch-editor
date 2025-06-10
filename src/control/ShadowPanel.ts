@@ -147,8 +147,10 @@ class ShadowPanel extends Panel {
           }
           this.silence = false;
         }, () => {
+          this.silence = true;
           pickCallback(true);
           setPrev();
+          this.silence = false;
         }, setPrev, listener);
       }
       else if (classList.contains('add')) {

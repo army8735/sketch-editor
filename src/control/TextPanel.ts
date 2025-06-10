@@ -532,8 +532,10 @@ class TextPanel extends Panel {
           }
           this.silence = false;
         }, () => {
+          this.silence = true;
           pickCallback(true);
           setPrev();
+          this.silence = false;
         }, setPrev, listener);
         const pDom = p.domElement.parentElement!;
         if (!listener.input.ignoreBlur.includes(pDom)) {
