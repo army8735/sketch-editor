@@ -26,6 +26,7 @@ module.exports = {
       .assert.value('#side .basic-panel .x', '9.13')
       .assert.value('#side .basic-panel .y', '9.13')
 
+      .click('#side .basic-panel .r')
       .updateValue('#side .basic-panel .r', ['25', browser.Keys.ENTER])
       .assert.value('#side .basic-panel .r', '25')
       .pause(20)
