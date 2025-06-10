@@ -216,6 +216,7 @@ class BasicPanel extends Panel {
       }
       nextNumber = [];
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
+      hasRefresh = !isInput;
       this.nodes.forEach((node, i) => {
         if (isFirst) {
           nodes.push(node);

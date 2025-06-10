@@ -151,7 +151,7 @@ class FillPanel extends Panel {
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: indexes[i] };
         })), independence);
-        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+        listener.emit(Listener.FILL_NODE, nodes.slice(0), indexes.slice(0));
         onBlur();
       }
     };
@@ -247,11 +247,6 @@ class FillPanel extends Panel {
           if (!fromGradient && !Array.isArray(nodes[0].computedStyle.fill[index])) {
             listener.gradient.update(this.nodes[0], fill, changeType);
           }
-          if (nodes.length) {
-            listener.emit(Listener.FILL_NODE, nodes.slice(0), prevs.map((prev, i) => {
-              return { prev, next: nexts[i], index };
-            }));
-          }
           this.silence = false;
         };
         // 取消可能的其它编辑态
@@ -333,7 +328,7 @@ class FillPanel extends Panel {
           listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
             return { prev, next: nexts[i], index: indexes[i] };
           })));
-          listener.emit(Listener.FILL_NODE, nodes.slice(0));
+          listener.emit(Listener.FILL_NODE, nodes.slice(0), indexes.slice(0));
         }
         this.silence = false;
       }
