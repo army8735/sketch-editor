@@ -262,6 +262,7 @@ class BasicPanel extends Panel {
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
+        this.show(this.nodes);
       }
       this.silence = false;
     });
