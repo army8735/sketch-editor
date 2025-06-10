@@ -250,6 +250,7 @@ class TextPanel extends Panel {
     };
 
     const onChange = (e: Event, key: 'fontSize' | 'letterSpacing' | 'lineHeight' | 'paragraphSpacing') => {
+      this.silence = true;
       if (nodes.length) {
         // 输入fontSize等如果只触发input，不会刷新，需等change才会；按箭头则直接change事件
         if (lvs.length) {
@@ -293,6 +294,7 @@ class TextPanel extends Panel {
         nexts = [];
         lvs = [];
       }
+      this.silence = false;
     };
 
     fs.addEventListener('input', (e) => {
@@ -526,6 +528,7 @@ class TextPanel extends Panel {
       // 尺寸固定模式
       else if ((classList.contains('auto') || classList.contains('fw') || classList.contains('fwh'))
         && !classList.contains('cur')) {
+        this.silence = true;
         const nodes = this.nodes.slice(0);
         let next: TextProps['textBehaviour'] = 'auto';
         if (classList.contains('fw')) {
@@ -570,10 +573,12 @@ class TextPanel extends Panel {
         dom.querySelector('.wh .cur')?.classList.remove('cur');
         classList.add('cur');
         dom.querySelector('.wh .txt')!.innerHTML = el.title;
+        this.silence = false;
       }
       // 左右对齐
       else if ((classList.contains('left') || classList.contains('right') || classList.contains('center') || el.classList.contains('justify'))
         && !classList.contains('cur')) {
+        this.silence = true;
         const nodes = this.nodes.slice(0);
         let value = TEXT_ALIGN.LEFT;
         if (classList.contains('right')) {
@@ -641,10 +646,12 @@ class TextPanel extends Panel {
         }
         dom.querySelector('.al .cur')?.classList.remove('cur');
         classList.add('cur');
+        this.silence = false;
       }
       // 上下对齐
       else if ((classList.contains('top') || classList.contains('bottom') || classList.contains('middle'))
         && !classList.contains('cur')) {
+        this.silence = true;
         const nodes = this.nodes.slice(0);
         let value: 'top' | 'middle' | 'bottom' = 'top';
         if (classList.contains('middle')) {
@@ -675,6 +682,7 @@ class TextPanel extends Panel {
         listener.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
         dom.querySelector('.va .cur')?.classList.remove('cur');
         classList.add('cur');
+        this.silence = false;
       }
     });
 

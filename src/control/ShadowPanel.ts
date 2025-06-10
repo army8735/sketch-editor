@@ -330,6 +330,10 @@ class ShadowPanel extends Panel {
           shadowEnable: prevs[i].shadowEnable.slice(0),
         };
         nexts.push(o);
+        // 多节点时某个节点数量不够忽略
+        if (!o.shadow[index]) {
+          return;
+        }
         const p = parseFloat(prevs[i].shadow[index].split(' ')[type]);
         if (isInput) {
           if (o.shadow[index]) {
@@ -385,7 +389,7 @@ class ShadowPanel extends Panel {
       this.silence = true;
       if (keys.length) {
         nodes.forEach((node, i) => {
-          if (keys[i].length) {
+          if (keys[i]?.length) {
             node.refresh(keys[i]);
           }
         });
