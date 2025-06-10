@@ -283,7 +283,6 @@ class BasicPanel extends Panel {
         }))));
         listener.emit(Listener.ROTATE_NODE, nodes.slice(0));
       }
-      this.show(this.nodes);
       onBlur();
       this.silence = false;
     });
