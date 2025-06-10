@@ -97,7 +97,7 @@ jobs:
         run: npm install
       - name: npm build
         run: npm run build
-      - name: npm test4
+      - name: npm test5
         uses: GabrielBB/xvfb-action@v1
         with:
           run: npm run test5
