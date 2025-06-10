@@ -142,6 +142,7 @@ class BasicPanel extends Panel {
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
+        this.show(nodes);
       }
       this.silence = false;
     }
@@ -176,7 +177,6 @@ class BasicPanel extends Panel {
         }
         listener.emit(Listener.MOVE_NODE, nodes.slice(0));
       }
-      this.show(nodes);
       onBlur();
       this.silence = false;
     };
@@ -363,6 +363,7 @@ class BasicPanel extends Panel {
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);
+        this.show(nodes);
       }
       this.silence = false;
     };
@@ -419,7 +420,6 @@ class BasicPanel extends Panel {
         }
         listener.emit(Listener.RESIZE_NODE, nodes.slice(0));
       }
-      this.show(nodes);
       onBlur();
       this.silence = false;
     };
