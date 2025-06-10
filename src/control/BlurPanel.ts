@@ -85,6 +85,7 @@ class BlurPanel extends Panel {
     let hasRefresh = false; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
 
     const onChange = () => {
+      this.silence = true;
       if (nodes.length && nexts.length) {
         if (!hasRefresh) {
           hasRefresh = true;
@@ -99,6 +100,7 @@ class BlurPanel extends Panel {
         listener.emit(Listener.BLUR_NODE, nodes.slice(0));
         onBlur();
       }
+      this.silence = false;
     };
 
     const onBlur = () => {
@@ -137,8 +139,8 @@ class BlurPanel extends Panel {
         node.updateStyle(next);
       });
       hasRefresh = true;
-      onChange();
       this.show(this.nodes);
+      onChange();
       this.silence = false;
     });
 
