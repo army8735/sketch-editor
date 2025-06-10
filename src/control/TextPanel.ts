@@ -286,6 +286,24 @@ class TextPanel extends Panel {
         listener.select.updateSelect(nodes);
         if (key === 'fontSize') {
           listener.emit(Listener.FONT_SIZE_NODE, nodes.slice(0));
+          // 影响行高检查
+          const isEditText = this.listener.state === state.EDIT_TEXT;
+          const o = isEditText && nodes[0]._content ? getEditTextInfo(nodes[0]) : getTextInfo(nodes);
+          const input = panel.querySelector('.lh input') as HTMLInputElement;
+          if (o.lineHeight.length > 1) {
+            input.value = '';
+            input.placeholder = '多个';
+          }
+          else {
+            if (o.autoLineHeight[0]) {
+              input.value = '';
+              input.placeholder = toPrecision(o.lineHeight[0] || 0, 2).toString();
+            }
+            else {
+              input.value = toPrecision(o.lineHeight[0] || 0, 2).toString();
+              input.placeholder = '';
+            }
+          }
         }
         else if (key === 'letterSpacing') {
           listener.emit(Listener.LETTER_SPACING_NODE, nodes.slice(0));
