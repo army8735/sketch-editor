@@ -656,6 +656,16 @@ export default class Listener extends Event {
     this.button = e.button;
     // 右键菜单，忽略meta按下
     if (e.button === 2) {
+      if (this.state === state.ADD_IMG) {
+        // 右键取消添加图片
+        this.dom.classList.remove('add-img');
+        this.state = state.NORMAL;
+        this.img?.remove();
+        this.img = undefined;
+        this.emit(Listener.CANCEL_ADD_ESC);
+        this.emit(Listener.STATE_CHANGE, state.ADD_IMG, this.state);
+        return;
+      }
       if ([state.EDIT_GRADIENT, state.EDIT_GEOM].includes(this.state)) {
         contextMenu.showOk(e.pageX, e.pageY, this);
         return;

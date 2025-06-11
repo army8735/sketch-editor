@@ -75,7 +75,7 @@ class Bitmap extends Node {
     const isBlob = /^blob:/.test(src);
     if (isBlob) {
       inject.uploadImgSrc(src).then(res => {
-        if (res) {
+        if (res && res !== src) {
           const cache = inject.IMG[src];
           // 复用
           if (cache && cache.state === inject.LOADED) {
