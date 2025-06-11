@@ -541,6 +541,47 @@ export function getOffsetByPoint(root: Root, x: number, y: number, node?: Contai
   return { left, top, right, bottom };
 }
 
+export function addNode(node: Node, root: Root, x: number, y: number, w: number, h: number, prev?: Node) {
+  // 指定prev节点后面
+  if (prev) {
+    const container = prev.parent!;
+    const { left, top, right, bottom } = getOffsetByPoint(root, x, y, container);
+    node.updateStyle({
+      left: left * 100 / container.width + '%',
+      top: top * 100 / container.height + '%',
+      right: (right - w) * 100 / container.width + '%',
+      bottom: (bottom - h) * 100 / container.height + '%',
+    });
+    prev.insertAfter(node);
+  }
+  // 画板或page上
+  else {
+    let artBoard: ArtBoard | undefined;
+    const pts = [
+      { x, y },
+      { x, y: y + h },
+      { x: x + w, y },
+      { x: x + w, y: y + h },
+    ];
+    for (let i = 0, len = pts.length; i < len; i++) {
+      const pt = pts[i];
+      artBoard = getArtBoardByPoint(root, pt.x, pt.y);
+      if (artBoard) {
+        break;
+      }
+    }
+    const container = artBoard || root.getCurPage()!;
+    const { left, top, right, bottom } = getOffsetByPoint(root, x, y, container);
+    node.updateStyle({
+      left: left * 100 / container.width + '%',
+      top: top * 100 / container.height + '%',
+      right: (right - w) * 100 / container.width + '%',
+      bottom: (bottom - h) * 100 / container.height + '%',
+    });
+    container.appendChild(node);
+  }
+}
+
 export default {
   getNodeByPoint,
   getArtBoardByPoint,
@@ -550,4 +591,5 @@ export default {
   getGuidesNodes,
   search2,
   getOffsetByPoint,
+  addNode,
 };

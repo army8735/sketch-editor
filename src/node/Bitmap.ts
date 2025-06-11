@@ -57,21 +57,6 @@ class Bitmap extends Node {
     else {
       const isBlob = /^blob:/.test(src);
       if (isBlob) {
-        // fetch('https://karas.alipay.com/api/uploadbase64', {
-        //   method: 'post',
-        //   headers: {
-        //     Accept: 'application/json',
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: JSON.stringify({
-        //     data: src,
-        //     quality: 1,
-        //   }),
-        // }).then(res => res.json()).then(res => {
-        //   if (res.success) {
-        //     this.src = res.url;
-        //   }
-        // });
       }
       const cache = inject.IMG[src];
       if (cache && cache.state === inject.LOADED) {

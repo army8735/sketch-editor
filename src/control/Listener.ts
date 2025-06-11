@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import Root from '../node/Root';
@@ -22,6 +23,7 @@ import contextMenu from './contextMenu';
 import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, Point, JStyle, MaskModeStyle } from '../format';
 import {
+  addNode,
   getArtBoardByPoint,
   getFrameNodes,
   getNodeByPoint,
@@ -72,6 +74,7 @@ import {
 import { createText } from '../tools/text';
 import PrevCommand from '../history/PrevCommand';
 import NextCommand from '../history/NextCommand';
+import Bitmap from '../node/Bitmap';
 
 export type ListenerOptions = {
   enabled?: {
@@ -142,6 +145,7 @@ export default class Listener extends Event {
   isWin = isWin;
   guides: Guides;
   clones: { parent: Container, node: Node }[];
+  img?: HTMLImageElement; // 添加的本地img
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
@@ -697,8 +701,12 @@ export default class Listener extends Event {
     const o = page.getComputedStyle();
     this.pageTx = o.translateX;
     this.pageTy = o.translateY;
+    // 最高优先级加图片，等鼠标抬起判断是点击还是框选
+    if (this.state === state.ADD_IMG) {
+      this.updateOrigin();
+    }
     // 空格或中间移动画布
-    if (e.button === 0 && this.spaceKey || this.middleKey || this.state === state.HAND) {
+    else if (e.button === 0 && this.spaceKey || this.middleKey || this.state === state.HAND) {
       this.dom.classList.add('handing');
     }
     // 普通按下是选择节点或者编辑文本
@@ -1001,8 +1009,37 @@ export default class Listener extends Event {
     const root = this.root;
     const dpi = root.dpi;
     const selected = this.selected;
+    if (this.state === state.ADD_IMG) {
+      if (this.isMouseDown) {
+        let dx = e.clientX - this.startX;
+        let dy = e.clientY - this.startY;
+        // 防抖添加后设置尺寸frame
+        if (this.select.frame.style.display === 'block') {
+          this.select.updateFrame(dx, dy);
+        }
+        // 防止轻微抖动添加frame
+        else if (dx && dy) {
+          this.select.showFrame(this.startX - this.originX, this.startY - this.originY, dx, dy);
+        }
+        if (this.select.frame.style.display === 'block' && this.img) {
+          this.img.style.maxWidth = 'none';
+          this.img.style.maxHeight = 'none';
+          this.img.style.left = this.startX - this.originX + 'px';
+          this.img.style.top = this.startY - this.originY + 'px';
+          this.img.style.width = Math.max(Math.abs(dx), 1) + 'px';
+          this.img.style.height = Math.max(Math.abs(dy), 1) + 'px';
+          this.img.style.transform = this.select.frame.style.transform;
+        }
+      }
+      // 未按下，鼠标移动也要显示图片缩影
+      else if (this.img) {
+        this.img.style.display = 'block';
+        this.img.style.left = e.clientX - this.originX + 'px';
+        this.img.style.top = e.clientY - this.originY + 'px';
+      }
+    }
     // 空格或中键拖拽画布
-    if ((this.spaceKey || this.middleKey || this.state === state.HAND) && !this.isFrame) {
+    else if ((this.spaceKey || this.middleKey || this.state === state.HAND) && !this.isFrame) {
       if (this.isMouseDown) {
         if (this.options.disabled?.drag) {
           return;
@@ -1288,45 +1325,7 @@ export default class Listener extends Event {
         const node = create(transform);
         const page = this.root.getCurPage()!;
         const zoom = page.getZoom();
-        // 已选节点第0个作为兄弟节点参考
-        if (this.selected.length) {
-          const prev = this.selected[0];
-          const container = prev.parent!;
-          const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
-          node.updateStyle({
-            left: left * 100 / container.width + '%',
-            top: top * 100 / container.height + '%',
-            right: (right - w / zoom) * 100 / container.width + '%',
-            bottom: (bottom - h / zoom) * 100 / container.height + '%',
-          });
-          prev.insertAfter(node);
-        }
-        // 无已选看是否是画板内
-        else {
-          let artBoard: ArtBoard | undefined;
-          const pts = [
-            { x, y },
-            { x, y: y + h },
-            { x: x + w, y },
-            { x: x + w, y: y + h },
-          ];
-          for (let i = 0, len = pts.length; i < len; i++) {
-            const pt = pts[i];
-            artBoard = getArtBoardByPoint(this.root, pt.x, pt.y);
-            if (artBoard) {
-              break;
-            }
-          }
-          const container = artBoard || page;
-          const { left, top, right, bottom } = getOffsetByPoint(this.root, x, y, container);
-          node.updateStyle({
-            left: left * 100 / container.width + '%',
-            top: top * 100 / container.height + '%',
-            right: (right - w / zoom) * 100 / container.width + '%',
-            bottom: (bottom - h / zoom) * 100 / container.height + '%',
-          });
-          container.appendChild(node);
-        }
+        addNode(node, this.root, x, y, w / zoom, h / zoom, this.selected[0]);
         this.selected.splice(0);
         this.selected.push(node);
         this.select.showSelect(this.selected);
@@ -1345,6 +1344,62 @@ export default class Listener extends Event {
         this.state = state.NORMAL;
         this.emit(Listener.STATE_CHANGE, old, this.state);
         this.emit(Listener.SELECT_NODE, [node]);
+      }
+    }
+    else if (this.state === state.ADD_IMG) {
+      let bitmap: Bitmap | undefined;
+      if (this.img) {
+        let { clientWidth: w, clientHeight: h, style } = this.img;
+        const { left, top, transform } = style;
+        let x = parseInt(left);
+        let y = parseInt(top);
+        if (transform === 'scale(-1, -1)') {
+          x -= w;
+          y -= h;
+        }
+        else if (transform === 'scaleX(-1)') {
+          x -= w;
+        }
+        else if (transform === 'scaleY(-1)') {
+          y -= h;
+        }
+        const dpi = this.root.dpi;
+        x *= dpi;
+        y *= dpi;
+        w *= dpi;
+        h *= dpi;
+        const page = this.root.getCurPage()!;
+        const zoom = page.getZoom();
+        bitmap = new Bitmap({
+          uuid: uuid.v4(),
+          src: this.img.src,
+          name: this.img.title,
+        });
+        addNode(bitmap, this.root, x, y, w / zoom, h / zoom, this.selected[0]);
+        this.selected.splice(0);
+        this.selected.push(bitmap);
+        this.select.showSelect(this.selected);
+        this.select.hideFrame();
+        this.dom.classList.remove('add-img');
+        this.history.addCommand(new AddCommand([bitmap], [{
+          x: bitmap.computedStyle.left,
+          y: bitmap.computedStyle.top,
+          parent: bitmap.parent!,
+        }]));
+        this.emit(Listener.ADD_NODE, [bitmap]);
+        this.img.remove();
+        this.img = undefined;
+      }
+      this.state = state.NORMAL;
+      this.emit(Listener.STATE_CHANGE, state.ADD_IMG, this.state);
+      if (bitmap) {
+        this.emit(Listener.SELECT_NODE, [bitmap]);
+      }
+    }
+    // 抬起时点在矢量框外部取消矢量编辑，排除frame选框（已在move时设置了keep）
+    else if (this.state === state.EDIT_GEOM) {
+      if (!this.geometry.keep) {
+        this.cancelEditGeom();
       }
     }
     else if (this.isMouseMove) {
@@ -1408,12 +1463,6 @@ export default class Listener extends Event {
       this.select.showSelect(selected);
       this.prepare();
       this.emit(Listener.SELECT_NODE, selected.slice(0));
-    }
-    // 抬起时点在矢量框外部取消矢量编辑，排除frame选框（已在move时设置了keep）
-    if (this.state === state.EDIT_GEOM) {
-      if (!this.geometry.keep) {
-        this.cancelEditGeom();
-      }
     }
     this.isMouseDown = false;
     this.isMouseMove = false;
@@ -2070,11 +2119,16 @@ export default class Listener extends Event {
         this.dom.classList.remove('add-text');
         const old = this.state;
         this.state = state.NORMAL;
-        if (picker.isShow()) {
-          picker.hide();
-        }
         this.emit(Listener.CANCEL_ADD_ESC);
         this.emit(Listener.STATE_CHANGE, old, this.state);
+      }
+      else if (this.state === state.ADD_IMG) {
+        this.dom.classList.remove('add-img');
+        this.state = state.NORMAL;
+        this.img?.remove();
+        this.img = undefined;
+        this.emit(Listener.CANCEL_ADD_ESC);
+        this.emit(Listener.STATE_CHANGE, state.ADD_IMG, this.state);
       }
       else if (this.state === state.EDIT_GEOM) {
         if (this.geometry.hasEditPoint()) {

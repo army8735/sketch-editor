@@ -6,6 +6,7 @@ import Listener from './Listener';
 import state from './state';
 import { BOOLEAN_OPERATION } from '../style/define';
 import picker from './picker';
+import inject from '../util/inject';
 
 const selHtml = `
 <div class="ti" title="select"><b class="select"></b></div>
@@ -34,7 +35,7 @@ const geomHtml = `
 
 const textHtml = `<div class="ti" title="text"><b class="text"></b></div>`;
 
-const imageHtml = `<div class="ti" title="image"><b class="image"></b></div>`;
+const imageHtml = `<div class="ti" title="image"><b class="image"></b><input type="file" accept="image/*"/></div>`;
 
 const maskHtml = `
 <div class="ti disable" title="alpha"><b class="alpha"></b></div>
@@ -86,11 +87,11 @@ class Toolbar {
     const image = document.createElement('div');
     image.className = 'img item';
     image.innerHTML = imageHtml;
-    // dom.appendChild(image);
+    dom.appendChild(image);
 
-    const mask = document.createElement('div');
-    mask.className = 'mask item';
-    mask.innerHTML = maskHtml;
+    // const mask = document.createElement('div');
+    // mask.className = 'mask item';
+    // mask.innerHTML = maskHtml;
     // dom.appendChild(mask);
 
     const bool = document.createElement('div');
@@ -123,6 +124,12 @@ class Toolbar {
         classList = target.classList;
       }
       else if (tagName === 'B') {
+        target = target.parentElement as HTMLElement;
+        tagName = target.tagName.toUpperCase();
+        classList = target.classList;
+      }
+      // 特殊的input file
+      else if (tagName === 'INPUT') {
         target = target.parentElement as HTMLElement;
         tagName = target.tagName.toUpperCase();
         classList = target.classList;
@@ -232,6 +239,41 @@ class Toolbar {
 
       if (prev !== listener.state) {
         listener.emit(Listener.STATE_CHANGE, prev, listener.state);
+      }
+    });
+
+    dom.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.tagName === 'INPUT') {
+        const file = target.files && target.files[0];
+        if (file) {
+          listener.state = state.ADD_IMG;
+          listener.dom.classList.add('add-img');
+          listener.select.hideSelect();
+          const reader = new FileReader();
+          reader.onload = function() {
+            const ab = reader.result as ArrayBuffer;
+            inject.loadArrayBufferImg(ab).then(res => {
+              res.title = file.name;
+              res.className = 'img';
+              res.style.maxWidth = '100px';
+              res.style.maxHeight = '100px';
+              listener.img = res;
+              listener.dom.appendChild(res);
+            });
+          };
+          reader.readAsArrayBuffer(file);
+        }
+        else {
+          reset();
+        }
+      }
+    });
+
+    dom.addEventListener('cancel', (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.tagName === 'INPUT') {
+        reset();
       }
     });
 
@@ -393,7 +435,7 @@ class Toolbar {
     });
 
     // 添加状态按下esc后取消添加返回至普通状态，按钮也要随之变化
-    listener.on(Listener.CANCEL_ADD_ESC, () => {
+    function reset() {
       clear();
       sel.classList.add('active');
       const div = sel.querySelector('.ti') as HTMLElement;
@@ -403,7 +445,8 @@ class Toolbar {
       if (listener.selected.length) {
         listener.select.showSelectNotUpdate();
       }
-    });
+    }
+    listener.on(Listener.CANCEL_ADD_ESC, reset);
   }
 }
 

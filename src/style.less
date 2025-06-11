@@ -296,7 +296,7 @@
         cursor: -webkit-image-set(url(@addRound) 2x, url(@addRound) 1x) 4 11, auto;
       }
 
-      &.add-line {
+      &.add-line, &.add-img {
         cursor: -webkit-image-set(url(@addLine) 2x, url(@addLine) 1x) 4 11, auto;
       }
 
@@ -1031,6 +1031,15 @@
         top: 0;
         overflow: visible;
       }
+    }
+
+    .img {
+      position: absolute;
+      display: none;
+      left: 0;
+      top: 0;
+      transform-origin: 0 0;
+      pointer-events: none;
     }
 
     .oval {
@@ -2160,6 +2169,7 @@
       }
 
       .ti {
+        position: relative;
         padding: 2px;
         width: 24px;
         height: 24px;
@@ -2180,6 +2190,15 @@
             background-color: rgba(230, 230, 230);
           }
         }
+      }
+
+      &.img input {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
       }
 
       .select {

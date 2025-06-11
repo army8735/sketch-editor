@@ -12,6 +12,7 @@ export enum state {
   ADD_TRIANGLE = 10,
   ADD_LINE = 11,
   ADD_STAR = 12,
+  ADD_IMG = 13,
 }
 
 export default state;
