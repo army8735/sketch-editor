@@ -55,9 +55,6 @@ class Bitmap extends Node {
       this.loader.error = true;
     }
     else {
-      const isBlob = /^blob:/.test(src);
-      if (isBlob) {
-      }
       const cache = inject.IMG[src];
       if (cache && cache.state === inject.LOADED) {
         if (cache.success) {
@@ -69,6 +66,24 @@ class Bitmap extends Node {
           this.loader.error = true;
         }
       }
+    }
+  }
+
+  override didMount() {
+    super.didMount();
+    const src = this.src;
+    const isBlob = /^blob:/.test(src);
+    if (isBlob) {
+      inject.uploadImgSrc(src).then(res => {
+        if (res) {
+          const cache = inject.IMG[src];
+          // 复用
+          if (cache && cache.state === inject.LOADED) {
+            inject.IMG[res] = cache;
+          }
+          this.src = res;
+        }
+      });
     }
   }
 
