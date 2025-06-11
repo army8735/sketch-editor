@@ -259,6 +259,8 @@ class Toolbar {
               res.style.maxWidth = '100px';
               res.style.maxHeight = '100px';
               listener.img = res;
+              listener.imgWidth = res.width;
+              listener.imgHeight = res.height;
               listener.dom.appendChild(res);
             });
           };

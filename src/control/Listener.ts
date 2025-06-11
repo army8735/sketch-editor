@@ -147,6 +147,8 @@ export default class Listener extends Event {
   guides: Guides;
   clones: { parent: Container, node: Node }[];
   img?: HTMLImageElement; // 添加的本地img
+  imgWidth: number;
+  imgHeight: number;
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
@@ -188,6 +190,8 @@ export default class Listener extends Event {
     this.originStyle = [];
     this.cssStyle = [];
     this.updateOrigin();
+
+    this.imgWidth = this.imgHeight = 0;
 
     this.select = new Select(root, dom);
     this.input = new Input(root, dom, this);
@@ -1030,6 +1034,7 @@ export default class Listener extends Event {
         }
         // 防止轻微抖动添加frame
         else if (dx && dy) {
+          this.isMouseMove = true;
           this.select.showFrame(this.startX - this.originX, this.startY - this.originY, dx, dy);
         }
         if (this.select.frame.style.display === 'block' && this.img) {
@@ -1386,7 +1391,7 @@ export default class Listener extends Event {
           src: this.img.src,
           name: this.img.title,
         });
-        addNode(bitmap, this.root, x, y, w / zoom, h / zoom, this.selected[0]);
+        addNode(bitmap, this.root, x, y, this.isMouseMove ? w / zoom : this.imgWidth, this.isMouseMove ? h / zoom : this.imgHeight, this.selected[0]);
         this.selected.splice(0);
         this.selected.push(bitmap);
         this.select.showSelect(this.selected);
