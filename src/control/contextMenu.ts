@@ -1,4 +1,4 @@
-import Group from '../node/Group';
+import AbstractGroup from '../node/AbstractGroup';
 import Listener from './Listener';
 import { MASK, VISIBILITY } from '../style/define';
 import { version } from '../../package.json';
@@ -197,7 +197,7 @@ const o = {
     }
     else if (nodes.length === 1) {
       const node = nodes[0];
-      if (node instanceof Group) {
+      if (node instanceof AbstractGroup) {
         classList.add('single-group');
       }
       else {

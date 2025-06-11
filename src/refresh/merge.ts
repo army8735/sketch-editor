@@ -105,7 +105,7 @@ export function genMerge(
       contrast,
     } = computedStyle;
     // 特殊的group可以指定唯一的fill用作tint色调功能
-    if (!tint && node instanceof Group && !(node instanceof ShapeGroup)) {
+    if (!tint && node instanceof Group) {
       if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
         tint = fill[0];
         tint[3] *= fillOpacity[0];

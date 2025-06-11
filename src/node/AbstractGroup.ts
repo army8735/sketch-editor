@@ -6,7 +6,7 @@ import { RefreshLevel } from '../refresh/level';
 
 const EPS = 1e-4;
 
-class AbstractGroup extends Container {
+abstract class AbstractGroup extends Container {
   fixedPosAndSize: boolean;
 
   constructor(props: Props, children: Node[]) {

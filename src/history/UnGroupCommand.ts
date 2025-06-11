@@ -1,7 +1,7 @@
 import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import Container from '../node/Container';
-import Group from '../node/Group';
+import AbstractGroup from '../node/AbstractGroup';
 import { unGroup } from '../tools/group';
 import { migrate } from '../tools/node';
 import { appendWithIndex } from '../tools/container';
@@ -15,21 +15,21 @@ export type UnGroupData = {
 class UnGroupCommand extends AbstractCommand {
   data: UnGroupData[];
 
-  constructor(nodes: Group[], data: UnGroupData[]) {
+  constructor(nodes: AbstractGroup[], data: UnGroupData[]) {
     super(nodes);
     this.data = data;
   }
 
   execute() {
-    UnGroupCommand.operate(this.nodes as Group[]);
+    UnGroupCommand.operate(this.nodes as AbstractGroup[]);
   }
 
   undo() {
     this.nodes.forEach((node, i) => {
-      const group = node as Group;
+      const group = node as AbstractGroup;
       group.fixedPosAndSize = true;
       const { parent, children } = this.data[i];
-      if (parent instanceof Group) {
+      if (parent instanceof AbstractGroup) {
         parent.fixedPosAndSize = true;
       }
       appendWithIndex(parent, group);
@@ -45,14 +45,14 @@ class UnGroupCommand extends AbstractCommand {
     });
     this.data.forEach((item) => {
       const { parent } = item;
-      if (parent instanceof Group && parent.fixedPosAndSize) {
+      if (parent instanceof AbstractGroup && parent.fixedPosAndSize) {
         parent.fixedPosAndSize = false;
         parent.checkPosSizeSelf();
       }
     });
   }
 
-  static operate(nodes: Group[]) {
+  static operate(nodes: AbstractGroup[]) {
     return nodes.map(item => {
       return unGroup(item)!;
     });

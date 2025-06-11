@@ -3,10 +3,10 @@ import Node from '../node/Node';
 import Group from '../node/Group';
 import { migrate, sortTempIndex } from './node';
 import inject from '../util/inject';
-import ShapeGroup from '../node/geom/ShapeGroup';
+import AbstractGroup from '../node/AbstractGroup';
 
 // 至少1个node进行编组，以第0个位置为基准
-export function group(nodes: Node[], group?: Group | ShapeGroup) {
+export function group(nodes: Node[], group?: AbstractGroup) {
   if (!nodes.length) {
     return;
   }
@@ -15,7 +15,7 @@ export function group(nodes: Node[], group?: Group | ShapeGroup) {
   const first = nodes2[0];
   const parent = first.parent!;
   // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
-  if (parent instanceof Group) {
+  if (parent instanceof AbstractGroup) {
     parent.fixedPosAndSize = true;
   }
   // 首次命令没有生成，后续redo时就有了
@@ -45,21 +45,21 @@ export function group(nodes: Node[], group?: Group | ShapeGroup) {
     group.appendChild(nodes2[i]);
   }
   group.fixedPosAndSize = false;
-  if (parent instanceof Group) {
+  if (parent instanceof AbstractGroup) {
     parent.fixedPosAndSize = false;
   }
   group.checkPosSizeSelf();
   return group;
 }
 
-export function unGroup(group: Group | ShapeGroup) {
+export function unGroup(group: AbstractGroup) {
   if (group.isDestroyed || !group.parent) {
     inject.error('Can not unGroup a destroyed Node');
     return;
   }
   group.fixedPosAndSize = true;
   const parent = group.parent;
-  if (parent instanceof Group) {
+  if (parent instanceof AbstractGroup) {
     parent.fixedPosAndSize = true;
   }
   let target = group as Node;
@@ -71,7 +71,7 @@ export function unGroup(group: Group | ShapeGroup) {
     target.insertAfter(item);
     target = item;
   }
-  if (parent instanceof Group) {
+  if (parent instanceof AbstractGroup) {
     parent.fixedPosAndSize = false;
   }
   group.fixedPosAndSize = false;

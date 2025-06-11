@@ -148,7 +148,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
         return res;
       }
       // 选不了组（组本身没内容，选中时肯定是组的空白区域），shapeGroup除外
-      if (res instanceof Group && !(res instanceof ShapeGroup)) {
+      if (res instanceof Group) {
         return;
       }
       // 点击前没有已选节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
@@ -322,7 +322,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
       // 按下metaKey，需返回最深的叶子节点，但不返回组、画板
       if (metaKey) {
         return res.filter(item => {
-          if (item instanceof Group && !(item instanceof ShapeGroup)) {
+          if (item instanceof Group) {
             return false;
           }
           if (item instanceof ArtBoard) {
@@ -336,7 +336,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
       outer:
       for (let i = 0, len = res.length; i < len; i++) {
         const item = res[i];
-        if (item instanceof Group && !(item instanceof ShapeGroup)) {
+        if (item instanceof Group) {
           continue;
         }
         if (item instanceof ArtBoard) {

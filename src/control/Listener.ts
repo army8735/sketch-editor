@@ -8,6 +8,7 @@ import ArtBoard from '../node/ArtBoard';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
 import Polyline from '../node/geom/Polyline';
+import AbstractGroup from '../node/AbstractGroup';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
@@ -1755,7 +1756,7 @@ export default class Listener extends Event {
   }
 
   unGroup(nodes = this.selected) {
-    const groups = nodes.filter(item => item instanceof Group);
+    const groups = nodes.filter(item => item instanceof AbstractGroup);
     if (groups.length) {
       const res = UnGroupCommand.operate(groups);
       this.selected.splice(0);
