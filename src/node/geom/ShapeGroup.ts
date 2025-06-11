@@ -21,13 +21,12 @@ import {
   StyleUnit, VISIBILITY,
 } from '../../style/define';
 import { getConic, getLinear, getRadial } from '../../style/gradient';
-import { migrate, sortTempIndex } from '../../tools/node';
 import inject, { OffScreen } from '../../util/inject';
 import { clone } from '../../util/type';
-import Group from '../Group';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
+import AbstractGroup from '../AbstractGroup';
 import { RefreshLevel } from '../../refresh/level';
 import { getCanvasGCO } from '../../style/mbm';
 import { lineJoin } from './border';
@@ -92,7 +91,7 @@ type Loader = {
   height: number;
 };
 
-class ShapeGroup extends Group {
+class ShapeGroup extends AbstractGroup {
   props: ShapeGroupProps;
   coords?: number[][][]; // undefined初始化，结果可能是空集合则空数组
   loaders: Loader[];
@@ -100,24 +99,19 @@ class ShapeGroup extends Group {
   constructor(props: ShapeGroupProps, children: Node[]) {
     super(props, children);
     this.props = props;
-    // this.coords = [];
     this.loaders = [];
     this.isShapeGroup = true;
   }
 
   override didMount() {
-    const { children } = this;
-    const len = children.length;
-    for (let i = 0; i < len; i++) {
-      children[i].didMount();
-    }
+    super.didMount();
     this.buildPoints();
     if (!this.coords?.length) {
       return;
     }
     const rect = this._rect || this.rect;
     const { width, height } = this;
-    const EPS = Group.EPS;
+    const EPS = AbstractGroup.EPS;
     // 和group的对比不同，直接用points的结果的rect
     if (Math.abs(rect[0]) > EPS
       || Math.abs(rect[1]) > EPS
@@ -954,78 +948,6 @@ class ShapeGroup extends Group {
       res[3] = Math.max(res[3], maxY);
     }
     return res;
-  }
-
-  static groupAsShape(
-    nodes: Node[],
-    bo = BOOLEAN_OPERATION.NONE,
-    props?: ShapeGroupProps,
-  ) {
-    if (!nodes.length) {
-      return;
-    }
-    sortTempIndex(nodes);
-    const first = nodes[0];
-    const parent = first.parent!;
-    // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
-    if (parent instanceof Group) {
-      parent.fixedPosAndSize = true;
-    }
-    for (let i = 0, len = nodes.length; i < len; i++) {
-      const item = nodes[i];
-      migrate(parent, item);
-      item.style.booleanOperation = { v: bo, u: StyleUnit.NUMBER };
-    }
-    // 取第一个矢量图形的描绘属性
-    let style: JStyle | undefined;
-    for (let i = 0, len = nodes.length; i < len; i++) {
-      const item = nodes[i];
-      if (item instanceof Polyline || item instanceof ShapeGroup) {
-        style = item.getCssStyle();
-        break;
-      }
-    }
-    if (!style) {
-      style = getDefaultStyle();
-    }
-    const p = Object.assign(
-      {
-        uuid: uuid.v4(),
-        name: '形状结合',
-        style: {
-          left: '0%',
-          top: '0%',
-          right: '0%',
-          bottom: '0%',
-          fill: style.fill,
-          fillEnable: style.fillEnable,
-          fillRule: style.fillRule,
-          stroke: style.stroke,
-          strokeEnable: style.strokeEnable,
-          strokeWidth: style.strokeWidth,
-          strokePosition: style.strokePosition,
-          strokeDasharray: style.strokeDasharray,
-          strokeLinecap: style.strokeLinecap,
-          strokeLinejoin: style.strokeLinejoin,
-          strokeMiterlimit: style.strokeMiterlimit,
-        },
-      },
-      props,
-    );
-    const shapeGroup = new ShapeGroup(p, []);
-    shapeGroup.fixedPosAndSize = true;
-    // 插入到first的后面
-    first.insertAfter(shapeGroup);
-    // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
-    for (let i = 0, len = nodes.length; i < len; i++) {
-      shapeGroup.appendChild(nodes[i]);
-    }
-    shapeGroup.fixedPosAndSize = false;
-    if (parent instanceof Group) {
-      parent.fixedPosAndSize = false;
-    }
-    shapeGroup.checkPosSizeSelf();
-    return shapeGroup;
   }
 }
 
