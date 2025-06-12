@@ -76,6 +76,7 @@ import { createText } from '../tools/text';
 import PrevCommand from '../history/PrevCommand';
 import NextCommand from '../history/NextCommand';
 import Bitmap from '../node/Bitmap';
+import inject from '../util/inject';
 
 export type ListenerOptions = {
   enabled?: {
@@ -149,6 +150,7 @@ export default class Listener extends Event {
   img?: HTMLImageElement; // 添加的本地img
   imgWidth: number;
   imgHeight: number;
+  dragHover: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
@@ -199,6 +201,9 @@ export default class Listener extends Event {
     this.gradient = new Gradient(root, dom, this);
     this.geometry = new Geometry(root, dom, this);
     this.addGeom = new AddGeom(root, dom);
+    this.dragHover = document.createElement('div');
+    this.dragHover.className = 'drag';
+    dom.appendChild(this.dragHover);
     this.clones = [];
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
@@ -212,6 +217,8 @@ export default class Listener extends Event {
     dom.addEventListener('dblclick', this.onDblClick.bind(this));
     dom.addEventListener('wheel', this.onWheel.bind(this));
     dom.addEventListener('contextmenu', this.onContextMenu.bind(this));
+    dom.addEventListener('dragover', this.onDragOver.bind(this));
+    dom.addEventListener('drop', this.onDrop.bind(this));
     document.addEventListener('keydown', this.onKeyDown.bind(this));
     document.addEventListener('keyup', this.onKeyUp.bind(this));
   }
@@ -2701,6 +2708,46 @@ export default class Listener extends Event {
     }
   }
 
+  onDragOver(e: DragEvent) {
+    e.preventDefault();
+    this.dragHover.style.display = 'block';
+  }
+
+  onDrop(e: DragEvent) {
+    e.preventDefault();
+    this.dragHover.style.display = 'none';
+    const file = e.dataTransfer?.files[0];
+    if (file) {
+      this.updateOrigin();
+      const dpi = this.root.dpi;
+      const x = (e.clientX - this.originX) * dpi;
+      const y = (e.clientY - this.originY) * dpi;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const ab = reader.result as ArrayBuffer;
+        inject.loadArrayBufferImg(ab).then(res => {
+          const bitmap = new Bitmap({
+            uuid: uuid.v4(),
+            src: res.src,
+            name: file.name,
+          });
+          addNode(bitmap, this.root, x, y, res.width, res.height, this.selected[0]);
+          this.selected.splice(0);
+          this.selected.push(bitmap);
+          this.select.showSelect(this.selected);
+          this.history.addCommand(new AddCommand([bitmap], [{
+            x: bitmap.computedStyle.left,
+            y: bitmap.computedStyle.top,
+            parent: bitmap.parent!,
+          }]));
+          this.emit(Listener.ADD_NODE, [bitmap]);
+          this.emit(Listener.SELECT_NODE, [bitmap]);
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
   updateSelected() {
     if (this.selected.length) {
       this.select.updateSelect(this.selected);
@@ -2775,6 +2822,8 @@ export default class Listener extends Event {
     this.dom.removeEventListener('dblclick', this.onDblClick);
     this.dom.removeEventListener('wheel', this.onWheel);
     this.dom.removeEventListener('contextmenu', this.onContextMenu);
+    this.dom.removeEventListener('dragover', this.onDragOver);
+    this.dom.removeEventListener('drop', this.onDrop);
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
 

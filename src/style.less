@@ -1033,15 +1033,6 @@
       }
     }
 
-    .img {
-      position: absolute;
-      display: none;
-      left: 0;
-      top: 0;
-      transform-origin: 0 0;
-      pointer-events: none;
-    }
-
     .oval {
       border-radius: 50%;
     }
@@ -1056,6 +1047,28 @@
 
     .triangle, .star {
       border: none;
+    }
+
+    .img {
+      position: absolute;
+      display: none;
+      left: 0;
+      top: 0;
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+
+    .drag {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: none;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 128, 255, 0.1);
+      border: 2px solid rgba(0, 128, 255, 0.3);
+      pointer-events: none;
     }
   }
 
@@ -1467,7 +1480,7 @@
       }
     }
 
-    .fill-panel, .stroke-panel {
+    .fill-panel, .stroke-panel, .tint-panel {
       margin-bottom: 10px;
       border-bottom: 1px solid rgba(206, 212, 216, 0.5);
 
@@ -2599,6 +2612,12 @@
 
     .arrow {
       left: 90%;
+    }
+  }
+
+  &.tintPanel {
+    .type {
+      display: none;
     }
   }
 
