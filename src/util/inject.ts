@@ -507,7 +507,7 @@ const inject = {
     }
     return [];
   },
-  async uploadImgSrc(src: string): Promise<string | void> {},
+  async uploadBlobImgSrc(src: string): Promise<string | void> {},
   log(s: any) {
     console.log(s);
   },
