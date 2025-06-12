@@ -75,7 +75,7 @@ class TintPanel extends Panel {
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: 0 };
         })), independence);
-        listener.emit(Listener.FILL_NODE, nodes.slice(0), nodes.map(() => 0));
+        listener.emit(Listener.TINT_NODE, nodes.slice(0), nodes.map(() => 0));
         onBlur();
       }
     };
@@ -212,7 +212,7 @@ class TintPanel extends Panel {
           listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
             return { prev, next: nexts[i], index: 0 };
           })));
-          listener.emit(Listener.FILL_NODE, nodes.slice(0), nodes.map(() => 0));
+          listener.emit(Listener.TINT_NODE, nodes.slice(0), nodes.map(() => 0));
         }
         this.silence = false;
       }
@@ -380,7 +380,7 @@ class TintPanel extends Panel {
     });
 
     listener.on([
-      Listener.FILL_NODE,
+      Listener.TINT_NODE,
     ], (nodes: Node[], idx: number[]) => {
       if (this.silence) {
         return;

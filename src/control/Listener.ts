@@ -2879,6 +2879,7 @@ export default class Listener extends Event {
   static CONSTRAIN_PROPORTION_NODE = 'CONSTRAIN_PROPORTION_NODE';
   static POINT_NODE = 'POINT_NODE'; // 改变矢量点
   static SELECT_POINT = 'SELECT_POINT'; // 选择矢量点
+  static TINT_NODE = 'TINT_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
   static STATE_CHANGE = 'STATE_CHANGE';
