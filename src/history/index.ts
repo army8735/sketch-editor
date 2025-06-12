@@ -26,6 +26,7 @@ import BoolGroupCommand from './BoolGroupCommand';
 import FlattenCommand from './FlattenCommand';
 import PrevCommand from './PrevCommand';
 import NextCommand from './NextCommand';
+import TintCommand from './TintCommand';
 
 export default {
   History,
@@ -56,4 +57,5 @@ export default {
   FlattenCommand,
   PrevCommand,
   NextCommand,
+  TintCommand,
 };

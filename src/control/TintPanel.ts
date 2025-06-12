@@ -7,7 +7,7 @@ import { color2hexStr, color2rgbaInt, color2rgbaStr, getCssFillStroke } from '..
 import { FillStyle } from '../format';
 import picker from './picker';
 import { ComputedGradient, ComputedPattern } from '../style/define';
-import FillCommand from '../history/FillCommand';
+import TintCommand from '../history/TintCommand';
 import state from './state';
 
 const html = `
@@ -64,7 +64,7 @@ class TintPanel extends Panel {
     panel.innerHTML = html;
     dom.appendChild(panel);
 
-    let nodes: Node[] = [];
+    let nodes: Group[] = [];
     let prevs: FillStyle[] = [];
     let nexts: FillStyle[] = [];
     let hasRefresh = true; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
@@ -72,7 +72,7 @@ class TintPanel extends Panel {
     const pickCallback = (independence = false) => {
       // 只有变更才会有next
       if (nodes.length && nexts.length) {
-        listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+        listener.history.addCommand(new TintCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: 0 };
         })), independence);
         listener.emit(Listener.TINT_NODE, nodes.slice(0), nodes.map(() => 0));
@@ -87,7 +87,7 @@ class TintPanel extends Panel {
     };
 
     const setPrev = () => {
-      nodes = this.nodes.slice(0);
+      nodes = this.nodes.slice(0) as Group[];
       prevs = [];
       nodes.forEach(node => {
         const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
@@ -162,7 +162,7 @@ class TintPanel extends Panel {
       else if (classList.contains('enabled')) {
         this.silence = true;
         const line = el.parentElement!;
-        const nodes = this.nodes.slice(0);
+        const nodes = this.nodes.slice(0) as Group[];
         const prevs: FillStyle[] = [];
         const nexts: FillStyle[] = [];
         let value = false;
@@ -209,7 +209,7 @@ class TintPanel extends Panel {
           });
         }
         if (nodes.length) {
-          listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+          listener.history.addCommand(new TintCommand(nodes, prevs.map((prev, i) => {
             return { prev, next: nexts[i], index: 0 };
           })));
           listener.emit(Listener.TINT_NODE, nodes.slice(0), nodes.map(() => 0));
@@ -233,7 +233,7 @@ class TintPanel extends Panel {
         const value = color2rgbaInt(input.value);
         this.nodes.forEach((node, i) => {
           if (isFirst) {
-            nodes.push(node);
+            nodes.push(node as Group);
             const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
             const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
             prevs.push({
@@ -261,7 +261,7 @@ class TintPanel extends Panel {
         hasRefresh = !isInput;
         this.nodes.forEach((node, i) => {
           if (isFirst) {
-            nodes.push(node);
+            nodes.push(node as Group);
             const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
             const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
             prevs.push({
@@ -329,8 +329,7 @@ class TintPanel extends Panel {
       if (tagName === 'SELECT') {
         if (target.parentElement!.classList.contains('pattern')) {}
         else {
-          const line = target.parentElement!.parentElement!.parentElement!;
-          nodes = this.nodes.slice(0);
+          nodes = this.nodes.slice(0) as Group[];
           prevs = [];
           nexts = [];
           nodes.forEach(node => {

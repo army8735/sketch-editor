@@ -10,6 +10,7 @@ import Slice from '../node/Slice';
 import Polyline from '../node/geom/Polyline';
 import AbstractGroup from '../node/AbstractGroup';
 import ShapeGroup from '../node/geom/ShapeGroup';
+import Bitmap from '../node/Bitmap';
 import { ComputedStyle, Style, StyleUnit, VISIBILITY } from '../style/define';
 import Event from '../util/Event';
 import AddGeom from './AddGeom';
@@ -62,6 +63,9 @@ import AddCommand, { AddData } from '../history/AddCommand';
 import PointCommand, { PointData } from '../history/PointCommand';
 import BoolGroupCommand from '../history/BoolGroupCommand';
 import FlattenCommand from '../history/FlattenCommand';
+import PrevCommand from '../history/PrevCommand';
+import NextCommand from '../history/NextCommand';
+import TintCommand, { TintData } from '../history/TintCommand';
 import { appendWithPosAndSize } from '../tools/container';
 import {
   createLine,
@@ -70,12 +74,9 @@ import {
   createRound,
   createTriangle,
   getFrameVertexes,
-  getPointsAbsByDsp
+  getPointsAbsByDsp,
 } from '../tools/polyline';
 import { createText } from '../tools/text';
-import PrevCommand from '../history/PrevCommand';
-import NextCommand from '../history/NextCommand';
-import Bitmap from '../node/Bitmap';
 import inject from '../util/inject';
 
 export type ListenerOptions = {
@@ -2461,6 +2462,9 @@ export default class Listener extends Event {
         }
         else if (c instanceof FillCommand) {
           this.emit(Listener.FILL_NODE, nodes.slice(0), (c.data as FillData[]).map(item => item.index));
+        }
+        else if (c instanceof TintCommand) {
+          this.emit(Listener.TINT_NODE, nodes.slice(0), (c.data as TintData[]).map(item => item.index));
         }
         else if (c instanceof StrokeCommand) {
           this.emit(Listener.STROKE_NODE, nodes.slice(0), (c.data as StrokeData[]).map(item => item.index));
