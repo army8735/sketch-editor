@@ -16,6 +16,7 @@ import PageList from './PageList';
 import ShadowPanel from './ShadowPanel';
 import BlurPanel from './BlurPanel';
 import ColorAdjustPanel from './ColorAdjustPanel';
+import TintPanel from './TintPanel';
 import Zoom from './Zoom';
 import picker from './picker';
 import contextMenu from './contextMenu';
@@ -74,6 +75,9 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener, opts
   const colorAdjustPanel = new ColorAdjustPanel(root, dom, listener);
   colorAdjustPanel.show(listener.selected);
 
+  const tintPanel = new TintPanel(root, dom, listener);
+  tintPanel.show(listener.selected);
+
   return {
     alignPanel,
     basicPanel,
@@ -120,6 +124,7 @@ export default {
   BlurPanel,
   AlignPanel,
   ColorAdjustPanel,
+  TintPanel,
   Zoom,
   picker,
   contextMenu,

@@ -23,8 +23,8 @@ class Group extends AbstractGroup {
     this.adjustPosAndSize();
   }
 
-  override updateFormatStyle(style: Partial<Style>, cb?: (sync: boolean) => void) {
-    const res = super.updateFormatStyle(style, cb);
+  override updateFormatStyle(style: Partial<Style>, cb?: ((sync: boolean) => void), noRefresh = false) {
+    const res = super.updateFormatStyle(style, cb, noRefresh);
     const keys = res.keys;
     if (keys.includes('fill') || keys.includes('fillEnable') || keys.includes('fillOpacity')) {
       const root = this.root!;
