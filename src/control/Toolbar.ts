@@ -242,6 +242,11 @@ class Toolbar {
       }
     });
 
+    function reInput() {
+      image.querySelector('input')?.remove();
+      image.querySelector('div')!.innerHTML += '<input type="file" accept="image/*"/>';
+    }
+
     dom.addEventListener('change', (e) => {
       const target = e.target as HTMLInputElement;
       if (target.tagName === 'INPUT') {
@@ -262,12 +267,14 @@ class Toolbar {
               listener.imgWidth = res.width;
               listener.imgHeight = res.height;
               listener.dom.appendChild(res);
+              reInput();
             });
           };
           reader.readAsArrayBuffer(file);
         }
         else {
           reset();
+          reInput();
         }
       }
     });

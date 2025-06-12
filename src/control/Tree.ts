@@ -150,7 +150,7 @@ export default class Tree {
       });
     });
 
-    listener.on(Listener.ADD_NODE, (nodes: Node[], selected?: Node[]) => {
+    listener.on(Listener.ADD_NODE, (nodes: Node[]) => {
       nodes.forEach((item) => {
         const res = genNodeTree(item, item.struct.lv);
         const dd = document.createElement('dd');
@@ -171,7 +171,6 @@ export default class Tree {
           }
         }
       });
-      // this.select(selected || nodes);
     });
 
     listener.on([Listener.GROUP_NODE, Listener.BOOL_GROUP_NODE], (groups: Group[], nodes: Node[][]) => {
@@ -527,6 +526,7 @@ export default class Tree {
       });
     });
 
+    // 防止拖拽过程中选择文本
     dom.addEventListener('selectstart', (e) => {
       e.preventDefault();
     });
@@ -698,21 +698,88 @@ export default class Tree {
       }
     });
 
+    let dragTarget: HTMLElement | undefined;
+    let originX = 0;
+    let originY = 0;
+    let startX = 0;
+    let startY = 0;
+    let isMouseMove = false;
+    dom.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) {
+        return;
+      }
+      // const target = e.target as HTMLElement;
+      // const tagName = target.tagName.toUpperCase();
+      // if (tagName === 'SPAN') {
+      //   dragTarget = target.parentElement!.parentElement!;
+      // }
+      // else if (tagName === 'DT') {
+      //   dragTarget = target.parentElement!;
+      // }
+      // if (dragTarget) {
+      //   const o = dom.querySelector('dl')!.getBoundingClientRect();
+      //   originX = o.left;
+      //   originY = o.top;
+      //   startX = e.clientX;
+      //   startY = e.clientY;
+      // }
+    });
+
     dom.addEventListener('mousemove', (e) => {
       let target = e.target as HTMLElement;
-      if (target.nodeName === 'SPAN') {
-        target = target.parentElement!;
-      }
-      const dl = target.parentElement!;
-      const uuid = dl.getAttribute('uuid');
-      if (uuid) {
-        const node = root.refs[uuid];
-        if (node) {
-          listener.select.showHover(node);
-          return;
+      // 鼠标发生了x和y移动，防止轻微抖动
+      if (dragTarget && !isMouseMove) {
+        if (e.clientX - startX && e.clientY - startY || Math.abs(e.clientY - startY) > 1) {
+          isMouseMove = true;
         }
       }
-      listener.select.hideHover();
+      if (isMouseMove) {
+        dragTarget!.classList.add('drag');
+        const x = e.clientX - originX;
+        const y = e.clientY - originY;
+        // console.log(x, y);
+        // 计算获取当前鼠标hover的dl节点，肯定有，防止异常判断非空
+        const tagName = target.tagName.toUpperCase();
+        let dl: HTMLElement | undefined;
+        if (tagName === 'SPAN') {
+          dl = target.parentElement!.parentElement!;
+        }
+        else if (tagName === 'DT') {
+          dl = target.parentElement!;
+        }
+        if (dl) {
+          // 本身的位置直接忽略，也不能拖到自己的子节点，有子节点的只有Group/ShapeGroup/ArtBoard
+          let temp = dl;
+          while (temp !== dom) {
+            if (temp === dragTarget) {
+              dom.querySelector('dl.active')?.classList.remove('active');
+              return;
+            }
+            temp = temp.parentElement!.parentElement!;
+          }
+          //
+        }
+      }
+      else {
+        if (target.nodeName === 'SPAN') {
+          target = target.parentElement!;
+        }
+        const dl = target.parentElement!;
+        const uuid = dl.getAttribute('uuid');
+        if (uuid) {
+          const node = root.refs[uuid];
+          if (node) {
+            listener.select.showHover(node);
+            return;
+          }
+        }
+        listener.select.hideHover();
+      }
+    });
+
+    dom.addEventListener('mouseup', (e) => {
+      dragTarget = undefined;
+      isMouseMove = false;
     });
 
     dom.addEventListener('mouseleave', () => {
