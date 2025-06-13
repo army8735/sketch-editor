@@ -927,6 +927,7 @@ class Node extends Event {
       return;
     }
     this.isDestroyed = true;
+    this.isMounted = false;
     this.clearCache(true);
     this.parent = this.root = this.mask = undefined;
   }

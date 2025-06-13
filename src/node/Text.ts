@@ -260,6 +260,10 @@ class Text extends Node {
             reset = true;
           }
         }
+        style.width = {
+          v: 0,
+          u: StyleUnit.AUTO,
+        };
       }
       if ((textBehaviour === 'auto' || textBehaviour === 'autoH')
         && height.u !== StyleUnit.AUTO
@@ -284,6 +288,10 @@ class Text extends Node {
             reset = true;
           }
         }
+        style.height = {
+          v: 0,
+          u: StyleUnit.AUTO,
+        };
       }
       if (reset) {
         this.checkPosSizeUpward();
