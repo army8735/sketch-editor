@@ -409,7 +409,7 @@ class TintPanel extends Panel {
       item.remove();
     });
     this.nodes = nodes.filter(item => item instanceof Group);
-    if (!this.nodes.length) {
+    if (!this.nodes.length || this.nodes.length !== nodes.length) {
       panel.style.display = 'none';
       return;
     }
