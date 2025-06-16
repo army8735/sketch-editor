@@ -101,7 +101,34 @@
       overflow-y: scroll;
       font-size: 12px;
 
+      .position {
+        position: absolute;
+        display: none;
+        z-index: 2;
+        top: 100%;
+        left: 5px;
+        right: 11px;
+        height: 2px;
+        background: #36F;
+        border-radius: 2px;
+        transform: translateX(6px) translateY(-2px);
+        pointer-events: none;
+
+        &:before {
+          position: absolute;
+          top: 50%;
+          left: -6px;
+          width: 4px;
+          height: 4px;
+          border: 2px solid #36F;
+          border-radius: 50%;
+          transform: translateY(-50%);
+          content: ' ';
+        }
+      }
+
       dl {
+        position: relative;
         margin: 0;
         height: 24px;
         overflow: hidden;
@@ -122,8 +149,10 @@
         }
 
         &.drag {
-          > dt {
-            border: 1px solid rgba(51, 102, 255, 0.3);
+          > dt .name {
+            color: #36F;
+            text-shadow: 1px 1px 1px rgba(51, 102, 255, 0.1);
+            filter: sepia(1) hue-rotate(320deg) saturate(3);
           }
         }
       }
@@ -142,6 +171,7 @@
         height: 24px;
         border: 1px solid transparent;
         border-radius: 6px;
+        overflow: visible;
 
         &:hover {
           .visible {

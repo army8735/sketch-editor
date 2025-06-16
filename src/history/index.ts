@@ -27,6 +27,7 @@ import FlattenCommand from './FlattenCommand';
 import PrevCommand from './PrevCommand';
 import NextCommand from './NextCommand';
 import TintCommand from './TintCommand';
+import PositionCommand from './PositionCommand';
 
 export default {
   History,
@@ -58,4 +59,5 @@ export default {
   PrevCommand,
   NextCommand,
   TintCommand,
+  PositionCommand,
 };

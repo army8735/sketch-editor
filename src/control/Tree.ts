@@ -14,6 +14,8 @@ import Listener from './Listener';
 import config from '../util/config';
 import contextMenu from './contextMenu';
 import { MASK, VISIBILITY } from '../style/define';
+import state from './state';
+import { POSITION } from '../history/PositionCommand';
 
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
@@ -113,12 +115,16 @@ export default class Tree {
   dom: HTMLElement;
   listener: Listener;
   silence: boolean;
+  position: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
     this.silence = false;
+    const position = this.position = document.createElement('div');
+    position.className = 'position';
+    dom.appendChild(position);
 
     // 可能存在，如果不存在就侦听改变，切换页面同样侦听
     const page = root.getCurPage();
@@ -698,46 +704,70 @@ export default class Tree {
       }
     });
 
-    let dragTarget: HTMLElement | undefined;
+    let dragTarget: HTMLElement[] = [];
+    let paddingLeft = 0;
     let originX = 0;
     let originY = 0;
+    let height = 0;
     let startX = 0;
     let startY = 0;
     let isMouseMove = false;
+    let positionData: {
+      el: HTMLElement;
+      ps: POSITION;
+    } | undefined;
     dom.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) {
+      if (e.button !== 0 || listener.state !== state.NORMAL) {
         return;
       }
-      // const target = e.target as HTMLElement;
-      // const tagName = target.tagName.toUpperCase();
-      // if (tagName === 'SPAN') {
-      //   dragTarget = target.parentElement!.parentElement!;
-      // }
-      // else if (tagName === 'DT') {
-      //   dragTarget = target.parentElement!;
-      // }
-      // if (dragTarget) {
-      //   const o = dom.querySelector('dl')!.getBoundingClientRect();
-      //   originX = o.left;
-      //   originY = o.top;
-      //   startX = e.clientX;
-      //   startY = e.clientY;
-      // }
+      const target = e.target as HTMLElement;
+      const tagName = target.tagName.toUpperCase();
+      let dt: HTMLElement | undefined;
+      if (tagName === 'SPAN') {
+        dt = target.parentElement!;
+      }
+      else if (tagName === 'DT') {
+        dt = target;
+      }
+      // 肯定有，预防下
+      if (!dt) {
+        return;
+      }
+      // 按下当前的，所有已选跟随拖拽
+      if (dt.classList.contains('active')) {
+        dom.querySelectorAll('dt.active').forEach(item => {
+          dragTarget.push(item.parentElement!);
+        });
+      }
+      // 否则只拖拽按下的
+      else {
+        dragTarget.push(dt.parentElement!);
+      }
+      if (dragTarget.length) {
+        const o = dom.getBoundingClientRect();
+        originX = o.left;
+        originY = o.top;
+        startX = e.clientX;
+        startY = e.clientY;
+        height = dom.querySelector('dt')!.offsetHeight;
+        paddingLeft = parseInt(window.getComputedStyle(dom).paddingLeft) || 0;
+      }
     });
 
     dom.addEventListener('mousemove', (e) => {
       let target = e.target as HTMLElement;
       // 鼠标发生了x和y移动，防止轻微抖动
-      if (dragTarget && !isMouseMove) {
+      if (dragTarget.length && !isMouseMove) {
         if (e.clientX - startX && e.clientY - startY || Math.abs(e.clientY - startY) > 1) {
           isMouseMove = true;
+          dragTarget.forEach(item => {
+            item.classList.add('drag');
+          });
         }
       }
       if (isMouseMove) {
-        dragTarget!.classList.add('drag');
-        const x = e.clientX - originX;
-        const y = e.clientY - originY;
-        // console.log(x, y);
+        position.style.display = 'none';
+        dom.querySelector('dl.active')?.classList.remove('active');
         // 计算获取当前鼠标hover的dl节点，肯定有，防止异常判断非空
         const tagName = target.tagName.toUpperCase();
         let dl: HTMLElement | undefined;
@@ -747,17 +777,168 @@ export default class Tree {
         else if (tagName === 'DT') {
           dl = target.parentElement!;
         }
+        // 有限高度情况下，拖出dl了，只会是最上边或最下边
+        else if (tagName === 'DIV') {
+          const dl = dom.querySelector('dl') as HTMLElement;
+          const o = dl.getBoundingClientRect();
+          if (e.offsetY >= dl.offsetHeight) {
+            position.style.top = o.top - originY + dl.offsetHeight + 'px';
+          }
+          else {
+            position.style.top = o.top - originY + 'px';
+          }
+          position.style.left = '0%';
+          position.style.display = 'block';
+        }
         if (dl) {
           // 本身的位置直接忽略，也不能拖到自己的子节点，有子节点的只有Group/ShapeGroup/ArtBoard
           let temp = dl;
-          while (temp !== dom) {
-            if (temp === dragTarget) {
-              dom.querySelector('dl.active')?.classList.remove('active');
+          while (temp && temp !== dom) {
+            if (dragTarget.includes(temp)) {
+              positionData = undefined;
               return;
             }
-            temp = temp.parentElement!.parentElement!;
+            // dl的parent是dd，再parent才是父级dl
+            temp = temp.parentElement!;
+            if (temp === dom) {
+              break;
+            }
+            temp = temp.parentElement!;
           }
-          //
+          const uuid = dl.getAttribute('uuid');
+          if (!uuid) {
+            positionData = undefined;
+            return;
+          }
+          const node = root.refs[uuid];
+          if (!node) {
+            positionData = undefined;
+            return;
+          }
+          let needX = false;
+          // console.log(node.name, e.offsetY, height, node instanceof Container);
+          // 鼠标在组上，以1/3线上代表目标位置前，以2/3线下代表目标位置后，中间代表其内（首子节点）
+          if (node instanceof Container) {
+            if (e.offsetY > height * 0.33) {
+              // 自动展开这个组
+              if (!node.isExpanded) {
+                node.isExpanded = true;
+                dl.classList.add('expand');
+              }
+            }
+            if (e.offsetY >= height * 0.67) {
+              dl.classList.add('active');
+              const dl2 = dl.querySelector('dl') as HTMLElement;
+              // 如果组有首子节点，以它为基准视为其前，一般不会有空组
+              if (dl2) {
+                const o = dl2.getBoundingClientRect();
+                position.style.top = o.top - originY + 'px';
+                const dt2 = dl2.querySelector('dt') as HTMLElement;
+                position.style.left = (parseInt(dt2.style.paddingLeft) || 0) + paddingLeft + 'px';
+                positionData = {
+                  el: dl,
+                  ps: POSITION.PREPEND,
+                };
+              }
+              // 否则视为组后普通处理
+              else {
+                const o = dl.getBoundingClientRect();
+                position.style.top = o.top - originY + dl.offsetHeight + 'px';
+                const dt = dl.querySelector('dt') as HTMLElement;
+                position.style.left = (parseInt(dt.style.paddingLeft) || 0) + paddingLeft + 'px';
+                const dd = dl.parentElement!;
+                if (!dd.nextElementSibling) {
+                  needX = true;
+                }
+                positionData = {
+                  el: dl,
+                  ps: POSITION.AFTER,
+                };
+              }
+              position.style.display = 'block';
+            }
+            else if (e.offsetY <= height * 0.33) {
+              dl.parentElement!.parentElement!.classList.add('active');
+              const o = dl.getBoundingClientRect();
+              position.style.top = o.top - originY + 'px';
+              const dt = dl.querySelector('dt') as HTMLElement;
+              position.style.left = (parseInt(dt.style.paddingLeft) || 0) + paddingLeft + 'px';
+              position.style.display = 'block';
+              positionData = {
+                el: dl,
+                ps: POSITION.BEFORE,
+              };
+            }
+            else {
+              dl.classList.add('active');
+              positionData = {
+                el: dl,
+                ps: POSITION.PREPEND,
+              };
+            }
+          }
+          // 鼠标在叶子节点上，以中线区分上下代表目标位置组的前后
+          else {
+            const dd = dl.parentElement!;
+            dd.parentElement!.classList.add('active');
+            const o = dl.getBoundingClientRect();
+            const dt = dl.querySelector('dt') as HTMLElement;
+            position.style.left = (parseInt(dt.style.paddingLeft) || 0) + paddingLeft + 'px';
+            if (e.offsetY >= height * 0.5) {
+              position.style.top = o.top - originY + height + 'px';
+              if (!dd.nextElementSibling) {
+                needX = true;
+              }
+              positionData = {
+                el: dl,
+                ps: POSITION.AFTER,
+              };
+            }
+            else {
+              position.style.top = o.top - originY + 'px';
+              positionData = {
+                el: dl,
+                ps: POSITION.BEFORE,
+              };
+            }
+            position.style.display = 'block';
+          }
+          // 当指向位置处于组的末尾没有next节点时，需要查看x的位置决定在哪一层
+          if (needX) {
+            dom.querySelector('dl.active')?.classList.remove('active');
+            const x = e.clientX - originX - paddingLeft;
+            let temp = dl;
+            while (temp && temp !== dom) {
+              // 往上查找到比这一级group的left大的位置
+              const dt = temp.querySelector('dt') as HTMLElement;
+              if (x >= parseInt(dt.style.paddingLeft)) {
+                dl = temp;
+                dl.parentElement!.parentElement!.classList.add('active');
+                positionData = {
+                  el: dl,
+                  ps: POSITION.AFTER,
+                };
+                break;
+              }
+              // dl的parent是dd，再parent才是父级dl
+              temp = temp.parentElement!;
+              if (temp === dom) {
+                dl = dom.querySelector('dl') as HTMLElement;
+                positionData = {
+                  el: dl,
+                  ps: POSITION.AFTER,
+                };
+                break;
+              }
+              temp = temp.parentElement!;
+            }
+            const dt = dl.querySelector('dt') as HTMLElement;
+            position.style.left = (parseInt(dt.style.paddingLeft) || 0) + paddingLeft + 'px';
+          }
+        }
+        // 不可能，兜底
+        else {
+          positionData = undefined;
         }
       }
       else {
@@ -778,8 +959,18 @@ export default class Tree {
     });
 
     dom.addEventListener('mouseup', (e) => {
-      dragTarget = undefined;
+      // 发生了拖动，尝试进行节点移动
+      if (isMouseMove && positionData && dragTarget.length) {
+        //
+      }
+      dragTarget.forEach(item => {
+        item.classList.remove('drag');
+      });
+      dragTarget = [];
       isMouseMove = false;
+      positionData = undefined;
+      dom.querySelector('dl.active')?.classList.remove('active');
+      position.style.display = 'none';
     });
 
     dom.addEventListener('mouseleave', () => {
