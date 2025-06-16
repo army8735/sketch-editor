@@ -541,18 +541,15 @@ export function getOffsetByPoint(root: Root, x: number, y: number, node?: Contai
   return { left, top, right, bottom };
 }
 
-export function addNode(node: Node, root: Root, x: number, y: number, w: number, h: number, prev?: Node) {
+export function addNode(node: Node, root: Root, x: number, y: number, w = 0, h = 0, prev?: Node) {
+  // 文本可以自动宽高，其它不行
+  if ((!w || !h) && !(node instanceof Text)) {
+    throw new Error('Missing w or h');
+  }
+  let container: Container;
   // 指定prev节点后面
   if (prev) {
-    const container = prev.parent!;
-    const { left, top, right, bottom } = getOffsetByPoint(root, x, y, container);
-    node.updateStyle({
-      left: left * 100 / container.width + '%',
-      top: top * 100 / container.height + '%',
-      right: (right - w) * 100 / container.width + '%',
-      bottom: (bottom - h) * 100 / container.height + '%',
-    });
-    prev.insertAfter(node);
+    container = prev.parent!;
   }
   // 画板或page上
   else {
@@ -570,15 +567,33 @@ export function addNode(node: Node, root: Root, x: number, y: number, w: number,
         break;
       }
     }
-    const container = artBoard || root.getCurPage()!;
-    const { left, top, right, bottom } = getOffsetByPoint(root, x, y, container);
-    node.updateStyle({
-      left: left * 100 / container.width + '%',
-      top: top * 100 / container.height + '%',
-      right: (right - w) * 100 / container.width + '%',
-      bottom: (bottom - h) * 100 / container.height + '%',
-    });
+    container = artBoard || root.getCurPage()!;
+  }
+  const { left, top, right, bottom } = getOffsetByPoint(root, x, y, container);
+  node.updateStyle({
+    left: left * 100 / container.width + '%',
+    top: top * 100 / container.height + '%',
+    right: w ? ((right - w) * 100 / container.width + '%') : 'auto',
+    bottom: h ? ((bottom - h) * 100 / container.height + '%') : 'auto',
+  });
+  if (prev) {
+    prev.insertAfter(node);
+  }
+  else {
     container.appendChild(node);
+  }
+  // 文字无宽高时特殊处理偏移，水平是鼠标开头左对齐，垂直是文本middle
+  if (node instanceof Text && (!w || !h)) {
+    const style: any = {};
+    if (!w) {
+      style.translateX = '-50%';
+      const w = node.width;
+      style.left = (node.computedStyle.left + w * 0.5) * 100 / container.width + '%';
+    }
+    if (!h) {
+      style.translateY = '-50%';
+    }
+    node.updateStyle(style);
   }
 }
 

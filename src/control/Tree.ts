@@ -759,12 +759,13 @@ export default class Tree {
       // 鼠标发生了x和y移动，防止轻微抖动
       if (dragTarget.length && !isMouseMove) {
         if (e.clientX - startX && e.clientY - startY || Math.abs(e.clientY - startY) > 1) {
-          isMouseMove = true;
+          // isMouseMove = true;
           dragTarget.forEach(item => {
             item.classList.add('drag');
           });
         }
       }
+      // 拖拽节点
       if (isMouseMove) {
         position.style.display = 'none';
         dom.querySelector('dl.active')?.classList.remove('active');
@@ -783,9 +784,17 @@ export default class Tree {
           const o = dl.getBoundingClientRect();
           if (e.offsetY >= dl.offsetHeight) {
             position.style.top = o.top - originY + dl.offsetHeight + 'px';
+            positionData = {
+              el: dl,
+              ps: POSITION.BEFORE,
+            };
           }
           else {
             position.style.top = o.top - originY + 'px';
+            positionData = {
+              el: dl,
+              ps: POSITION.AFTER,
+            };
           }
           position.style.left = '0%';
           position.style.display = 'block';
@@ -837,10 +846,10 @@ export default class Tree {
                 position.style.left = (parseInt(dt2.style.paddingLeft) || 0) + paddingLeft + 'px';
                 positionData = {
                   el: dl,
-                  ps: POSITION.PREPEND,
+                  ps: POSITION.APPEND,
                 };
               }
-              // 否则视为组后普通处理
+              // 特殊的空组，视为组前普通处理
               else {
                 const o = dl.getBoundingClientRect();
                 position.style.top = o.top - originY + dl.offsetHeight + 'px';
@@ -852,7 +861,7 @@ export default class Tree {
                 }
                 positionData = {
                   el: dl,
-                  ps: POSITION.AFTER,
+                  ps: POSITION.BEFORE,
                 };
               }
               position.style.display = 'block';
@@ -866,14 +875,14 @@ export default class Tree {
               position.style.display = 'block';
               positionData = {
                 el: dl,
-                ps: POSITION.BEFORE,
+                ps: POSITION.AFTER,
               };
             }
             else {
               dl.classList.add('active');
               positionData = {
                 el: dl,
-                ps: POSITION.PREPEND,
+                ps: POSITION.APPEND,
               };
             }
           }
@@ -891,14 +900,14 @@ export default class Tree {
               }
               positionData = {
                 el: dl,
-                ps: POSITION.AFTER,
+                ps: POSITION.BEFORE,
               };
             }
             else {
               position.style.top = o.top - originY + 'px';
               positionData = {
                 el: dl,
-                ps: POSITION.BEFORE,
+                ps: POSITION.AFTER,
               };
             }
             position.style.display = 'block';
@@ -916,7 +925,7 @@ export default class Tree {
                 dl.parentElement!.parentElement!.classList.add('active');
                 positionData = {
                   el: dl,
-                  ps: POSITION.AFTER,
+                  ps: POSITION.BEFORE,
                 };
                 break;
               }
@@ -926,7 +935,7 @@ export default class Tree {
                 dl = dom.querySelector('dl') as HTMLElement;
                 positionData = {
                   el: dl,
-                  ps: POSITION.AFTER,
+                  ps: POSITION.BEFORE,
                 };
                 break;
               }
@@ -936,11 +945,8 @@ export default class Tree {
             position.style.left = (parseInt(dt.style.paddingLeft) || 0) + paddingLeft + 'px';
           }
         }
-        // 不可能，兜底
-        else {
-          positionData = undefined;
-        }
       }
+      // 未拖拽是hover
       else {
         if (target.nodeName === 'SPAN') {
           target = target.parentElement!;
@@ -961,7 +967,38 @@ export default class Tree {
     dom.addEventListener('mouseup', (e) => {
       // 发生了拖动，尝试进行节点移动
       if (isMouseMove && positionData && dragTarget.length) {
-        //
+        console.log(positionData)
+        let min = -1;
+        // 先查找最小lv，将所有节点按照tree显示的上下顺序排列，需要找到同lv下先后顺序（子节点向上找父节点作为代表）
+        const nodes = dragTarget.map(item => {
+          const lv = parseInt(item.getAttribute('lv')!);
+          if (min === -1) {
+            min = lv;
+          }
+          else {
+            min = Math.min(min, lv);
+          }
+          const uuid = item.getAttribute('uuid');
+          if (uuid) {
+            return root.refs[uuid];
+          }
+        }).filter(item => item) as Node[];
+        // 未知异常，uuid不存在或对不上节点
+        if (nodes.length !== dragTarget.length) {
+          throw new Error('Drag node not exist');
+        }
+        console.log(min, nodes);
+        // 获取所有节点不同lv下的index数据，从最小lv到自己lv的index列表，每个node可能lv不同导致数量不同
+        const indexes = nodes.map(item => {
+          let lv = item.struct.lv;
+          const res: number[] = [];
+          while (lv >= min) {
+            res.unshift(item.index);
+            item = item.parent!;
+            lv = item.struct.lv;
+          }
+          return res;
+        });
       }
       dragTarget.forEach(item => {
         item.classList.remove('drag');

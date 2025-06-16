@@ -9,7 +9,7 @@ import {
   TEXT_VERTICAL_ALIGN
 } from '../style/define';
 import fontInfo from '../style/font'
-import { ResizeStyle, Rich, TextProps } from '../format';
+import { JStyle, ResizeStyle, Rich, TextProps } from '../format';
 
 export const SIZE_LIST = [
   6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 21, 24, 36, 48, 60, 72,
@@ -418,12 +418,13 @@ export function setTextBehaviour(node: Text, behaviour: TextProps['textBehaviour
   node.checkPosSizeUpward();
 }
 
-export function createText(content: string) {
+export function createText(content: string, style?: Partial<JStyle>) {
   return new Text({
     uuid: uuid.v4(),
     name: content,
     index: 0,
     style: {
+      ...style,
       fontFamily: 'Arial',
       fontStyle: 'normal',
       fontWeight: 400,
@@ -439,6 +440,7 @@ export function createText(content: string) {
     rich: [{
       location: 0,
       length: 4,
+      ...style,
       fontFamily: 'Arial',
       fontStyle: 'normal',
       fontWeight: 400,
