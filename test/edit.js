@@ -221,7 +221,7 @@ function toTree() {
     return res;
   }
   const list = [count++];
-  const children = tree.children[0].children;
+  const children = tree.children[1].children;
   for (let i = 0, len = children.length; i < len; i++) {
     list.push(scan(children[i].children[0]));
   }
