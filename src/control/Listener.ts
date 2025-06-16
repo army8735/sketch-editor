@@ -1235,7 +1235,6 @@ export default class Listener extends Event {
       text.beforeEdit();
       this.select.select.classList.add('text');
       this.dom.classList.remove('add-text');
-      this.dom.classList.remove('text');
       this.history.addCommand(new AddCommand([text], [{
         x: text.computedStyle.left,
         y: text.computedStyle.top,
