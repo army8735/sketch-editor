@@ -882,9 +882,15 @@ class Bitmap extends Node {
     if (imagesZip) {
       const res = await fetch(this._src);
       const blob = await res.blob();
-      const url = this._src || this.uuid || uuid.v4();
-      imagesZip.file(url, blob);
-      json.image._ref = 'images/' + url;
+      let url = this._src;
+      // base64/http的都转成blob，相同资源会同名文件，浏览器机制
+      if (!/^blob:/.test(url)) {
+        url = URL.createObjectURL(blob);
+      }
+      // 都是blob后就可以确保唯一性，去除前缀路径
+      const name = url.replace(/.*\//, '');
+      imagesZip.file(name, blob);
+      json.image._ref = 'images/' + name;
     }
     return json;
   }
