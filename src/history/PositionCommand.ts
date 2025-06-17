@@ -10,6 +10,10 @@ class PositionCommand extends AbstractCommand {
   }
 
   undo() {}
+
+  static operate(nodes: Node[], target: Node, list: HTMLElement[], el: HTMLElement, ps: 'before' | 'after' | 'append') {
+    // const el = nodes.map(item => )
+  }
 }
 
 export default PositionCommand;

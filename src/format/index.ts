@@ -212,7 +212,6 @@ export type PageProps = Props & {
 
 export type BitmapProps = Props & {
   src: string | undefined;
-  md5?: string; // sketch文件名方式
   onLoad?: () => void;
   onError?: () => void;
 };

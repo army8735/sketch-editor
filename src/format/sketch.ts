@@ -624,9 +624,7 @@ async function convertItem(
   }
   if (layer._class === SketchFormat.ClassValue.Bitmap) {
     let src = '';
-    let md5 = '';
     if (layer.image._ref_class === 'MSImageData') {
-      md5 = layer.image._ref.replace(/^images\//, '');
       src = await readImageFile(layer.image._ref, opt);
     }
     else if ((layer.image._ref_class as string) === 'MSNetworkImage') {
@@ -698,7 +696,6 @@ async function convertItem(
         isLocked,
         isExpanded,
         src,
-        md5,
       },
     } as JBitmap;
   }

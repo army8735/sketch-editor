@@ -715,7 +715,7 @@ export default class Tree {
     let isMouseMove = false;
     let positionData: {
       el: HTMLElement;
-      ps: 'append' | 'after' | 'before';
+      ps: 'append' | 'after' | 'before'; // 下方before上方，非dom的顺序
     } | undefined;
     dom.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.state !== state.NORMAL) {
@@ -839,7 +839,7 @@ export default class Tree {
             if (e.offsetY >= height * 0.67) {
               dl.classList.add('active');
               const dl2 = dl.querySelector('dl') as HTMLElement;
-              // 如果组有首子节点，以它为基准视为其前，一般不会有空组
+              // 如果组有首子节点，以它为基准视为其后即append，一般不会有空组
               if (dl2) {
                 const o = dl2.getBoundingClientRect();
                 position.style.top = o.top - originY + 'px';
@@ -850,7 +850,7 @@ export default class Tree {
                   ps: 'append',
                 };
               }
-              // 特殊的空组，视为组前普通处理
+              // 特殊的空组，视为组前普通处理，一般不会有空组
               else {
                 const o = dl.getBoundingClientRect();
                 position.style.top = o.top - originY + dl.offsetHeight + 'px';
@@ -908,7 +908,7 @@ export default class Tree {
               position.style.top = o.top - originY + 'px';
               positionData = {
                 el: dl,
-                ps: 'before',
+                ps: 'after',
               };
             }
             position.style.display = 'block';
@@ -1043,7 +1043,7 @@ export default class Tree {
             if (first.el.parentElement!.nextElementSibling === positionData.el.parentElement && positionData.ps === 'after') {
               ignore = true;
             }
-            if (last.el.parentElement!.previousElementSibling === positionData.el.parentElement && positionData.ps === 'before') {
+            else if (last.el.parentElement!.previousElementSibling === positionData.el.parentElement && positionData.ps === 'before') {
               ignore = true;
             }
           }
@@ -1084,14 +1084,28 @@ export default class Tree {
                 }
                 if (ps === 'after') {
                   moveAfter(data.map(item => item.node), target);
-                  data.forEach(item => {
-                    el.insertBefore(el.parentElement!, item.el);
+                  data.reverse().forEach((item, i) => {
+                    const dd = el.parentElement!;
+                    dd.parentElement!.insertBefore(item.el.parentElement!, dd);
+                    const lv = data[i].node.struct.lv;
+                    item.el.setAttribute('lv', lv.toString());
+                    item.el.querySelector('dt')!.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
                   });
                 }
                 else if (ps === 'before') {
                   moveBefore(data.map(item => item.node), target);
-                  data.forEach(item => {
-                    el.insertBefore(el.parentElement!, item.el);
+                  data.forEach((item, i) => {
+                    const dd = el.parentElement!;
+                    const prev = dd.nextElementSibling;
+                    if (prev) {
+                      dd.parentElement!.insertBefore(item.el.parentElement!, prev);
+                    }
+                    else {
+                      dd.parentElement!.append(item.el.parentElement!);
+                    }
+                    const lv = data[i].node.struct.lv;
+                    item.el.setAttribute('lv', lv.toString());
+                    item.el.querySelector('dt')!.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
                   });
                 }
                 if (p instanceof AbstractGroup) {
