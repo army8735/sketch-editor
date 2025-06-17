@@ -10,12 +10,13 @@ import Bitmap from '../node/Bitmap';
 import Text from '../node/Text';
 import Slice from '../node/Slice';
 import Container from '../node/Container';
+import AbstractGroup from '../node/AbstractGroup';
 import Listener from './Listener';
 import config from '../util/config';
 import contextMenu from './contextMenu';
 import { MASK, VISIBILITY } from '../style/define';
 import state from './state';
-import { POSITION } from '../history/PositionCommand';
+import { moveAfter, moveAppend, moveBefore } from '../tools/node';
 
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
@@ -714,7 +715,7 @@ export default class Tree {
     let isMouseMove = false;
     let positionData: {
       el: HTMLElement;
-      ps: POSITION;
+      ps: 'append' | 'after' | 'before';
     } | undefined;
     dom.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.state !== state.NORMAL) {
@@ -786,14 +787,14 @@ export default class Tree {
             position.style.top = o.top - originY + dl.offsetHeight + 'px';
             positionData = {
               el: dl,
-              ps: POSITION.BEFORE,
+              ps: 'before',
             };
           }
           else {
             position.style.top = o.top - originY + 'px';
             positionData = {
               el: dl,
-              ps: POSITION.AFTER,
+              ps: 'after',
             };
           }
           position.style.left = '0%';
@@ -846,7 +847,7 @@ export default class Tree {
                 position.style.left = (parseInt(dt2.style.paddingLeft) || 0) + paddingLeft + 'px';
                 positionData = {
                   el: dl,
-                  ps: POSITION.APPEND,
+                  ps: 'append',
                 };
               }
               // 特殊的空组，视为组前普通处理
@@ -861,7 +862,7 @@ export default class Tree {
                 }
                 positionData = {
                   el: dl,
-                  ps: POSITION.BEFORE,
+                  ps: 'before',
                 };
               }
               position.style.display = 'block';
@@ -875,14 +876,14 @@ export default class Tree {
               position.style.display = 'block';
               positionData = {
                 el: dl,
-                ps: POSITION.AFTER,
+                ps: 'after',
               };
             }
             else {
               dl.classList.add('active');
               positionData = {
                 el: dl,
-                ps: POSITION.APPEND,
+                ps: 'append',
               };
             }
           }
@@ -900,14 +901,14 @@ export default class Tree {
               }
               positionData = {
                 el: dl,
-                ps: POSITION.BEFORE,
+                ps: 'before',
               };
             }
             else {
               position.style.top = o.top - originY + 'px';
               positionData = {
                 el: dl,
-                ps: POSITION.AFTER,
+                ps: 'before',
               };
             }
             position.style.display = 'block';
@@ -925,7 +926,7 @@ export default class Tree {
                 dl.parentElement!.parentElement!.classList.add('active');
                 positionData = {
                   el: dl,
-                  ps: POSITION.BEFORE,
+                  ps: 'before',
                 };
                 break;
               }
@@ -935,7 +936,7 @@ export default class Tree {
                 dl = dom.querySelector('dl') as HTMLElement;
                 positionData = {
                   el: dl,
-                  ps: POSITION.BEFORE,
+                  ps: 'before',
                 };
                 break;
               }
@@ -967,9 +968,8 @@ export default class Tree {
     dom.addEventListener('mouseup', (e) => {
       // 发生了拖动，尝试进行节点移动
       if (isMouseMove && positionData && dragTarget.length) {
-        console.log(positionData)
         let min = -1;
-        // 先查找最小lv，将所有节点按照tree显示的上下顺序排列，需要找到同lv下先后顺序（子节点向上找父节点作为代表）
+        // 先查找最小lv，为了将所有节点按照tree显示的上下顺序排列，需要找到同lv下先后顺序（子节点向上找父节点作为代表）
         const nodes = dragTarget.map(item => {
           const lv = parseInt(item.getAttribute('lv')!);
           if (min === -1) {
@@ -987,18 +987,121 @@ export default class Tree {
         if (nodes.length !== dragTarget.length) {
           throw new Error('Drag node not exist');
         }
-        console.log(min, nodes);
         // 获取所有节点不同lv下的index数据，从最小lv到自己lv的index列表，每个node可能lv不同导致数量不同
-        const indexes = nodes.map(item => {
-          let lv = item.struct.lv;
-          const res: number[] = [];
+        const data = nodes.map((item, i) => {
+          let n = item;
+          let lv = n.struct.lv;
+          const index: { lv: number, index: number }[] = [];
           while (lv >= min) {
-            res.unshift(item.index);
-            item = item.parent!;
-            lv = item.struct.lv;
+            index.unshift({
+              lv,
+              index: n.index,
+            });
+            n = n.parent!;
+            lv = n.struct.lv;
           }
-          return res;
+          return {
+            node: item,
+            el: dragTarget[i],
+            index,
+          };
         });
+        // 先排序，按照tree展示的上下顺序，从下到上
+        data.sort((a, b) => {
+          const ia = a.index;
+          const ib = b.index;
+          // 相同lv部分对比index
+          for (let i = 0, len = Math.min(ia.length, ib.length); i < len; i++) {
+            if (ia[i].index !== ib[i].index) {
+              return ia[i].index - ib[i].index;
+            }
+          }
+          // 不相同部分一定是一方是另一方的子节点，但这种情况是选不了的
+          throw new Error('Unknown index exception');
+        });
+        // 检测是否是全相邻节点，全相邻时拖拽到这些节点旁是无效忽略的
+        let isAllSibling = true;
+        for (let i = 1, len = data.length; i < len; i++) {
+          if (data[i].node.prev !== data[i - 1].node) {
+            isAllSibling = false;
+            break;
+          }
+        }
+        let ignore = false;
+        if (isAllSibling) {
+          for (let i = 0, len = data.length; i < len; i++) {
+            const item = data[i];
+            // 前面已经防止拖拽自身了，这里兜底再次判断
+            if (item.el === positionData.el && (positionData.ps === 'before' || positionData.ps === 'after')) {
+              ignore = true;
+              break;
+            }
+          }
+          if (!ignore) {
+            const first = data[0];
+            const last = data[data.length - 1];
+            if (first.el.parentElement!.nextElementSibling === positionData.el.parentElement && positionData.ps === 'after') {
+              ignore = true;
+            }
+            if (last.el.parentElement!.previousElementSibling === positionData.el.parentElement && positionData.ps === 'before') {
+              ignore = true;
+            }
+          }
+        }
+        if (!ignore) {
+          const uuid = positionData.el.getAttribute('uuid');
+          // 一定有，以防万一预防
+          if (uuid) {
+            const target = root.refs[uuid];
+            if (target) {
+              const { ps, el } = positionData;
+              // 先固定住要拖拽到的group，再按顺序迁移
+              if (ps === 'append') {
+                if (target instanceof AbstractGroup) {
+                  target.fixedPosAndSize = true;
+                  moveAppend(data.map(item => item.node), target);
+                  target.fixedPosAndSize = false;
+                  target.checkPosSizeSelf();
+                }
+                const dt = el.querySelector('dt') as HTMLElement;
+                data.forEach((item, i) => {
+                  const p = item.el.parentElement!;
+                  if (dt.nextElementSibling) {
+                    el.insertBefore(p, dt.nextElementSibling);
+                  }
+                  else {
+                    el.prepend(p);
+                  }
+                  const lv = data[i].node.struct.lv;
+                  item.el.setAttribute('lv', lv.toString());
+                  item.el.querySelector('dt')!.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+                });
+              }
+              else {
+                const p = target.parent;
+                if (p instanceof AbstractGroup) {
+                  p.fixedPosAndSize = true;
+                }
+                if (ps === 'after') {
+                  moveAfter(data.map(item => item.node), target);
+                  data.forEach(item => {
+                    el.insertBefore(el.parentElement!, item.el);
+                  });
+                }
+                else if (ps === 'before') {
+                  moveBefore(data.map(item => item.node), target);
+                  data.forEach(item => {
+                    el.insertBefore(el.parentElement!, item.el);
+                  });
+                }
+                if (p instanceof AbstractGroup) {
+                  p.fixedPosAndSize = false;
+                  p.checkPosSizeSelf();
+                }
+              }
+            }
+          }
+        }
       }
       dragTarget.forEach(item => {
         item.classList.remove('drag');
