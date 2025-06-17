@@ -865,6 +865,7 @@ class Bitmap extends Node {
   override toJson(): JNode {
     const res = super.toJson();
     res.tagName = TAG_NAME.BITMAP;
+    (res.props as BitmapProps).src = this._src;
     return res;
   }
 
