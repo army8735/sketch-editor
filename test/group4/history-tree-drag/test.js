@@ -8,7 +8,7 @@ module.exports = {
       .waitForElementVisible('body', 1000)
       .pause(20)
       .assert.cssClassPresent('dl[uuid="455286D1-26FC-4EB2-9254-881818B57F33"]', 'layer')
-      .assert.notl.cssClassPresent('dl[uuid="455286D1-26FC-4EB2-9254-881818B57F33"]', 'expand')
+      .assert.not.cssClassPresent('dl[uuid="455286D1-26FC-4EB2-9254-881818B57F33"]', 'expand')
       .click('#button7')
       .assert.value('#base64', '[0,{"name":"ab","children":[{"name":"123","children":[]},{"name":"456","children":[]},{"name":"abc","children":[]},{"name":"编组2","children":[{"name":"三角形","children":[]},{"name":"编组1","children":[{"name":"椭圆形","children":[]},{"name":"矩形","children":[]}]}]}]}]')
 

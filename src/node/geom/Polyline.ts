@@ -852,6 +852,10 @@ class Polyline extends Geom {
     const oldUUid = props.uuid;
     props.uuid = uuid.v4();
     props.sourceUuid = oldUUid;
+    props.name = this.name;
+    props.nameIsFixed = this.nameIsFixed;
+    props.index = this.index;
+    props.points = this.points;
     const res = new Polyline(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);
