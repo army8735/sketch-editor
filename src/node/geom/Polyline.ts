@@ -855,7 +855,12 @@ class Polyline extends Geom {
     props.name = this.name;
     props.nameIsFixed = this.nameIsFixed;
     props.index = this.index;
-    props.points = this.points;
+    props.points = this.points.map(item => {
+      return {
+        ...item,
+        curveMode: ['none', 'straight', 'mirrored', 'asymmetric', 'disconnected'][item.curveMode] || 'none',
+      };
+    });
     const res = new Polyline(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);
