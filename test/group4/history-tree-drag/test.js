@@ -75,7 +75,7 @@ module.exports = {
       .moveToElement('span[title="编组1"]', 5, 12)
       .mouseButtonUp(0)
       .click('#button7')
-      .assert.value('#base64', '[7,{"name":"ab","children":[{"name":"abc","children":[]},{"name":"编组2","children":[{"name":"三角形","children":[]},{"name":"编组1","children":[{"name":"123","children":[]},{"name":"456","children":[]},{"name":"椭圆形","children":[]},{"name":"矩形","children":[]}]}]}]}]')
+      .assert.value('#base64', '7,{"name":"ab","children":[{"name":"456","children":[]},{"name":"abc","children":[]},{"name":"编组2","children":[{"name":"三角形","children":[]},{"name":"编组1","children":[{"name":"123","children":[]},{"name":"椭圆形","children":[]},{"name":"矩形","children":[]}]}]}]}]')
 
       .end();
   }

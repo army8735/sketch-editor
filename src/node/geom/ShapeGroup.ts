@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { getDefaultStyle, JNode, JStyle, Override, ShapeGroupProps, TAG_NAME } from '../../format';
+import { JNode, Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bo from '../../math/bo';
 import { calPoint, isE } from '../../math/matrix';
 import CanvasCache from '../../refresh/CanvasCache';
@@ -18,7 +18,8 @@ import {
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
   STROKE_POSITION,
-  StyleUnit, VISIBILITY,
+  StyleUnit,
+  VISIBILITY,
 } from '../../style/define';
 import { getConic, getLinear, getRadial } from '../../style/gradient';
 import inject, { OffScreen } from '../../util/inject';
@@ -805,6 +806,7 @@ class ShapeGroup extends AbstractGroup {
     });
     const width = maxX - minX;
     const height = maxY - minY;
+    console.log(this.props.name, width, maxX, minX);
     let scale = 1;
     if (width >= height) {
       scale = max / width;
