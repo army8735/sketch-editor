@@ -246,7 +246,8 @@ export default class Geometry {
             });
             listener.history.addCommand(new PointCommand(this.nodes.slice(0), data), true);
             listener.emit(Listener.POINT_NODE, [node], [[mid]]);
-            this.emitSelectPoint();
+            isDrag = true;
+            this.setClonePoints();
             pathIdx = -1;
           }
           // 点空了

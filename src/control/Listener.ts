@@ -1935,6 +1935,7 @@ export default class Listener extends Event {
         this.selected = nodes2.slice(0);
         this.updateActive();
         this.emit(Listener.ADD_NODE, nodes2.slice(0));
+        this.emit(Listener.SELECT_NODE, nodes2.slice(0));
       }
     }
   }
