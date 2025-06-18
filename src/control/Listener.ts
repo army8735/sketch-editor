@@ -26,10 +26,8 @@ import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, Point, JStyle, MaskModeStyle } from '../format';
 import {
   addNode,
-  getArtBoardByPoint,
   getFrameNodes,
   getNodeByPoint,
-  getOffsetByPoint,
   getOverlayArtBoardByPoint,
 } from '../tools/root';
 import { intersectLineLine } from '../math/isec';
@@ -65,6 +63,7 @@ import BoolGroupCommand from '../history/BoolGroupCommand';
 import FlattenCommand from '../history/FlattenCommand';
 import PrevCommand from '../history/PrevCommand';
 import NextCommand from '../history/NextCommand';
+import PositionCommand from '../history/PositionCommand';
 import TintCommand, { TintData } from '../history/TintCommand';
 import { appendWithPosAndSize } from '../tools/container';
 import {
@@ -2475,6 +2474,9 @@ export default class Listener extends Event {
             this.emit(Listener.PREV_NODE, nodes.slice(0), c.data.slice(0));
           }
         }
+        else if (c instanceof PositionCommand) {
+          this.emit(Listener.POSITION_NODE, nodes.slice(0));
+        }
         else if (c instanceof RichCommand) {
           if (c.type === RichCommand.TEXT_ALIGN) {
             this.emit(Listener.TEXT_ALIGN_NODE, nodes.slice(0));
@@ -2797,6 +2799,7 @@ export default class Listener extends Event {
   static ADD_NODE = 'ADD_NODE';
   static PREV_NODE = 'PREV_NODE';
   static NEXT_NODE = 'NEXT_NODE';
+  static POSITION_NODE = 'POSITION_NODE';
   static GROUP_NODE = 'GROUP_NODE';
   static UN_GROUP_NODE = 'UN_GROUP_NODE';
   static BOOL_GROUP_NODE = 'BOOL_GROUP_NODE';

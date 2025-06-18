@@ -39,9 +39,6 @@ class UnGroupCommand extends AbstractCommand {
       });
       group.fixedPosAndSize = false;
       group.checkPosSizeSelf();
-      if (group instanceof ShapeGroup) {
-        group.refresh();
-      }
     });
     this.data.forEach((item) => {
       const { parent } = item;

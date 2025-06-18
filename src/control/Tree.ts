@@ -10,13 +10,12 @@ import Bitmap from '../node/Bitmap';
 import Text from '../node/Text';
 import Slice from '../node/Slice';
 import Container from '../node/Container';
-import AbstractGroup from '../node/AbstractGroup';
 import Listener from './Listener';
 import config from '../util/config';
 import contextMenu from './contextMenu';
-import { MASK, VISIBILITY } from '../style/define';
 import state from './state';
-import { moveAfter, moveAppend, moveBefore } from '../tools/node';
+import { MASK, VISIBILITY } from '../style/define';
+import PositionCommand, { position } from '../history/PositionCommand';
 
 function genNodeTree(node: Node, lv: number, ignoreChild = false) {
   const type = getNodeType(node);
@@ -715,7 +714,7 @@ export default class Tree {
     let isMouseMove = false;
     let positionData: {
       el: HTMLElement;
-      ps: 'append' | 'after' | 'before'; // 下方before上方，非dom的顺序
+      ps: position; // 下方before上方，非dom的顺序
     } | undefined;
     dom.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || listener.state !== state.NORMAL) {
@@ -760,7 +759,7 @@ export default class Tree {
       // 鼠标发生了x和y移动，防止轻微抖动
       if (dragTarget.length && !isMouseMove) {
         if (e.clientX - startX && e.clientY - startY || Math.abs(e.clientY - startY) > 1) {
-          // isMouseMove = true;
+          isMouseMove = true;
           dragTarget.forEach(item => {
             item.classList.add('drag');
           });
@@ -1050,71 +1049,49 @@ export default class Tree {
         }
         if (!ignore) {
           const uuid = positionData.el.getAttribute('uuid');
+          let target: Node | undefined;
           // 一定有，以防万一预防
           if (uuid) {
-            const target = root.refs[uuid];
-            if (target) {
-              const { ps, el } = positionData;
-              // 先固定住要拖拽到的group，再按顺序迁移
-              if (ps === 'append') {
-                if (target instanceof AbstractGroup) {
-                  target.fixedPosAndSize = true;
-                  moveAppend(data.map(item => item.node), target);
-                  target.fixedPosAndSize = false;
-                  target.checkPosSizeSelf();
-                }
-                const dt = el.querySelector('dt') as HTMLElement;
-                data.forEach((item, i) => {
-                  const p = item.el.parentElement!;
-                  if (dt.nextElementSibling) {
-                    el.insertBefore(p, dt.nextElementSibling);
-                  }
-                  else {
-                    el.prepend(p);
-                  }
-                  const lv = data[i].node.struct.lv;
-                  item.el.setAttribute('lv', lv.toString());
-                  item.el.querySelector('dt')!.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
-                });
+            target = root.refs[uuid];
+          }
+          if (!target) {
+            throw new Error('Unknown exception target');
+          }
+          const { ps, el } = positionData;
+          const positionCommand = new PositionCommand(
+            data.map(item => item.node),
+            data.map((item) => {
+              let sel: HTMLElement;
+              let sps: position;
+              const el = item.el;
+              const dd = el.parentElement!;
+              // 最后一个节点没有next了，dom中表现是没有prev的dd节点而是父节点的dt，需忽略
+              if (dd.previousElementSibling && dd.previousElementSibling.tagName !== 'DT') {
+                sel = dd.previousElementSibling as HTMLElement;
+                sps = 'before';
+              }
+              else if (dd.nextElementSibling) {
+                sel = dd.nextElementSibling as HTMLElement;
+                sps = 'after';
               }
               else {
-                const p = target.parent;
-                if (p instanceof AbstractGroup) {
-                  p.fixedPosAndSize = true;
-                }
-                if (ps === 'after') {
-                  moveAfter(data.map(item => item.node), target);
-                  data.reverse().forEach((item, i) => {
-                    const dd = el.parentElement!;
-                    dd.parentElement!.insertBefore(item.el.parentElement!, dd);
-                    const lv = data[i].node.struct.lv;
-                    item.el.setAttribute('lv', lv.toString());
-                    item.el.querySelector('dt')!.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
-                  });
-                }
-                else if (ps === 'before') {
-                  moveBefore(data.map(item => item.node), target);
-                  data.forEach((item, i) => {
-                    const dd = el.parentElement!;
-                    const prev = dd.nextElementSibling;
-                    if (prev) {
-                      dd.parentElement!.insertBefore(item.el.parentElement!, prev);
-                    }
-                    else {
-                      dd.parentElement!.append(item.el.parentElement!);
-                    }
-                    const lv = data[i].node.struct.lv;
-                    item.el.setAttribute('lv', lv.toString());
-                    item.el.querySelector('dt')!.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
-                  });
-                }
-                if (p instanceof AbstractGroup) {
-                  p.fixedPosAndSize = false;
-                  p.checkPosSizeSelf();
-                }
+                sel = dd.parentElement!;
+                sps = 'append';
               }
-            }
-          }
+              return {
+                el,
+                sel,
+                sps,
+              };
+            }),
+            target,
+            el,
+            ps,
+          );
+          positionCommand.execute();
+          listener.history.addCommand(positionCommand);
+          listener.emit(Listener.POSITION_NODE, data.map(item => item.node));
+          listener.active(data.map(item => item.node));
         }
       }
       dragTarget.forEach(item => {
