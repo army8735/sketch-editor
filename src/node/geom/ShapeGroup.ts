@@ -806,7 +806,6 @@ class ShapeGroup extends AbstractGroup {
     });
     const width = maxX - minX;
     const height = maxY - minY;
-    console.log(this.props.name, width, maxX, minX);
     let scale = 1;
     if (width >= height) {
       scale = max / width;

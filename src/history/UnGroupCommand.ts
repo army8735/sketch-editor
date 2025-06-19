@@ -39,9 +39,6 @@ class UnGroupCommand extends AbstractCommand {
       });
       group.fixedPosAndSize = false;
       group.checkPosSizeSelf();
-      if (group instanceof ShapeGroup) { // TODO: 删了没有coords报错检查
-        group.refresh();
-      }
     });
     this.data.forEach((item) => {
       const { parent } = item;

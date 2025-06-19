@@ -1,7 +1,14 @@
 import Node from './Node';
+import ShapeGroup from './geom/ShapeGroup';
 
 export function checkReflow(node: Node, addDom: boolean, removeDom: boolean) {
-  const parent = node.parent!;
+  const parent = node.parent;
+  // 向上清除ShapeGroup的coords
+  let p = parent;
+  while (p && p instanceof ShapeGroup) {
+    p.coords = undefined;
+    p = p.parent;
+  }
   if (removeDom) {
     const mask = node.mask;
     node.checkPosSizeUpward();
@@ -15,8 +22,8 @@ export function checkReflow(node: Node, addDom: boolean, removeDom: boolean) {
   // add和普通修改共用
   else {
     node.layout({
-      w: parent.width,
-      h: parent.height,
+      w: parent!.width,
+      h: parent!.height,
     });
     if (addDom) {
       node.didMount();
