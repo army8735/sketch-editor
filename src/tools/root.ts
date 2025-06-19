@@ -543,8 +543,8 @@ export function getOffsetByPoint(root: Root, x: number, y: number, node?: Contai
 
 export function addNode(node: Node, root: Root, x: number, y: number, w = 0, h = 0, prev?: Node) {
   // 文本可以自动宽高，其它不行
-  if ((!w || !h) && !(node instanceof Text)) {
-    throw new Error('Missing w or h');
+  if ((!w || !h || w < 0 || h < 0) && !(node instanceof Text)) {
+    throw new Error('Invalid w or h');
   }
   let container: Container;
   // 指定prev节点后面

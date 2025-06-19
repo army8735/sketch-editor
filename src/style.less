@@ -336,7 +336,7 @@
         cursor: -webkit-image-set(url(@addRound) 2x, url(@addRound) 1x) 4 11, auto;
       }
 
-      &.add-line, &.add-img {
+      &.add-line, &.add-img, &.add-custom {
         cursor: -webkit-image-set(url(@addLine) 2x, url(@addLine) 1x) 4 11, auto;
       }
 
@@ -1056,7 +1056,7 @@
       }
     }
 
-    .rect, .oval, .round, .line, .triangle, .star {
+    .rect, .oval, .round, .line, .triangle, .star, .custom {
       box-sizing: border-box;
       position: absolute;
       border: 1px solid #979797;
@@ -1081,11 +1081,7 @@
       border-radius: 8px;
     }
 
-    .line {
-      border: none;
-    }
-
-    .triangle, .star {
+    .line, .triangle, .star, .custom {
       border: none;
     }
 

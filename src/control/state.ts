@@ -13,6 +13,7 @@ export enum state {
   ADD_LINE = 11,
   ADD_STAR = 12,
   ADD_IMG = 13,
+  ADD_CUSTOM_GEOM = 14,
 }
 
 export default state;

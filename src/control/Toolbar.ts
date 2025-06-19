@@ -179,7 +179,7 @@ class Toolbar {
           div.querySelector('b')!.className = title;
         }
       }
-      console.log(title)
+      // console.log(title)
       listener.dom.classList.remove('hand');
       listener.dom.classList.remove('text');
 

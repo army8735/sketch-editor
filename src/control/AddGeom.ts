@@ -1,18 +1,22 @@
 import Root from '../node/Root';
+import Listener from './Listener';
 
 export default class AddGeom {
   root: Root;
   dom: HTMLElement;
+  listener: Listener;
   rect: HTMLElement;
   oval: HTMLElement;
   round: HTMLElement;
   triangle: HTMLElement;
   line: HTMLElement;
   star: HTMLElement;
+  custom: HTMLElement;
 
-  constructor(root: Root, dom: HTMLElement) {
+  constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
+    this.listener = listener;
 
     const rect = this.rect = document.createElement('div');
     rect.className = 'rect';
@@ -45,6 +49,12 @@ export default class AddGeom {
     star.className = 'star';
     star.style.display = 'none';
     // dom.appendChild(star);
+
+    const custom = this.custom = document.createElement('div');
+    custom.className = 'custom';
+    custom.style.display = 'none';
+    custom.innerHTML = '<svg><path d="" stroke="#979797" fill="none" stroke-width="1"></path></svg>';
+    dom.appendChild(custom);
   }
 
   show(style: CSSStyleDeclaration, x: number, y: number) {
@@ -110,6 +120,11 @@ export default class AddGeom {
 
   showOval(x: number, y: number) {
     const style = this.oval.style;
+    this.show(style, x, y);
+  }
+
+  showCustom(x: number, y: number) {
+    const style = this.custom.style;
     this.show(style, x, y);
   }
 
@@ -192,5 +207,25 @@ export default class AddGeom {
   updateStar(w: number, h: number) {}
 
   hideStar() {}
+
+  updateCustom(w: number, h: number) {
+    const style = this.custom.style;
+    this.update(style, w, h);
+    w = Math.max(1, Math.abs(w));
+    h = Math.max(1, Math.abs(h));
+    const svg = this.custom.querySelector('svg') as SVGSVGElement;
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.setAttribute('width', w + 'px');
+    svg.setAttribute('height', h + 'px');
+    const path = svg.querySelector('path') as SVGPathElement;
+    const d = this.listener.customGeom.preview(w, h)
+      || `M0,0 L${w},0 L${w},${h} L0,${h} L0,0 Z`;
+    path.setAttribute('d', d);
+  }
+
+  hideCustom() {
+    const { clientWidth: w, clientHeight: h, style } = this.custom;
+    return this.hide(style, w, h);
+  }
 }
 

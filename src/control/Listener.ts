@@ -22,6 +22,7 @@ import Geometry from './Geometry';
 import state from './state';
 import picker from './picker';
 import contextMenu from './contextMenu';
+import CustomGeom from './CustomGeom';
 import { clone } from '../util/type';
 import { ArtBoardProps, BreakMaskStyle, Point, JStyle, MaskModeStyle } from '../format';
 import {
@@ -151,6 +152,7 @@ export default class Listener extends Event {
   imgWidth: number;
   imgHeight: number;
   dragHover: HTMLElement;
+  customGeom: CustomGeom;
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
@@ -200,11 +202,12 @@ export default class Listener extends Event {
     this.guides = new Guides(root, dom, this);
     this.gradient = new Gradient(root, dom, this);
     this.geometry = new Geometry(root, dom, this);
-    this.addGeom = new AddGeom(root, dom);
+    this.addGeom = new AddGeom(root, dom, this);
     this.dragHover = document.createElement('div');
     this.dragHover.className = 'drag';
     dom.appendChild(this.dragHover);
     this.clones = [];
+    this.customGeom = new CustomGeom(this);
 
     dom.addEventListener('mousedown', this.onMouseDown.bind(this));
     dom.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -457,12 +460,15 @@ export default class Listener extends Event {
       this.startY = (e.clientY - this.originY);
       this.addGeom.showRect(this.startX, this.startY);
     }
-    else if (this.state === state.ADD_RECT
+    else if (
+      this.state === state.ADD_RECT
       || this.state === state.ADD_OVAL
       || this.state === state.ADD_ROUND
       || this.state === state.ADD_LINE
       || this.state === state.ADD_TRIANGLE
-      || this.state === state.ADD_STAR) {
+      || this.state === state.ADD_STAR
+      || this.state === state.ADD_CUSTOM_GEOM
+    ) {
       this.startX = (e.clientX - this.originX);
       this.startY = (e.clientY - this.originY);
       if (this.state === state.ADD_RECT) {
@@ -479,6 +485,9 @@ export default class Listener extends Event {
       }
       else if (this.state === state.ADD_TRIANGLE) {
         this.addGeom.showTriangle(this.startX, this.startY);
+      }
+      else if (this.state === state.ADD_CUSTOM_GEOM) {
+        this.addGeom.showCustom(this.startX, this.startY);
       }
     }
     // 点到canvas上，也有可能在canvas外，逻辑一样
@@ -851,11 +860,14 @@ export default class Listener extends Event {
         const h = (e.clientY - this.originY - this.startY);
         this.addGeom.updateRect(w, h);
       }
-      else if (this.state === state.ADD_RECT
+      else if (
+        this.state === state.ADD_RECT
         || this.state === state.ADD_OVAL
         || this.state === state.ADD_ROUND
         || this.state === state.ADD_LINE
-        || this.state === state.ADD_TRIANGLE) {
+        || this.state === state.ADD_TRIANGLE
+        || this.state === state.ADD_CUSTOM_GEOM
+      ) {
         const w = (e.clientX - this.originX - this.startX);
         const h = (e.clientY - this.originY - this.startY);
         if (this.state === state.ADD_RECT) {
@@ -872,6 +884,9 @@ export default class Listener extends Event {
         }
         else if (this.state === state.ADD_TRIANGLE) {
           this.addGeom.updateTriangle(w, h);
+        }
+        else if (this.state === state.ADD_CUSTOM_GEOM) {
+          this.addGeom.updateCustom(w, h);
         }
       }
       else {
@@ -1248,7 +1263,8 @@ export default class Listener extends Event {
       || this.state === state.ADD_OVAL
       || this.state === state.ADD_ROUND
       || this.state === state.ADD_LINE
-      || this.state === state.ADD_TRIANGLE) {
+      || this.state === state.ADD_TRIANGLE
+      || this.state === state.ADD_CUSTOM_GEOM) {
       const old = this.state;
       const addGeom = this.addGeom;
       const hide = {
@@ -1257,6 +1273,7 @@ export default class Listener extends Event {
         [state.ADD_ROUND]: addGeom.hideRound,
         [state.ADD_LINE]: addGeom.hideLine,
         [state.ADD_TRIANGLE]: addGeom.hideTriangle,
+        [state.ADD_CUSTOM_GEOM]: addGeom.hideCustom,
       }[old] as Function;
       let { x, y, w, h, transform } = hide.call(addGeom);
       if (w && h) {
@@ -1265,19 +1282,23 @@ export default class Listener extends Event {
         y *= dpi;
         w *= dpi;
         h *= dpi;
-        w = Math.max(w, 1);
-        h = Math.max(h, 1);
         const create = {
           [state.ADD_RECT]: createRect,
           [state.ADD_OVAL]: createOval,
           [state.ADD_ROUND]: createRound,
           [state.ADD_LINE]: createLine,
           [state.ADD_TRIANGLE]: createTriangle,
+          [state.ADD_CUSTOM_GEOM]: () => {
+            return this.customGeom.create();
+          },
         }[old] as Function;
         const node = create(transform);
+        if (!node) {
+          throw new Error('Missing create data');
+        }
         const page = this.root.getCurPage()!;
         const zoom = page.getZoom();
-        addNode(node, this.root, x, y, w / zoom, h / zoom, this.selected[0]);
+        addNode(node, this.root, x, y, Math.max(1, w / zoom), Math.max(1, h / zoom), this.selected[0]);
         this.selected.splice(0);
         this.selected.push(node);
         this.select.showSelect(this.selected);
@@ -1287,6 +1308,7 @@ export default class Listener extends Event {
         this.dom.classList.remove('add-line');
         this.dom.classList.remove('add-star');
         this.dom.classList.remove('add-triangle');
+        this.dom.classList.remove('add-custom');
         this.history.addCommand(new AddCommand([node], [{
           x: node.computedStyle.left,
           y: node.computedStyle.top,
@@ -2056,20 +2078,25 @@ export default class Listener extends Event {
       else if (this.state === state.EDIT_TEXT) {
         this.cancelEditText();
       }
-      else if (this.state === state.ADD_RECT
+      else if (
+        this.state === state.ADD_RECT
         || this.state === state.ADD_OVAL
         || this.state === state.ADD_ROUND
         || this.state === state.ADD_LINE
         || this.state === state.ADD_TRIANGLE
         || this.state === state.ADD_STAR
-        || this.state === state.ADD_TEXT) {
+        || this.state === state.ADD_CUSTOM_GEOM
+        || this.state === state.ADD_TEXT
+      ) {
         this.dom.classList.remove('add-rect');
         this.dom.classList.remove('add-oval');
         this.dom.classList.remove('add-round');
         this.dom.classList.remove('add-line');
         this.dom.classList.remove('add-triangle');
         this.dom.classList.remove('add-star');
+        this.dom.classList.remove('add-custom');
         this.dom.classList.remove('add-text');
+        this.customGeom.cancel();
         const old = this.state;
         this.state = state.NORMAL;
         this.emit(Listener.CANCEL_ADD_ESC);
