@@ -771,6 +771,7 @@ export default class Tree {
         dom.querySelector('dl.active')?.classList.remove('active');
         // 计算获取当前鼠标hover的dl节点，肯定有，防止异常判断非空
         const tagName = target.tagName.toUpperCase();
+        const { scrollTop, scrollLeft } = this.dom;
         let dl: HTMLElement | undefined;
         if (tagName === 'SPAN') {
           dl = target.parentElement!.parentElement!;
@@ -782,15 +783,15 @@ export default class Tree {
         else if (tagName === 'DIV') {
           const dl = dom.querySelector('dl') as HTMLElement;
           const o = dl.getBoundingClientRect();
-          if (e.offsetY >= dl.offsetHeight) {
-            position.style.top = o.top - originY + dl.offsetHeight + 'px';
+          if (e.offsetY >= dl.offsetHeight + scrollTop) {
+            position.style.top = o.top - originY + dl.offsetHeight + scrollTop + 'px';
             positionData = {
               el: dl,
               ps: 'before',
             };
           }
           else {
-            position.style.top = o.top - originY + 'px';
+            position.style.top = o.top - originY + scrollTop + 'px';
             positionData = {
               el: dl,
               ps: 'after',
@@ -825,7 +826,6 @@ export default class Tree {
             return;
           }
           let needX = false;
-          // console.log(node.name, e.offsetY, height, node instanceof Container);
           // 鼠标在组上，以1/3线上代表目标位置前，以2/3线下代表目标位置后，中间代表其内（首子节点）
           if (node instanceof Container) {
             if (e.offsetY > height * 0.33) {
@@ -841,7 +841,7 @@ export default class Tree {
               // 如果组有首子节点，以它为基准视为其后即append，一般不会有空组
               if (dl2) {
                 const o = dl2.getBoundingClientRect();
-                position.style.top = o.top - originY + 'px';
+                position.style.top = o.top - originY + scrollTop + 'px';
                 const dt2 = dl2.querySelector('dt') as HTMLElement;
                 position.style.left = (parseInt(dt2.style.paddingLeft) || 0) + paddingLeft + 'px';
                 positionData = {
@@ -852,7 +852,7 @@ export default class Tree {
               // 特殊的空组，视为组前普通处理，一般不会有空组
               else {
                 const o = dl.getBoundingClientRect();
-                position.style.top = o.top - originY + dl.offsetHeight + 'px';
+                position.style.top = o.top - originY + dl.offsetHeight + scrollTop + 'px';
                 const dt = dl.querySelector('dt') as HTMLElement;
                 position.style.left = (parseInt(dt.style.paddingLeft) || 0) + paddingLeft + 'px';
                 const dd = dl.parentElement!;
@@ -869,7 +869,7 @@ export default class Tree {
             else if (e.offsetY <= height * 0.33) {
               dl.parentElement!.parentElement!.classList.add('active');
               const o = dl.getBoundingClientRect();
-              position.style.top = o.top - originY + 'px';
+              position.style.top = o.top - originY + scrollTop + 'px';
               const dt = dl.querySelector('dt') as HTMLElement;
               position.style.left = (parseInt(dt.style.paddingLeft) || 0) + paddingLeft + 'px';
               position.style.display = 'block';
@@ -894,7 +894,7 @@ export default class Tree {
             const dt = dl.querySelector('dt') as HTMLElement;
             position.style.left = (parseInt(dt.style.paddingLeft) || 0) + paddingLeft + 'px';
             if (e.offsetY >= height * 0.5) {
-              position.style.top = o.top - originY + height + 'px';
+              position.style.top = o.top - originY + height + scrollTop + 'px';
               if (!dd.nextElementSibling) {
                 needX = true;
               }
@@ -904,7 +904,7 @@ export default class Tree {
               };
             }
             else {
-              position.style.top = o.top - originY + 'px';
+              position.style.top = o.top - originY + scrollTop + 'px';
               positionData = {
                 el: dl,
                 ps: 'after',
@@ -915,7 +915,7 @@ export default class Tree {
           // 当指向位置处于组的末尾没有next节点时，需要查看x的位置决定在哪一层
           if (needX) {
             dom.querySelector('dl.active')?.classList.remove('active');
-            const x = e.clientX - originX - paddingLeft;
+            const x = e.clientX - originX - paddingLeft + scrollLeft;
             let temp = dl;
             while (temp && temp !== dom) {
               // 往上查找到比这一级group的left大的位置

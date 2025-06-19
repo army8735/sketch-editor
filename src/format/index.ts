@@ -275,18 +275,6 @@ export type JPoint = {
   ty: number;
   hasCurveFrom: boolean;
   hasCurveTo: boolean;
-  // absX?: number; // 算上宽高的绝对像素值
-  // absY?: number;
-  // absFx?: number;
-  // absFy?: number;
-  // absTx?: number;
-  // absTy?: number;
-  // dspX?: number; // 绝对值和相对于AP的matrix的值，展示在面板上
-  // dspY?: number;
-  // dspFx?: number;
-  // dspFy?: number;
-  // dspTx?: number;
-  // dspTy?: number;
 };
 
 export type Point = Omit<JPoint, 'curveMode'> & {
