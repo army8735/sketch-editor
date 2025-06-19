@@ -136,23 +136,28 @@
       });
     }
   };
+
+  function download(blob) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    if (typeof link.download === 'string') {
+      document.body.appendChild(link);
+      link.download = (root.props.name || 'se') + '.sketch';
+      link.href = url;
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      location.replace(url);
+    }
+  }
+
   const $save = document.querySelector('#save');
   $save.addEventListener('click', function(e) {
     if (root) {
       root.toSketchFile().then(zip => {
         zip.generateAsync({ type: 'blob' }).then(blob => {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          if (typeof link.download === 'string') {
-            document.body.appendChild(link);
-            link.download = (root.props.name || 'se') + '.sketch';
-            link.href = url;
-            link.click();
-            document.body.removeChild(link);
-          } else {
-            location.replace(url);
-          }
-        })
+          download(blob);
+        });
       });
     }
   });
@@ -168,17 +173,7 @@
     sketchEditor.tools.node.toBitmap(selected, {
       blob: true,
     }).then(blob => {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      if (typeof link.download === 'string') {
-        document.body.appendChild(link);
-        link.download = (root.props.name || 'se') + '.png';
-        link.href = url;
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        location.replace(url);
-      }
+      download(blob);
     });
   });
 </script>

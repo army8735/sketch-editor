@@ -273,4 +273,6 @@ export default {
   getPointsAbsByDsp,
   createRect,
   createOval,
+  createLine,
+  createTriangle,
 };
