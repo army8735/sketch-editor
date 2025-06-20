@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
+import { JNode, JRich, ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
@@ -3402,31 +3402,69 @@ class Text extends Node {
       });
     }
     props.content = this._content;
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      width,
+      height,
+    } = this.style;
+    const autoW = width.u === StyleUnit.AUTO
+      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
+    const autoH = height.u === StyleUnit.AUTO
+      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
+    if (autoW) {
+      props.textBehaviour = 'auto';
+    }
+    else if (autoH) {
+      props.textBehaviour = 'autoH';
+    }
+    else {
+      props.textBehaviour = 'fixed';
+    }
     const res = new Text(props);
     res.style = clone(this.style);
     res.computedStyle = clone(this.computedStyle);
-    // if (props.textBehaviour === 'auto') {
-    //   res.style.width = {
-    //     v: this.width,
-    //     u: StyleUnit.PX,
-    //   };
-    //   res.style.height = {
-    //     v: this.height,
-    //     u: StyleUnit.PX,
-    //   };
-    // }
-    // else if (props.textBehaviour === 'autoH') {
-    //   res.style.height = {
-    //     v: this.height,
-    //     u: StyleUnit.PX,
-    //   };
-    // }
     return res;
   }
 
   override toJson(): JNode {
     const res = super.toJson();
     res.tagName = TAG_NAME.TEXT;
+    if (this.rich) {
+      (res.props as TextProps).rich = this.rich.map(item => {
+        return {
+          ...item,
+          textAlign: (['left', 'right', 'center', 'justify'][item.textAlign] || 'left') as JRich['textAlign'],
+          textDecoration: item.textDecoration.map(o => {
+            return ['none', 'underline', 'lineThrough'][o] || 'none';
+          }) as JRich['textDecoration'],
+          color: color2rgbaStr(item.color),
+        };
+      });
+    }
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      width,
+      height,
+    } = this.style;
+    const autoW = width.u === StyleUnit.AUTO
+      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
+    const autoH = height.u === StyleUnit.AUTO
+      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
+    if (autoW) {
+      (res.props as TextProps).textBehaviour = 'auto';
+    }
+    else if (autoH) {
+      (res.props as TextProps).textBehaviour = 'autoH';
+    }
+    else {
+      (res.props as TextProps).textBehaviour = 'fixed';
+    }
     return res;
   }
 
@@ -3504,10 +3542,7 @@ class Text extends Node {
       && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
     const autoH = height.u === StyleUnit.AUTO
       && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
-    if (autoW && autoH) {
-      json.textBehaviour = SketchFormat.TextBehaviour.Flexible;
-    }
-    else if (autoW) {
+    if (autoW) {
       json.textBehaviour = SketchFormat.TextBehaviour.Flexible;
     }
     else if (autoH) {
