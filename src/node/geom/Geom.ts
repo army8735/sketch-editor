@@ -141,11 +141,13 @@ class Geom extends Node {
     const width = (maxX - minX) || 1;
     const height = (maxY - minY) || 1;
     let scale = 1;
-    if (width >= height) {
-      scale = max / width;
-    }
-    else {
-      scale = max / height;
+    if (width && height) {
+      if (width >= height) {
+        scale = max / width;
+      }
+      else {
+        scale = max / height;
+      }
     }
     let d = svgPolygon(absCoords.map(item => {
       return item.map(d => d * scale);

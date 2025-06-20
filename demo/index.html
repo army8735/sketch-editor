@@ -138,12 +138,12 @@
     }
   };
 
-  function download(blob) {
+  function download(blob, suffix) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     if (typeof link.download === 'string') {
       document.body.appendChild(link);
-      link.download = (root.props.name || 'se') + '.sketch';
+      link.download = (root.props.name || 'se') + suffix;
       link.href = url;
       link.click();
       document.body.removeChild(link);
@@ -166,7 +166,7 @@
     }
     root.toSketchFile().then(zip => {
       zip.generateAsync({ type: 'blob' }).then(blob => {
-        download(blob);
+        download(blob, '.sketch');
       });
     });
   });
@@ -182,7 +182,7 @@
     sketchEditor.tools.node.toBitmap(selected, {
       blob: true,
     }).then(blob => {
-      download(blob);
+      download(blob, '.png');
     });
   });
 </script>

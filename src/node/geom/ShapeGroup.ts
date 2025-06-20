@@ -807,11 +807,13 @@ class ShapeGroup extends AbstractGroup {
     const width = maxX - minX;
     const height = maxY - minY;
     let scale = 1;
-    if (width >= height) {
-      scale = max / width;
-    }
-    else {
-      scale = max / height;
+    if (width && height) {
+      if (width >= height) {
+        scale = max / width;
+      }
+      else {
+        scale = max / height;
+      }
     }
     const fillRule =
       computedStyle.fillRule === FILL_RULE.EVEN_ODD ? 'evenodd' : 'nonzero';
