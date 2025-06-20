@@ -1,4 +1,4 @@
-import { Point } from '../../format';
+import { JPoint, Point } from '../../format';
 import { CURVE_MODE } from '../../style/define';
 import { bezierLength, bezierSlope, getPointByT, getPointT } from '../../math/bezier';
 import { getRoots } from '../../math/equation';
@@ -30,8 +30,11 @@ type Seg = {
   isDeleted: boolean;
 };
 
-export function isCornerPoint(point: Point) {
-  return (point.curveMode === CURVE_MODE.STRAIGHT || point.curveMode === CURVE_MODE.NONE)
+export function isCornerPoint(point: Point | JPoint) {
+  return (point.curveMode === CURVE_MODE.STRAIGHT
+      || point.curveMode === CURVE_MODE.NONE
+      || point.curveMode === 'straight'
+      || point.curveMode === 'none')
     && point.cornerRadius > 0;
 }
 

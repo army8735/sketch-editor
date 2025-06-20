@@ -14,8 +14,7 @@
     "test1": "nightwatch --group group1 --filter test.js",
     "test2": "nightwatch --group group2 --filter test.js",
     "test3": "nightwatch --group group3 --filter test.js",
-    "test4": "nightwatch --group group4 --filter test.js",
-    "test5": "nightwatch --group group5 --filter test.js"
+    "test4": "nightwatch --group group4 --filter test.js"
   },
   "repository": {
     "type": "git",
