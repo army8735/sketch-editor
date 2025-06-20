@@ -174,6 +174,10 @@ class Page extends Container {
   }
 
   override toJson(): JNode {
+    // 尚未实例化
+    if (this.json) {
+      return this.json;
+    }
     const res = super.toJson();
     res.tagName = TAG_NAME.PAGE;
     return res;

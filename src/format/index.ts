@@ -19,8 +19,8 @@ export type JFile = {
     };
   };
   pages: JPage[];
-  currentPageIndex: number;
-  symbolMasters: JSymbolMaster[];
+  currentPageIndex?: number;
+  symbolMasters?: JSymbolMaster[];
 };
 
 export type JNode = {
@@ -190,7 +190,7 @@ export type GeomProps = Props & {
 };
 
 export type RootProps = Props & {
-  dpi: number;
+  dpi?: number;
   assets?: {
     uuid: string;
   };

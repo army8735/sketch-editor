@@ -28,8 +28,9 @@
     <div class="toolbar" id="toolbar"></div>
     <div class="zoom" id="zoom"></div>
     <div>
-      <button id="save">保存</button>
-      <button id="export">导出</button>
+      <button id="json">json</button>
+      <button id="sketch">sketch</button>
+      <button id="image">image</button>
     </div>
   </div>
   <div class="container">
@@ -151,18 +152,26 @@
     }
   }
 
-  const $save = document.querySelector('#save');
-  $save.addEventListener('click', function(e) {
-    if (root) {
-      root.toSketchFile().then(zip => {
-        zip.generateAsync({ type: 'blob' }).then(blob => {
-          download(blob);
-        });
-      });
+  const $json = document.querySelector('#json');
+  $json.addEventListener('click', () => {
+    if (!root) {
+      return;
     }
+    console.log(root.toJsonFile());
   });
-  const $export = document.querySelector('#export');
-  $export.addEventListener('click', () => {
+  const $sketch = document.querySelector('#sketch');
+  $sketch.addEventListener('click', () => {
+    if (!root) {
+      return;
+    }
+    root.toSketchFile().then(zip => {
+      zip.generateAsync({ type: 'blob' }).then(blob => {
+        download(blob);
+      });
+    });
+  });
+  const $image = document.querySelector('#image');
+  $image.addEventListener('click', () => {
     if (!root) {
       return;
     }

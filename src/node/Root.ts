@@ -94,7 +94,7 @@ class Root extends Container implements FrameCallback {
   constructor(props: RootProps, children: Node[] = []) {
     super(props, children);
     // 初始化的数据
-    this.dpi = props.dpi;
+    this.dpi = props.dpi || 1;
     this.root = this;
     this.programs = {};
     this.refs = {};
@@ -795,6 +795,24 @@ class Root extends Container implements FrameCallback {
 
   zoomFit() {
     return this.lastPage?.zoomFit();
+  }
+
+  toJsonFile() {
+    const symbolMasters = [];
+    for (let i in this.symbolMasters) {
+      symbolMasters.push(this.symbolMasters[i].toJson());
+    }
+    return {
+      currentPageIndex: this.getPageIndex(),
+      document: {
+        uuid: this.props.uuid,
+        assets: (this.props as RootProps).assets,
+        layerStyles: (this.props as RootProps).layerStyles,
+        layerTextStyles: (this.props as RootProps).layerTextStyles,
+      },
+      pages: this.getPages().map(item => item.toJson()),
+      symbolMasters,
+    };
   }
 
   async toSketchFile(filter?: (node: Node) => boolean): Promise<JSZip> {
