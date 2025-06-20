@@ -869,8 +869,8 @@ class Bitmap extends Node {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Bitmap> {
-    const json = await super.toSketchJson(zip) as SketchFormat.Bitmap;
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>): Promise<SketchFormat.Bitmap> {
+    const json = await super.toSketchJson(zip, blobHash) as SketchFormat.Bitmap;
     json._class = SketchFormat.ClassValue.Bitmap;
     json.image = {
       _class: 'MSJSONFileReference',
@@ -882,10 +882,16 @@ class Bitmap extends Node {
     if (imagesZip) {
       const res = await fetch(this._src);
       const blob = await res.blob();
-      let url = this._src;
-      // base64/http的都转成blob，相同资源会同名文件，浏览器机制
-      if (!/^blob:/.test(url)) {
+      let url = '';
+      // base64/http的都转成blob，相同资源判断复用
+      if (blobHash && blobHash[this._src]) {
+        url = blobHash[this._src];
+      }
+      else {
         url = URL.createObjectURL(blob);
+        if (blobHash) {
+          blobHash[this._src] = url;
+        }
       }
       // 都是blob后就可以确保唯一性，去除前缀路径
       const name = url.replace(/.*\//, '');

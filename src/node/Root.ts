@@ -815,7 +815,7 @@ class Root extends Container implements FrameCallback {
     };
   }
 
-  async toSketchFile(filter?: (node: Node) => boolean): Promise<JSZip> {
+  async toSketchFile(): Promise<JSZip> {
     if (this.isDestroyed) {
       // 离屏情况特殊处理
       this.willMount();
@@ -869,12 +869,17 @@ class Root extends Container implements FrameCallback {
       });
     });
     if (pagesZip && imagesZip) {
+      const blobHash: Record<string, string> = {};
       const list = await Promise.all(this.pageContainer.children.map(item => {
-        return item.toSketchJson(zip, filter);
+        return item.toSketchJson(zip, blobHash);
       }));
       list.forEach(item => {
         pagesZip.file(item.do_objectID + '.json', JSON.stringify(item));
       });
+      // 用完之后清空blob的url，bitmap中使用
+      for (let i in blobHash) {
+        URL.revokeObjectURL(blobHash[i]);
+      }
     }
     const meta: SketchFormat.Meta = {
       commit: '',

@@ -1702,7 +1702,7 @@ class Node extends Event {
     };
   }
 
-  async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean) {
+  async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     const { width, height, style, computedStyle } = this;
     let resizingConstraint = 0;
     if (style.left.v === StyleUnit.PX) {
