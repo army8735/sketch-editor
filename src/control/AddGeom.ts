@@ -167,6 +167,7 @@ export default class AddGeom {
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     svg.setAttribute('width', w + 'px');
     svg.setAttribute('height', h + 'px');
+    svg.style.transform = style.transform;
     const path = svg.querySelector('path') as SVGPathElement;
     path.setAttribute('d', `M${w * 0.5},0 L${w},${h} L0,${h} L${w * 0.5},0 Z`);
   }
@@ -217,6 +218,7 @@ export default class AddGeom {
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     svg.setAttribute('width', w + 'px');
     svg.setAttribute('height', h + 'px');
+    svg.style.transform = style.transform;
     const path = svg.querySelector('path') as SVGPathElement;
     const d = this.listener.customGeom.preview(w, h)
       || `M0,0 L${w},0 L${w},${h} L0,${h} L0,0 Z`;
