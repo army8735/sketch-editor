@@ -67,17 +67,12 @@ class Group extends AbstractGroup {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean): Promise<SketchFormat.Group> {
-    const json = await super.toSketchJson(zip) as SketchFormat.Group;
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>): Promise<SketchFormat.Group> {
+    const json = await super.toSketchJson(zip, blobHash) as SketchFormat.Group;
     json._class = SketchFormat.ClassValue.Group;
     json.hasClickThrough = false;
-    const list = await Promise.all(this.children.filter(item => {
-      if (filter) {
-        return filter(item);
-      }
-      return true;
-    }).map(item => {
-      return item.toSketchJson(zip);
+    const list = await Promise.all(this.children.map(item => {
+      return item.toSketchJson(zip, blobHash);
     }));
     json.layers = list.map(item => {
       return item as SketchFormat.Group |

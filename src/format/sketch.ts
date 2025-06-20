@@ -249,7 +249,7 @@ async function convertItem(
   // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似但多了symbolID
   if (layer._class === SketchFormat.ClassValue.Artboard || layer._class === SketchFormat.ClassValue.SymbolMaster) {
     const children: JNode[] = [];
-    for (let i = 0, len = layer.layers.length; i < len; i++) {
+    for (let i = 0, len = layer.layers?.length; i < len; i++) {
       const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, width as number, height as number);
       if (res) {
         children.push(res);
@@ -571,7 +571,7 @@ async function convertItem(
   }
   if (layer._class === SketchFormat.ClassValue.Group) {
     const children: JNode[] = [];
-    for (let i = 0, len = layer.layers.length; i < len; i++) {
+    for (let i = 0, len = layer.layers?.length; i < len; i++) {
       const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, layer.frame.width, layer.frame.height);
       if (res) {
         children.push(res);
@@ -1051,7 +1051,7 @@ async function convertItem(
       styleId,
     } = await geomStyle(layer, opt);
     const children: JNode[] = [];
-    for (let i = 0, len = layer.layers.length; i < len; i++) {
+    for (let i = 0, len = layer.layers?.length; i < len; i++) {
       const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, layer.frame.width, layer.frame.height);
       if (res) {
         children.push(res);

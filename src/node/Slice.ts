@@ -19,8 +19,8 @@ class Slice extends Node {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip, filter?: (node: Node) => boolean): Promise<SketchFormat.Slice> {
-    const json = await super.toSketchJson(zip, filter) as SketchFormat.Slice;
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>): Promise<SketchFormat.Slice> {
+    const json = await super.toSketchJson(zip, blobHash) as SketchFormat.Slice;
     json._class = SketchFormat.ClassValue.Slice;
     return json;
   }
