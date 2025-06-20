@@ -231,6 +231,12 @@ class Geom extends Node {
     }
     return res;
   }
+
+  override toJson() {
+    const res = super.toJson();
+    (res.props as GeomProps).isClosed = this.isClosed;
+    return res;
+  }
 }
 
 export default Geom;

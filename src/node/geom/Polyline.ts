@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { Point, JNode, Override, PolylineProps, TAG_NAME } from '../../format';
+import { Point, JNode, Override, PolylineProps, TAG_NAME, JPoint } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
 import { calSize, color2rgbaInt, color2rgbaStr } from '../../style/css';
@@ -698,6 +698,22 @@ class Polyline extends Geom {
   override toJson(): JNode {
     const res = super.toJson();
     res.tagName = TAG_NAME.POLYLINE;
+    (res.props as PolylineProps).points = this.points.map(item => {
+      return {
+        x: item.x,
+        y: item.y,
+        cornerRadius: item.cornerRadius,
+        curveMode: ['none', 'straight', 'mirrored', 'asymmetric', 'disconnected'][item.curveMode] || 'none',
+        fx: item.fx,
+        fy: item.fy,
+        tx: item.tx,
+        ty: item.ty,
+        hasCurveFrom: item.hasCurveFrom,
+        hasCurveTo: item.hasCurveTo,
+      };
+    }) as JPoint[];
+    (res.props as PolylineProps).isRectangle = this.isRectangle;
+    (res.props as PolylineProps).isOval = this.isOval;
     return res;
   }
 
