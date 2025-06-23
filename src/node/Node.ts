@@ -191,7 +191,7 @@ class Node extends Event {
     }
     this.parentOpId = parent.localOpId;
     this.parentMwId = parent.localMwId;
-    const root = (this.root = parent.root!);
+    const root = (this.root = parent.root);
     if (!this.isPage) {
       this.page = parent.page;
     }
@@ -202,7 +202,7 @@ class Node extends Event {
       this.symbolInstance = parent.symbolInstance;
     }
     const uuid = this.uuid;
-    if (uuid) {
+    if (root && uuid) {
       root.refs[uuid] = this;
     }
   }
@@ -402,6 +402,15 @@ class Node extends Event {
       }
       if (height.u !== StyleUnit.AUTO) {
         this.height = computedStyle.height = Math.max(this.minHeight, calSize(height, parent.height));
+      }
+    }
+    // 不应该没有parent，Root会自己强制计算要求px，但防止特殊逻辑比如添加自定义矢量fake计算还是兜底
+    else {
+      if (width.u === StyleUnit.PX) {
+        this.width = computedStyle.width = width.v;
+      }
+      if (height.u === StyleUnit.PX) {
+        this.height = computedStyle.height = height.v;
       }
     }
     computedStyle.letterSpacing = style.letterSpacing.v;

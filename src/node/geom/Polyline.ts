@@ -4,7 +4,7 @@ import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { Point, JNode, Override, PolylineProps, TAG_NAME, JPoint } from '../../format';
 import CanvasCache from '../../refresh/CanvasCache';
 import { canvasPolygon } from '../../refresh/paint';
-import { calSize, color2rgbaInt, color2rgbaStr } from '../../style/css';
+import { calSize, color2rgbaInt, color2rgbaStr, normalizePoints } from '../../style/css';
 import {
   ComputedGradient,
   ComputedPattern,
@@ -39,29 +39,7 @@ class Polyline extends Geom {
   constructor(props: PolylineProps) {
     super(props);
     this.props = props;
-    props.points.forEach(item => {
-      this.points.push(Object.assign({}, item, {
-        curveMode: {
-          'none': CURVE_MODE.NONE,
-          'straight': CURVE_MODE.STRAIGHT,
-          'mirrored': CURVE_MODE.MIRRORED,
-          'asymmetric': CURVE_MODE.ASYMMETRIC,
-          'disconnected': CURVE_MODE.DISCONNECTED,
-        }[item.curveMode] || CURVE_MODE.NONE,
-        absX: 0,
-        absY: 0,
-        absFx: 0,
-        absFy: 0,
-        absTx: 0,
-        absTy: 0,
-        dspX: 0,
-        dspY: 0,
-        dspFx: 0,
-        dspFy: 0,
-        dspTx: 0,
-        dspTy: 0,
-      }) as Point);
-    });
+    this.points.push(...normalizePoints(this.props.points));
     this.isPolyline = true;
     this.isRectangle = !!props.isRectangle;
     this.isOval = !!props.isOval;

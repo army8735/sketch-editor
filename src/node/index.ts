@@ -14,6 +14,8 @@ import SymbolInstance from './SymbolInstance';
 import SymbolMaster from './SymbolMaster';
 import Text from './Text';
 import parser from './parser';
+import border from './geom/border';
+import corner from './geom/corner';
 
 export default {
   ArtBoard,
@@ -32,4 +34,6 @@ export default {
   ShapeGroup,
   reflow,
   parser,
+  border,
+  corner,
 };

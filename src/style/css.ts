@@ -1,4 +1,4 @@
-import { JRich, JStyle, Rich } from '../format';
+import { JPoint, JRich, JStyle, Rich } from '../format';
 import inject from '../util/inject';
 import { isNil, isString } from '../util/type';
 import {
@@ -9,6 +9,7 @@ import {
   ComputedPattern,
   ComputedShadow,
   ComputedStyle,
+  CURVE_MODE,
   FILL_RULE,
   FONT_STYLE,
   MASK,
@@ -1182,9 +1183,37 @@ export function normalizeColor(color: number[]) {
   return color;
 }
 
+export function normalizePoints(points: JPoint[]) {
+  return points.map(item => {
+    return {
+      ...item,
+      curveMode: {
+        'none': CURVE_MODE.NONE,
+        'straight': CURVE_MODE.STRAIGHT,
+        'mirrored': CURVE_MODE.MIRRORED,
+        'asymmetric': CURVE_MODE.ASYMMETRIC,
+        'disconnected': CURVE_MODE.DISCONNECTED,
+      }[item.curveMode] || CURVE_MODE.NONE,
+      absX: 0,
+      absY: 0,
+      absFx: 0,
+      absFy: 0,
+      absTx: 0,
+      absTy: 0,
+      dspX: 0,
+      dspY: 0,
+      dspFx: 0,
+      dspFy: 0,
+      dspTx: 0,
+      dspTy: 0,
+    };
+  });
+}
+
 export default {
   normalize,
   normalizeRich,
+  normalizePoints,
   normalizeColor,
   equalStyle,
   color2rgbaInt,

@@ -220,9 +220,8 @@ export default class AddGeom {
     svg.setAttribute('height', h + 'px');
     svg.style.transform = style.transform;
     const path = svg.querySelector('path') as SVGPathElement;
-    const d = this.listener.customGeom.preview(w, h)
-      || `M0,0 L${w},0 L${w},${h} L0,${h} L0,0 Z`;
-    path.setAttribute('d', d);
+    const d = this.listener.customGeom.preview(w, h);
+    path.setAttribute('d', d || '');
   }
 
   hideCustom() {

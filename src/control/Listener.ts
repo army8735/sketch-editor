@@ -1265,6 +1265,13 @@ export default class Listener extends Event {
       || this.state === state.ADD_LINE
       || this.state === state.ADD_TRIANGLE
       || this.state === state.ADD_CUSTOM_GEOM) {
+      this.dom.classList.remove('add-rect');
+      this.dom.classList.remove('add-oval');
+      this.dom.classList.remove('add-round');
+      this.dom.classList.remove('add-line');
+      this.dom.classList.remove('add-star');
+      this.dom.classList.remove('add-triangle');
+      this.dom.classList.remove('add-custom');
       const old = this.state;
       const addGeom = this.addGeom;
       const hide = {
@@ -1276,6 +1283,8 @@ export default class Listener extends Event {
         [state.ADD_CUSTOM_GEOM]: addGeom.hideCustom,
       }[old] as Function;
       let { x, y, w, h, transform } = hide.call(addGeom);
+      let node: Node | undefined;
+      // 可能不存在，比如按下后没拖拽鼠标有尺寸，就不会创建，也有可能拖拽后又回到原处宽高为0
       if (w && h) {
         const dpi = this.root.dpi;
         x *= dpi;
@@ -1292,31 +1301,26 @@ export default class Listener extends Event {
             return this.customGeom.create();
           },
         }[old] as Function;
-        const node = create(transform);
-        if (!node) {
-          throw new Error('Missing create data');
+        node = create(transform);
+        if (node) {
+          const page = this.root.getCurPage()!;
+          const zoom = page.getZoom();
+          addNode(node, this.root, x, y, Math.max(1, w / zoom), Math.max(1, h / zoom), this.selected[0]);
+          this.selected.splice(0);
+          this.selected.push(node);
+          this.select.showSelect(this.selected);
+          this.history.addCommand(new AddCommand([node], [{
+            x: node.computedStyle.left,
+            y: node.computedStyle.top,
+            parent: node.parent!,
+          }]));
+          this.emit(Listener.ADD_NODE, [node]);
         }
-        const page = this.root.getCurPage()!;
-        const zoom = page.getZoom();
-        addNode(node, this.root, x, y, Math.max(1, w / zoom), Math.max(1, h / zoom), this.selected[0]);
-        this.selected.splice(0);
-        this.selected.push(node);
-        this.select.showSelect(this.selected);
-        this.dom.classList.remove('add-rect');
-        this.dom.classList.remove('add-oval');
-        this.dom.classList.remove('add-round');
-        this.dom.classList.remove('add-line');
-        this.dom.classList.remove('add-star');
-        this.dom.classList.remove('add-triangle');
-        this.dom.classList.remove('add-custom');
-        this.history.addCommand(new AddCommand([node], [{
-          x: node.computedStyle.left,
-          y: node.computedStyle.top,
-          parent: node.parent!,
-        }]));
-        this.emit(Listener.ADD_NODE, [node]);
-        this.state = state.NORMAL;
-        this.emit(Listener.STATE_CHANGE, old, this.state);
+      }
+      this.customGeom.cancel();
+      this.state = state.NORMAL;
+      this.emit(Listener.STATE_CHANGE, old, this.state);
+      if (node) {
         this.emit(Listener.SELECT_NODE, [node]);
       }
     }

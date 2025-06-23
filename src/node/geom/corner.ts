@@ -586,3 +586,9 @@ function convert2Seg(ps: XY[], belong: number) {
   }
   return res;
 }
+
+export default {
+  isCornerPoint,
+  getStraight,
+  getCurve,
+};
