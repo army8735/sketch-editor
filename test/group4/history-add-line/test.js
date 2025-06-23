@@ -21,6 +21,7 @@ module.exports = {
       .click('#button2')
       .assert.value('#base64', '[0]')
 
+      .click('#toolbar .geom')
       .moveToElement('canvas', 50, 50)
       .mouseButtonDown(0)
       .moveToElement('canvas', 100, 100)
