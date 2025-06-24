@@ -907,7 +907,7 @@ function renderWebglNoTile(
     // 画布和Page的FBO切换检测
     if (isInScreen) {
       // 画布开始，新建画布纹理并绑定FBO，计算end索引供切回Page，空画布无效需跳过
-      if (node.isArtBoard && node instanceof ArtBoard) {
+      if (node instanceof ArtBoard) {
         node.renderBgc(gl, cx, cy);
         if (total + next) {
           artBoardIndex[i + total + next] = node;
@@ -952,8 +952,8 @@ function renderWebglNoTile(
       continue;
     }
     // 图片检查内容加载计数器
-    if (isInScreen && node.isBitmap && (node as Bitmap).checkLoader()) {
-      imgLoadList.push(node as Bitmap);
+    if (isInScreen && node instanceof Bitmap && node.checkLoader()) {
+      imgLoadList.push(node);
     }
     // console.log(i, node.props.name, isInScreen, x1, y1, x2, y2, abRect.join(','))
     // 真正的渲染部分

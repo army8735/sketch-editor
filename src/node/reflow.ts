@@ -3,10 +3,16 @@ import ShapeGroup from './geom/ShapeGroup';
 
 export function checkReflow(node: Node, addDom: boolean, removeDom: boolean) {
   const parent = node.parent;
-  // 向上清除ShapeGroup的coords
+  // 向上清除ShapeGroup的coords/bbox
   let p = parent;
   while (p && p instanceof ShapeGroup) {
+    p.clearCache(true);
     p.coords = undefined;
+    p._rect = undefined;
+    p._bbox = undefined;
+    p._bbox2 = undefined;
+    p._filterBbox = undefined;
+    p._filterBbox2 = undefined;
     p = p.parent;
   }
   if (removeDom) {

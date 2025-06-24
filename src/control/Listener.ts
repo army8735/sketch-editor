@@ -292,7 +292,7 @@ export default class Listener extends Event {
 
   toggleGroup(node: Node, value = false) {
     const p = node.parent;
-    if (p && p.isGroup && p instanceof Group) {
+    if (p && p instanceof AbstractGroup) {
       p.fixedPosAndSize = value;
     }
   }
@@ -389,7 +389,7 @@ export default class Listener extends Event {
       else {
         this.abcStyle = selected.map((item) => {
           // resize画板children的定位尺寸临时变为固定px
-          if (item.isArtBoard && item instanceof ArtBoard && !(item.props as ArtBoardProps).resizesContent) {
+          if (item instanceof ArtBoard && !(item.props as ArtBoardProps).resizesContent) {
             return item.children.map((child) => {
               const { computedStyle, style } = child;
               const res = {
