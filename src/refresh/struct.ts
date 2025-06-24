@@ -1247,7 +1247,7 @@ function renderOverlay(
   gl.uniform1f(u_height, 1 / cy);
   for (let i = 0; i < start; i++) {
     const { node } = structs[i];
-    if (node.isSlice && node instanceof Slice) {
+    if (node instanceof Slice) {
       const matrix = node._matrixWorld;
       const bbox = node._rect || node.rect;
       const isInScreen = checkInScreen(bbox, matrix, W, H);

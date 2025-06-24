@@ -649,7 +649,7 @@ class BasicPanel extends Panel {
     else {
       y.value = toPrecision(ys[0]).toString();
     }
-    r.disabled = nodes.filter(item => item.isSlice && item instanceof Slice).length > 0;
+    r.disabled = nodes.filter(item => item instanceof Slice).length > 0;
     if (rs.length > 1) {
       r.placeholder = '多个';
     }

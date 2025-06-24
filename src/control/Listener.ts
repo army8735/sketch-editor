@@ -375,7 +375,7 @@ export default class Listener extends Event {
       }
       // 旋转时记住中心坐标
       if (selected.length === 1 && (this.metaKey || isWin && this.ctrlKey)
-        && !selected[0].isSlice && !(selected[0] instanceof Slice)
+        && !(selected[0] instanceof Slice)
         && [CONTROL_TYPE.TL, CONTROL_TYPE.TR, CONTROL_TYPE.BL, CONTROL_TYPE.BR].indexOf(controlType) > -1) {
         const { points } = selected[0].getBoundingClientRect();
         const i = intersectLineLine(
