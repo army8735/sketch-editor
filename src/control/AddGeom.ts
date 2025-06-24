@@ -82,7 +82,8 @@ export default class AddGeom {
     }
   }
 
-  hide(style: CSSStyleDeclaration, w: number, h: number) {
+  hide(el: HTMLElement) {
+    const { clientWidth: w, clientHeight: h, style } = el;
     const { left, top, transform } = style;
     let x = parseInt(left);
     let y = parseInt(top);
@@ -100,6 +101,12 @@ export default class AddGeom {
     style.width = '0px';
     style.height = '0px';
     style.transform = '';
+    const svg = el.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('d', '');
+      svg.setAttribute('width', '0');
+      svg.setAttribute('height', '0');
+    }
     return { x, y, w, h, transform };
   }
 
@@ -114,8 +121,7 @@ export default class AddGeom {
   }
 
   hideRect() {
-    const { clientWidth: w, clientHeight: h, style } = this.rect;
-    return this.hide(style, w, h);
+    return this.hide(this.rect);
   }
 
   showOval(x: number, y: number) {
@@ -134,8 +140,7 @@ export default class AddGeom {
   }
 
   hideOval() {
-    const { clientWidth: w, clientHeight: h, style } = this.oval;
-    return this.hide(style, w, h);
+    return this.hide(this.oval);
   }
 
   showRound(x: number, y: number) {
@@ -149,8 +154,7 @@ export default class AddGeom {
   }
 
   hideRound() {
-    const { clientWidth: w, clientHeight: h, style } = this.round;
-    return this.hide(style, w, h);
+    return this.hide(this.round);
   }
 
   showTriangle(x: number, y: number) {
@@ -173,8 +177,7 @@ export default class AddGeom {
   }
 
   hideTriangle() {
-    const { clientWidth: w, clientHeight: h, style } = this.triangle;
-    return this.hide(style, w, h);
+    return this.hide(this.triangle);
   }
 
   showLine(x: number, y: number) {
@@ -196,8 +199,7 @@ export default class AddGeom {
   }
 
   hideLine() {
-    const { clientWidth: w, clientHeight: h, style } = this.line;
-    return this.hide(style, w, h);
+    return this.hide(this.line);
   }
 
   showStar(x: number, y: number) {
@@ -225,8 +227,7 @@ export default class AddGeom {
   }
 
   hideCustom() {
-    const { clientWidth: w, clientHeight: h, style } = this.custom;
-    return this.hide(style, w, h);
+    return this.hide(this.custom);
   }
 }
 
