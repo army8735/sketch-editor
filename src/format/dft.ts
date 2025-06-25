@@ -56,4 +56,5 @@ export const DEFAULT_STYLE = {
   saturate: 1,
   brightness: 1,
   contrast: 1,
+  overflow: 'visible',
 };

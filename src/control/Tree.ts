@@ -9,6 +9,8 @@ import Group from '../node/Group';
 import Bitmap from '../node/Bitmap';
 import Text from '../node/Text';
 import Slice from '../node/Slice';
+import Frame from '../node/Frame';
+import Graphic from '../node/Graphic';
 import Container from '../node/Container';
 import Listener from './Listener';
 import config from '../util/config';
@@ -106,6 +108,12 @@ function getNodeType(node: Node) {
   }
   else if (node instanceof Slice) {
     type = 'slice';
+  }
+  else if (node instanceof Frame) {
+    type = 'frame';
+  }
+  else if (node instanceof Graphic) {
+    type = 'graphic';
   }
   return type;
 }

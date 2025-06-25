@@ -13,6 +13,8 @@ import Slice from './Slice';
 import SymbolInstance from './SymbolInstance';
 import SymbolMaster from './SymbolMaster';
 import Text from './Text';
+import Frame from './Frame';
+import Graphic from './Graphic';
 import parser from './parser';
 import border from './geom/border';
 import corner from './geom/corner';
@@ -32,6 +34,8 @@ export default {
   Geom,
   Polyline,
   ShapeGroup,
+  Frame,
+  Graphic,
   reflow,
   parser,
   border,

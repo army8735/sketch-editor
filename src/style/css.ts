@@ -13,7 +13,7 @@ import {
   FILL_RULE,
   FONT_STYLE,
   MASK,
-  MIX_BLEND_MODE,
+  MIX_BLEND_MODE, OVERFLOW,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
@@ -719,6 +719,17 @@ export function normalize(style: any): Style {
     if (Array.isArray(matrix)) {
       res.matrix = { v: matrix, u: StyleUnit.MATRIX };
     }
+  }
+  if (style.hasOwnProperty('overflow')) {
+    const overflow = style.overflow;
+    let v = OVERFLOW.HIDDEN;
+    if (overflow === 'visible') {
+      v = OVERFLOW.VISIBLE;
+    }
+    res.overflow = {
+      v,
+      u: StyleUnit.NUMBER,
+    };
   }
   return res;
 }

@@ -5,9 +5,12 @@ import {
   JArtBoard,
   JBitmap,
   JFile,
+  JFrame,
+  JGraphic,
   JGroup,
   JNode,
   JPage,
+  JPoint,
   JPolyline,
   JRich,
   JShapeGroup,
@@ -15,8 +18,8 @@ import {
   JSymbolMaster,
   JText,
   Override,
-  JPoint,
-  TAG_NAME, TextProps,
+  TAG_NAME,
+  TextProps,
 } from './';
 import { PAGE_H, PAGE_W } from './dft';
 import font from '../style/font';
@@ -294,6 +297,7 @@ async function convertItem(
         children: children.filter((item) => item),
       } as JSymbolMaster;
     }
+    const includeBackgroundColorInExport = layer.includeBackgroundColorInExport;
     return {
       tagName: TAG_NAME.ART_BOARD,
       props: {
@@ -303,6 +307,7 @@ async function convertItem(
         constrainProportions,
         hasBackgroundColor,
         resizesContent: layer.resizesContent,
+        includeBackgroundColorInExport,
         style: {
           width, // 画板始终相对于page的原点，没有百分比单位
           height,
@@ -582,6 +587,56 @@ async function convertItem(
       fillEnable,
       fillOpacity,
     } = await geomStyle(layer, opt);
+    // @ts-ignore
+    const groupBehavior = layer.groupBehavior;
+    if (groupBehavior === 1 || groupBehavior === 2) {
+      // @ts-ignore
+      const includeBackgroundColorInExport = layer.includeBackgroundColorInExport;
+      // @ts-ignore
+      const clippingBehavior = layer.clippingBehavior;
+      console.log(layer.name, groupBehavior, clippingBehavior);
+      return {
+        tagName: groupBehavior === 1 ? TAG_NAME.FRAME : TAG_NAME.GRAPHIC,
+        props: {
+          uuid: layer.do_objectID,
+          name: layer.name,
+          nameIsFixed: layer.nameIsFixed,
+          index,
+          constrainProportions,
+          includeBackgroundColorInExport,
+          style: {
+            left,
+            top,
+            right,
+            bottom,
+            width,
+            height,
+            visibility,
+            opacity,
+            fill,
+            fillEnable,
+            fillOpacity,
+            translateX,
+            translateY,
+            scaleX,
+            scaleY,
+            rotateZ,
+            mixBlendMode,
+            maskMode,
+            breakMask,
+            blur,
+            shadow,
+            shadowEnable,
+            innerShadow,
+            innerShadowEnable,
+            overflow: clippingBehavior === 2 ? 'visible' : 'hidden',
+          },
+          isLocked,
+          isExpanded,
+        },
+        children: children.filter((item) => item),
+      } as JFrame | JGraphic;
+    }
     return {
       tagName: TAG_NAME.GROUP,
       props: {
@@ -1033,6 +1088,7 @@ async function convertItem(
     } as JPolyline;
   }
   if (layer._class === SketchFormat.ClassValue.ShapeGroup) {
+    console.log(layer);
     const {
       fill,
       fillEnable,

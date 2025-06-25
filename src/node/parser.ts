@@ -1,18 +1,18 @@
 import {
-  JNode,
-  SymbolMasterProps,
-  SymbolInstanceProps,
-  TAG_NAME,
   ArtBoardProps,
   BitmapProps,
   JContainer,
+  JGroup,
+  JLayer,
+  JNode,
+  JSymbolInstance,
+  JSymbolMaster,
   PolylineProps,
   ShapeGroupProps,
+  SymbolInstanceProps,
+  SymbolMasterProps,
+  TAG_NAME,
   TextProps,
-  JSymbolMaster,
-  JGroup,
-  JSymbolInstance,
-  JLayer,
 } from '../format/';
 import ArtBoard from './ArtBoard';
 import Bitmap from './Bitmap';
@@ -25,6 +25,8 @@ import Text from './Text';
 import SymbolInstance from './SymbolInstance';
 import Slice from './Slice';
 import Root from './Root';
+import Frame from './Frame';
+import Graphic from './Graphic';
 
 export function parse(json: JLayer, root?: Root): Node | undefined {
   const tagName = json.tagName;
@@ -88,6 +90,28 @@ export function parse(json: JLayer, root?: Root): Node | undefined {
   }
   else if (tagName === TAG_NAME.SLICE) {
     return new Slice(json.props);
+  }
+  else if (tagName === TAG_NAME.FRAME) {
+    const children = [];
+    const cd = (json as JContainer).children || [];
+    for (let i = 0, len = cd.length; i < len; i++) {
+      const res = parse(cd[i], root);
+      if (res) {
+        children.push(res);
+      }
+    }
+    return new Frame(json.props, children);
+  }
+  else if (tagName === TAG_NAME.GRAPHIC) {
+    const children = [];
+    const cd = (json as JContainer).children || [];
+    for (let i = 0, len = cd.length; i < len; i++) {
+      const res = parse(cd[i], root);
+      if (res) {
+        children.push(res);
+      }
+    }
+    return new Graphic(json.props, children);
   }
 }
 

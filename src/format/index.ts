@@ -61,6 +61,16 @@ export type JShapeGroup = JContainer & {
   props: ShapeGroupProps,
 };
 
+export type JFrame = JContainer & {
+  tagName: TAG_NAME.FRAME;
+  includeBackgroundColorInExport?: boolean;
+};
+
+export type JGraphic = JContainer & {
+  tagName: TAG_NAME.GRAPHIC;
+  includeBackgroundColorInExport?: boolean;
+};
+
 export type JBitmap = JContainer & {
   tagName: TAG_NAME.BITMAP;
   props: BitmapProps;
@@ -84,6 +94,7 @@ export type JLayer = JNode
   | JSymbolInstance
   | JGroup
   | JShapeGroup
+  | JFrame
   | JBitmap
   | JText
   | JPolyline;
@@ -304,6 +315,8 @@ export enum TAG_NAME {
   SLICE = 'slice',
   SHAPE_GROUP = '$shapeGroup',
   POLYLINE = '$polyline',
+  FRAME = 'frame',
+  GRAPHIC = 'graphic',
 }
 
 export type Override = {

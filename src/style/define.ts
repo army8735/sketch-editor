@@ -280,6 +280,7 @@ export type Style = {
   brightness: StyleNumValue;
   contrast: StyleNumValue;
   matrix?: StyleMatrixValue;
+  overflow: StyleOverflowValue;
 };
 
 export type ComputedStyle = {
@@ -340,6 +341,7 @@ export type ComputedStyle = {
   brightness: number;
   contrast: number;
   matrix?: ComputedMatrix;
+  overflow: OVERFLOW;
 };
 
 export enum TEXT_ALIGN {
@@ -460,6 +462,16 @@ export enum TEXT_DECORATION {
   LINE_THROUGH = 2,
 }
 
+export enum OVERFLOW {
+  VISIBLE = 0,
+  HIDDEN = 1,
+}
+
+export type StyleOverflowValue = {
+  v: OVERFLOW;
+  u: number;
+}
+
 export default {
   StyleUnit,
   calUnit,
@@ -479,4 +491,5 @@ export default {
   PATTERN_FILL_TYPE,
   VISIBILITY,
   TEXT_DECORATION,
+  OVERFLOW,
 };
