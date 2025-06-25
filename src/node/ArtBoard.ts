@@ -42,9 +42,12 @@ class ArtBoard extends Container {
     cx: number,
     cy: number,
   ) {
-    const programs = this.root!.programs;
-    const { width, height, matrixWorld } = this;
+    const { width, height, matrixWorld, hasBackgroundColor } = this;
+    if (!hasBackgroundColor) {
+      return;
+    }
     // 白色背景
+    const programs = this.root!.programs;
     const bgColorProgram = programs.bgColorProgram;
     gl.useProgram(bgColorProgram);
     // 矩形固定2个三角形
@@ -126,8 +129,11 @@ class ArtBoard extends Container {
     tile: Tile,
     ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number },
   ) {
-    const programs = this.root!.programs;
+    if (!this.hasBackgroundColor) {
+      return;
+    }
     // 白色背景
+    const programs = this.root!.programs;
     const bgColorProgram = programs.bgColorProgram;
     gl.useProgram(bgColorProgram);
     // 矩形固定2个三角形

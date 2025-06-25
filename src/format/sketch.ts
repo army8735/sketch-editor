@@ -147,13 +147,6 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
 }
 
 async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Promise<JPage> {
-  const children: JNode[] = [];
-  for (let i = 0, len = page.layers.length; i < len; i++) {
-    const res = await convertItem(page.layers[i], (i + 1) / (len + 1), opt, PAGE_W, PAGE_H);
-    if (res) {
-      children.push(res);
-    }
-  }
   let x = 0;
   let y = 0;
   let zoom = 1;
@@ -171,6 +164,16 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
       zoom = zoomValue;
     }
   }
+  const dx = page.horizontalRulerData?.base || 0;
+  const dy = page.verticalRulerData?.base || 0;
+  console.warn(zoom, x, y, dx, dy)
+  const children: JNode[] = [];
+  for (let i = 0, len = page.layers.length; i < len; i++) {
+    const res = await convertItem(page.layers[i], (i + 1) / (len + 1), opt, PAGE_W, PAGE_H, dx, dy);
+    if (res) {
+      children.push(res);
+    }
+  }
   return {
     tagName: TAG_NAME.PAGE,
     props: {
@@ -179,16 +182,16 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
       nameIsFixed: page.nameIsFixed,
       index,
       constrainProportions: page.frame.constrainProportions || false,
-      rule: {
-        baseX: page.horizontalRulerData?.base || 0,
-        baseY: page.verticalRulerData?.base || 0,
-      },
+      // rule: {
+      //   baseX: page.horizontalRulerData?.base || 0,
+      //   baseY: page.verticalRulerData?.base || 0,
+      // },
       style: {
         width: PAGE_W,
         height: PAGE_H,
         visibility: 'hidden',
-        translateX: x,
-        translateY: y,
+        translateX: x + dx,
+        translateY: y + dy,
         scaleX: zoom,
         scaleY: zoom,
         transformOrigin: [0, 0],
@@ -207,11 +210,15 @@ async function convertItem(
   opt: Opt,
   w: number,
   h: number,
+  dx = 0,
+  dy = 0,
 ): Promise<JNode | undefined> {
   let width: number | string = layer.frame.width || 0.5;
   let height: number | string = layer.frame.height || 0.5;
   let translateX: number | string = layer.frame.x || 0;
   let translateY: number | string = layer.frame.y || 0;
+  translateX -= dx;
+  translateY -= dy;
   if (w < 0) {
     w = 0;
   }
@@ -594,7 +601,6 @@ async function convertItem(
       const includeBackgroundColorInExport = layer.includeBackgroundColorInExport;
       // @ts-ignore
       const clippingBehavior = layer.clippingBehavior;
-      console.log(layer.name, groupBehavior, clippingBehavior);
       return {
         tagName: groupBehavior === 1 ? TAG_NAME.FRAME : TAG_NAME.GRAPHIC,
         props: {
@@ -1088,7 +1094,6 @@ async function convertItem(
     } as JPolyline;
   }
   if (layer._class === SketchFormat.ClassValue.ShapeGroup) {
-    console.log(layer);
     const {
       fill,
       fillEnable,
