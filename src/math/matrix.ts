@@ -1,5 +1,5 @@
 export function identity() {
-  return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]) as Float64Array;
 }
 
 // 16位单位矩阵判断，空也认为是

@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@sketch-hq/sketch-file-format-ts": "^6.5.0",
-    "ag-psd": "^28.1.0",
+    "ag-psd": "^28.2.1",
     "jszip": "^3.10.1",
     "uuid": "^9.0.1"
   },
@@ -50,7 +50,7 @@
     "rollup-plugin-postcss": "^4.0.2",
     "selenium-server": "^3.141.59",
     "tslib": "^2.8.1",
-    "typescript": "~5.6.3",
+    "typescript": "^5.8.3",
     "webstorm-disable-index": "^1.2.0"
   },
   "main": "dist/index.js",

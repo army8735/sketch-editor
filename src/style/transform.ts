@@ -26,7 +26,7 @@ export function calRotateZRadian(t: Float64Array, v: number) {
 
 // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
 export function calMatrixByOrigin(m: Float64Array, ox: number, oy: number) {
-  let res = m.slice(0);
+  let res = m.slice(0) as Float64Array;
   if (ox === 0 && oy === 0 || isE(m)) {
     return res;
   }
@@ -68,7 +68,7 @@ export function calMatrix(style: Style, width = 0, height = 0) {
 }
 
 export function calTransformByMatrixAndOrigin(matrix: Float64Array, x: number, y: number) {
-  let res = matrix.slice(0);
+  let res = matrix.slice(0) as Float64Array;
   res = multiplyTfo(res, x, y);
   res = tfoMultiply(-x, -y, res);
   return res;
