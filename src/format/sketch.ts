@@ -182,10 +182,6 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
       nameIsFixed: page.nameIsFixed,
       index,
       constrainProportions: page.frame.constrainProportions || false,
-      // rule: {
-      //   baseX: page.horizontalRulerData?.base || 0,
-      //   baseY: page.verticalRulerData?.base || 0,
-      // },
       style: {
         width: PAGE_W,
         height: PAGE_H,

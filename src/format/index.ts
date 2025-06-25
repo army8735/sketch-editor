@@ -215,10 +215,6 @@ export type RootProps = Props & {
 };
 
 export type PageProps = Props & {
-  rule?: {
-    baseX: number;
-    baseY: number;
-  };
 };
 
 export type BitmapProps = Props & {

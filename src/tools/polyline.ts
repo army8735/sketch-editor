@@ -3,7 +3,7 @@ import { JPoint, Point } from '../format';
 import Polyline from '../node/geom/Polyline';
 import { calPoint, inverse4 } from '../math/matrix';
 import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
-import { getBaseCoords, getBasicMatrix } from './node';
+import { getBasicMatrix } from './node';
 
 export function createRect() {
   return new Polyline({
@@ -213,20 +213,19 @@ export function getPointsDspByAbs(node: Polyline, points?: Point | Point[]) {
   if (!points) {
     points = node.points;
   }
-  const { baseX, baseY } = getBaseCoords(node);
   const pts = Array.isArray(points) ? points : [points];
   pts.forEach(item => {
     const p = calPoint({
-      x: item.absX - baseX,
-      y: item.absY - baseY,
+      x: item.absX,
+      y: item.absY,
     }, m);
     const f = calPoint({
-      x: item.absFx - baseX,
-      y: item.absFy - baseY,
+      x: item.absFx,
+      y: item.absFy,
     }, m);
     const t = calPoint({
-      x: item.absTx - baseX,
-      y: item.absTy - baseY,
+      x: item.absTx,
+      y: item.absTy,
     }, m);
     item.dspX = p.x;
     item.dspY = p.y;
@@ -243,20 +242,19 @@ export function getPointsAbsByDsp(node: Polyline, points?: Point | Point[]) {
     points = node.points;
   }
   const i = inverse4(m);
-  const { baseX, baseY } = getBaseCoords(node);
   const pts = Array.isArray(points) ? points : [points];
   pts.forEach(item => {
     const p = calPoint({
-      x: item.dspX + baseX,
-      y: item.dspY + baseY,
+      x: item.dspX,
+      y: item.dspY,
     }, i);
     const f = calPoint({
-      x: item.dspFx + baseX,
-      y: item.dspFy + baseY,
+      x: item.dspFx,
+      y: item.dspFy,
     }, i);
     const t = calPoint({
-      x: item.dspTx + baseX,
-      y: item.dspTy + baseY,
+      x: item.dspTx,
+      y: item.dspTy,
     }, i);
     item.absX = p.x;
     item.absY = p.y;

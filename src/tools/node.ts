@@ -1198,16 +1198,6 @@ export function getBasicMatrix(node: Node) {
   return m;
 }
 
-export function getBaseCoords(node: Node) {
-  let baseX = 0,
-    baseY = 0;
-  if (!node.artBoard) {
-    baseX = (node.page?.props as PageProps).rule?.baseX || 0;
-    baseY = (node.page?.props as PageProps).rule?.baseY || 0;
-  }
-  return { baseX, baseY };
-}
-
 export function getBasicInfo(node: Node) {
   const m = getBasicMatrix(node);
   const rect = node._rect || node.rect;
@@ -1221,12 +1211,9 @@ export function getBasicInfo(node: Node) {
   const x4 = t.x4;
   const y4 = t.y4;
   const { computedStyle } = node;
-  const { baseX, baseY } = getBaseCoords(node);
   const res = {
-    baseX,
-    baseY,
-    x: Math.min(x1, x2, x3, x4) - baseX,
-    y: Math.min(y1, y2, y3, y4) - baseY,
+    x: Math.min(x1, x2, x3, x4),
+    y: Math.min(y1, y2, y3, y4),
     w: rect[2] - rect[0],
     h: rect[3] - rect[1],
     isFlippedHorizontal: computedStyle.scaleX === -1,
@@ -1382,7 +1369,6 @@ export default {
   resizeBottomLeftMultiArOperate,
   resizeBottomRightMultiArOperate,
   getBasicMatrix,
-  getBaseCoords,
   getBasicInfo,
   toBitmap,
 };
