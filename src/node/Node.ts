@@ -120,6 +120,8 @@ class Node extends Event {
   isShapeGroup = false;
   isContainer = false;
   isSlice = false;
+  isFrame = false;
+  isGraphic = false;
   tileList: Tile[];
   uuid: string;
   name: string;
@@ -498,6 +500,7 @@ class Node extends Event {
       (item) => item.v,
     );
     computedStyle.textDecoration = style.textDecoration.map(item => item.v);
+    computedStyle.overflow = style.overflow.v;
     // 只有重布局或者改transform才影响，普通repaint不变
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
@@ -1201,6 +1204,7 @@ class Node extends Event {
   getCssStyle() {
     const res: any = {};
     const { style, computedStyle } = this;
+    Object.assign(res, computedStyle);
     // %单位转换
     ['top', 'right', 'bottom', 'left', 'width', 'height', 'translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ'].forEach((k) => {
       const o: any = style[k as keyof JStyle];
@@ -1269,6 +1273,7 @@ class Node extends Event {
     res.saturate = computedStyle.saturate * 100 + '%';
     res.brightness = computedStyle.brightness * 100 + '%';
     res.contrast = computedStyle.contrast * 100 + '%';
+    res.overflow = ['visible', 'hidden'][computedStyle.overflow] || 'visible';
     return res as JStyle;
   }
 
