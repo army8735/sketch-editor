@@ -874,7 +874,7 @@ class Node extends Event {
                   const ctx2 = os.ctx;
                   ctx2.beginPath();
                   coords.forEach((item) => {
-                    canvasPolygon(ctx, item, scale, dx2, dy2);
+                    canvasPolygon(ctx2, item, scale, dx2, dy2);
                   });
                   if (isClosed) {
                     ctx2.closePath();
