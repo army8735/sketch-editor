@@ -390,25 +390,25 @@ export function getLinearCoords(deg: number, ox: number, oy: number, w: number, 
 export function getLinear(
   stops: ComputedColorStop[],
   d: number[],
-  ox: number,
-  oy: number,
+  dx: number,
+  dy: number,
   w: number,
   h: number,
 ): Linear {
   let x1, y1, x2, y2;
   // 特殊的css角度写法，先求出外接圆心和半径，默认css是180deg
   if (d.length <= 1) {
-    const t = getLinearCoords(d[0] ?? Math.PI, ox, oy, w, h);
+    const t = getLinearCoords(d[0] ?? Math.PI, dx, dy, w, h);
     x1 = t.x1;
     y1 = t.y1;
     x2 = t.x2;
     y2 = t.y2;
   }
   else {
-    x1 = ox + d[0] * w;
-    y1 = oy + d[1] * h;
-    x2 = ox + d[2] * w;
-    y2 = oy + d[3] * h;
+    x1 = dx + d[0] * w;
+    y1 = dy + d[1] * h;
+    x2 = dx + d[2] * w;
+    y2 = dy + d[3] * h;
   }
   const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
   const stop = getColorStop(stops, total, false);
@@ -492,24 +492,24 @@ export type Conic = {
 export function getConic(
   stops: ComputedColorStop[],
   d: number[],
-  ox: number,
-  oy: number,
+  dx: number,
+  dy: number,
   w: number,
   h: number,
 ): Conic {
-  let x1 = Math.floor(ox + 0.5 * w);
-  let y1 = Math.floor(oy + 0.5 * h);
-  const x2 = Math.floor(ox + 0.5 * w);
-  const y2 = Math.floor(oy + 0.5 * h);
+  let x1 = Math.floor(dx + 0.5 * w);
+  let y1 = Math.floor(dy + 0.5 * h);
+  const x2 = Math.floor(dx + 0.5 * w);
+  const y2 = Math.floor(dy + 0.5 * h);
   const x = x2 - x1;
   const y = y2 - y1;
   // chrome的bug，偶数会有竖线
-  if (x1 % 2 === 0) {
-    x1++;
-  }
-  if (y1 % 2 === 0) {
-    y1++;
-  }
+  // if (x1 % 2 === 0) {
+  //   x1++;
+  // }
+  // if (y1 % 2 === 0) {
+  //   y1++;
+  // }
   let angle = 0;
   if (x === 0) {
     if (y >= 0) {

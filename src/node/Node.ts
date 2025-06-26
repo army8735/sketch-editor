@@ -829,15 +829,15 @@ class Node extends Event {
         ctx.closePath();
       }
       // 先下层的fill
-      for (let i = 0, len = fill.length; i < len; i++) {
-        if (!fillEnable[i] || !fillOpacity[i]) {
+      for (let j = 0, len = fill.length; j < len; j++) {
+        if (!fillEnable[j] || !fillOpacity[j]) {
           continue;
         }
-        let f = fill[i];
+        let f = fill[j];
         // 椭圆的径向渐变无法直接完成，用mask来模拟，即原本用纯色填充，然后离屏绘制渐变并用matrix模拟椭圆，再合并
         let ellipse: OffScreen | undefined;
-        const mode = fillMode[i];
-        ctx.globalAlpha = fillOpacity[i];
+        const mode = fillMode[j];
+        ctx.globalAlpha = fillOpacity[j];
         if (Array.isArray(f)) {
           if (f[3] <= 0) {
             continue;
@@ -851,11 +851,11 @@ class Node extends Event {
             f = f as ComputedPattern;
             const url = f.url;
             if (url) {
-              let loader = this.loaders[i];
+              let loader = this.loaders[j];
               const cache = inject.IMG[url];
               // 已有的图像同步直接用
               if (!loader && cache && cache.source) {
-                loader = this.loaders[i] = {
+                loader = this.loaders[j] = {
                   error: false,
                   loading: false,
                   width: cache.width,
@@ -933,7 +933,7 @@ class Node extends Event {
               }
               else {
                 this.root!.imgLoadingCount++;
-                loader = this.loaders[i] = this.loaders[i] || {
+                loader = this.loaders[j] = this.loaders[j] || {
                   error: false,
                   loading: true,
                   width: 0,
@@ -942,7 +942,7 @@ class Node extends Event {
                 };
                 inject.loadImg(url, (data: any) => {
                   // 可能会变更，所以加载完后对比下是不是当前最新的
-                  if (url === (fill[i] as ComputedPattern)?.url) {
+                  if (url === (fill[j] as ComputedPattern)?.url) {
                     loader.loading = false;
                     if (data.success) {
                       loader.error = false;
@@ -974,21 +974,21 @@ class Node extends Event {
           else {
             f = f as ComputedGradient;
             if (f.t === GRADIENT.LINEAR) {
-              const gd = getLinear(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
-              const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+              const gd = getLinear(f.stops, f.d, 0, 0, w - dx * 2, h - dy * 2);
+              const lg = ctx.createLinearGradient(gd.x1 + dx2, gd.y1 + dy2, gd.x2 + dx2, gd.y2 + dy2);
               gd.stop.forEach((item) => {
                 lg.addColorStop(item.offset, color2rgbaStr(item.color));
               });
               ctx.fillStyle = lg;
             }
             else if (f.t === GRADIENT.RADIAL) {
-              const gd = getRadial(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
+              const gd = getRadial(f.stops, f.d, 0, 0, w - dx * 2, h - dy * 2);
               const rg = ctx.createRadialGradient(
-                gd.cx,
-                gd.cy,
+                gd.cx + dx2,
+                gd.cy + dy2,
                 0,
-                gd.cx,
-                gd.cy,
+                gd.cx + dx2,
+                gd.cy + dy2,
                 gd.total,
               );
               gd.stop.forEach((item) => {
@@ -1016,7 +1016,7 @@ class Node extends Event {
               }
             }
             else if (f.t === GRADIENT.CONIC) {
-              const gd = getConic(f.stops, f.d, dx2, dy2, w - dx * 2, h - dy * 2);
+              const gd = getConic(f.stops, f.d, 0, 0, w - dx * 2, h - dy * 2);
               const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
               gd.stop.forEach((item) => {
                 cg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -1130,13 +1130,13 @@ class Node extends Event {
       }
       ctx.miterLimit = strokeMiterlimit;
       // 再上层的stroke
-      for (let i = 0, len = stroke.length; i < len; i++) {
-        if (!strokeEnable[i] || !strokeWidth[i]) {
+      for (let j = 0, len = stroke.length; j < len; j++) {
+        if (!strokeEnable[j] || !strokeWidth[j]) {
           continue;
         }
-        const s = stroke[i];
-        const p = strokePosition[i];
-        ctx.globalCompositeOperation = getCanvasGCO(strokeMode[i]);
+        const s = stroke[j];
+        const p = strokePosition[j];
+        ctx.globalCompositeOperation = getCanvasGCO(strokeMode[j]);
         // 颜色
         if (Array.isArray(s)) {
           ctx.strokeStyle = color2rgbaStr(s);
@@ -1144,21 +1144,21 @@ class Node extends Event {
         // 或者渐变
         else {
           if (s.t === GRADIENT.LINEAR) {
-            const gd = getLinear(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
-            const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+            const gd = getLinear(s.stops, s.d, 0, 0, w - dx * 2, h - dy * 2);
+            const lg = ctx.createLinearGradient(gd.x1 + dx2, gd.y1 + dy2, gd.x2 + dx2, gd.y2 + dy2);
             gd.stop.forEach((item) => {
               lg.addColorStop(item.offset, color2rgbaStr(item.color));
             });
             ctx.strokeStyle = lg;
           }
           else if (s.t === GRADIENT.RADIAL) {
-            const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
+            const gd = getRadial(s.stops, s.d, 0, 0, w - dx * 2, h - dy * 2);
             const rg = ctx.createRadialGradient(
-              gd.cx,
-              gd.cy,
+              gd.cx + dx2,
+              gd.cy + dy2,
               0,
-              gd.cx,
-              gd.cy,
+              gd.cx + dx2,
+              gd.cy + dy2,
               gd.total,
             );
             gd.stop.forEach((item) => {
@@ -1173,7 +1173,7 @@ class Node extends Event {
               ctx2.lineCap = ctx.lineCap;
               ctx2.lineJoin = ctx.lineJoin;
               ctx2.miterLimit = ctx.miterLimit;
-              ctx2.lineWidth = strokeWidth[i] * scale;
+              ctx2.lineWidth = strokeWidth[j] * scale;
               ctx2.strokeStyle = '#FFF';
               ctx2.beginPath();
               coords.forEach((item) => {
@@ -1183,14 +1183,14 @@ class Node extends Event {
                 ctx2.closePath();
               }
               if (p === STROKE_POSITION.INSIDE && isClosed) {
-                ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                ctx2.lineWidth = strokeWidth[j] * 2 * scale;
                 ctx2.save();
                 ctx2.clip();
                 ctx2.stroke();
                 ctx2.restore();
               }
               else if (p === STROKE_POSITION.OUTSIDE && isClosed) {
-                ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+                ctx2.lineWidth = strokeWidth[j] * 2 * scale;
                 ctx2.stroke();
                 ctx2.save();
                 ctx2.clip();
@@ -1215,7 +1215,7 @@ class Node extends Event {
             }
           }
           else if (s.t === GRADIENT.CONIC) {
-            const gd = getConic(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
+            const gd = getConic(s.stops, s.d, 0, 0, w - dx * 2, h - dy * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
             gd.stop.forEach((item) => {
               cg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -1226,7 +1226,7 @@ class Node extends Event {
         // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
         let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
         if (p === STROKE_POSITION.INSIDE && isClosed) {
-          ctx.lineWidth = strokeWidth[i] * 2 * scale;
+          ctx.lineWidth = strokeWidth[j] * 2 * scale;
         }
         else if (p === STROKE_POSITION.OUTSIDE && isClosed) {
           os = inject.getOffscreenCanvas(w, h);
@@ -1236,14 +1236,14 @@ class Node extends Event {
           ctx2.lineJoin = ctx.lineJoin;
           ctx2.miterLimit = ctx.miterLimit;
           ctx2.strokeStyle = ctx.strokeStyle;
-          ctx2.lineWidth = strokeWidth[i] * 2 * scale;
+          ctx2.lineWidth = strokeWidth[j] * 2 * scale;
           ctx2.beginPath();
           coords.forEach((item) => {
             canvasPolygon(ctx2!, item, scale, dx2, dy2);
           });
         }
         else {
-          ctx.lineWidth = strokeWidth[i] * scale;
+          ctx.lineWidth = strokeWidth[j] * scale;
         }
         if (isClosed) {
           if (ctx2) {
