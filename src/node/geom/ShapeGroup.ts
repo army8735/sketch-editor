@@ -84,18 +84,9 @@ function applyMatrixPoints(points: number[][], m: Float64Array) {
   return points.map((item) => item.slice(0));
 }
 
-type Loader = {
-  error: boolean;
-  loading: boolean;
-  source?: HTMLImageElement;
-  width: number;
-  height: number;
-};
-
 class ShapeGroup extends AbstractGroup {
   props: ShapeGroupProps;
   coords?: number[][][]; // undefined初始化，结果可能是空集合则空数组
-  loaders: Loader[];
 
   constructor(props: ShapeGroupProps, children: Node[]) {
     super(props, children);
