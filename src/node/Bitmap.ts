@@ -181,7 +181,7 @@ class Bitmap extends Node {
     return false;
   }
 
-  override calContent(): boolean {
+  override calContent() {
     const {
       fill,
       fillOpacity,

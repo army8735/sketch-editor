@@ -682,7 +682,7 @@ class Text extends Node {
     }
   }
 
-  override calContent(): boolean {
+  override calContent() {
     return (this.hasContent = !!this._content);
   }
 

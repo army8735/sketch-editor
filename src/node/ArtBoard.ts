@@ -27,7 +27,7 @@ class ArtBoard extends Container {
   }
 
   // 画板有自定义背景色时有内容
-  override calContent(): boolean {
+  override calContent() {
     return (this.hasContent = this.hasBackgroundColor);
   }
 

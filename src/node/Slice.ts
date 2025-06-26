@@ -9,7 +9,7 @@ class Slice extends Node {
     this.isSlice = true;
   }
 
-  override calContent(): boolean {
+  override calContent() {
     return this.hasContent = false;
   }
 

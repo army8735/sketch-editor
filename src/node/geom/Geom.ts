@@ -8,24 +8,14 @@ import { lineCap, lineJoin } from './border';
 import { getPointsRect } from '../../math/bbox';
 import { calPoint } from '../../math/matrix';
 
-export type Loader = {
-  error: boolean;
-  loading: boolean;
-  source?: HTMLImageElement;
-  width: number;
-  height: number;
-};
-
 class Geom extends Node {
   coords?: number[][];
-  loaders: Loader[];
   points: Point[];
   isClosed: boolean;
 
   constructor(props: GeomProps) {
     super(props);
     this.isGeom = true;
-    this.loaders = [];
     this.points = [];
     this.isClosed = props.isClosed || false;
   }
@@ -54,7 +44,7 @@ class Geom extends Node {
     this.coords = [];
   }
 
-  override calContent(): boolean {
+  override calContent() {
     this.buildPoints();
     return (this.hasContent = !!this.coords && this.coords.length > 1);
   }

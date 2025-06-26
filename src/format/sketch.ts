@@ -166,7 +166,6 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
   }
   const dx = page.horizontalRulerData?.base || 0;
   const dy = page.verticalRulerData?.base || 0;
-  console.warn(zoom, x, y, dx, dy)
   const children: JNode[] = [];
   for (let i = 0, len = page.layers.length; i < len; i++) {
     const res = await convertItem(page.layers[i], (i + 1) / (len + 1), opt, PAGE_W, PAGE_H, dx, dy);
