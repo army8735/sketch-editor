@@ -1144,7 +1144,7 @@ class Node extends Event {
         // 或者渐变
         else {
           if (s.t === GRADIENT.LINEAR) {
-            const gd = getLinear(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
+            const gd = getLinear(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
             gd.stop.forEach((item) => {
               lg.addColorStop(item.offset, color2rgbaStr(item.color));
@@ -1152,7 +1152,7 @@ class Node extends Event {
             ctx.strokeStyle = lg;
           }
           else if (s.t === GRADIENT.RADIAL) {
-            const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
+            const gd = getRadial(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const rg = ctx.createRadialGradient(
               gd.cx,
               gd.cy,
@@ -1215,7 +1215,7 @@ class Node extends Event {
             }
           }
           else if (s.t === GRADIENT.CONIC) {
-            const gd = getConic(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
+            const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
             gd.stop.forEach((item) => {
               cg.addColorStop(item.offset, color2rgbaStr(item.color));
