@@ -812,7 +812,8 @@ class Node extends Event {
     canvasCache.available = true;
     const list = canvasCache.list;
     for (let i = 0, len = list.length; i < len; i++) {
-      const { x, y, os: { ctx } } = list[i];
+      const item = list[i];
+      const { x, y, os: { ctx } } = item;
       const dx2 = -x;
       const dy2 = -y;
       if (scale !== 1) {
@@ -1167,7 +1168,7 @@ class Node extends Event {
             // 椭圆渐变，由于有缩放，先离屏绘制白色stroke记a，再绘制变换的结果整屏fill记b，b混合到a上用source-in即可只显示重合的b
             const m = gd.matrix;
             if (m) {
-              const ellipse = inject.getOffscreenCanvas(w, h);
+              const ellipse = inject.getOffscreenCanvas(item.w, item.h);
               const ctx2 = ellipse.ctx;
               ctx2.setLineDash(ctx.getLineDash());
               ctx2.lineCap = ctx.lineCap;
@@ -1229,7 +1230,7 @@ class Node extends Event {
           ctx.lineWidth = strokeWidth[j] * 2 * scale;
         }
         else if (p === STROKE_POSITION.OUTSIDE && isClosed) {
-          os = inject.getOffscreenCanvas(w, h);
+          os = inject.getOffscreenCanvas(item.w, item.h);
           ctx2 = os.ctx;
           ctx2.setLineDash(ctx.getLineDash());
           ctx2.lineCap = ctx.lineCap;
@@ -1264,7 +1265,7 @@ class Node extends Event {
           ctx2!.strokeStyle = '#FFF';
           ctx2!.stroke();
           ctx2!.restore();
-          ctx.drawImage(os!.canvas, dx2 - dx, dy2 - dy);
+          ctx.drawImage(os!.canvas, 0, 0);
           os!.release();
         }
         else {
