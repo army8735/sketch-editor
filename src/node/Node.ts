@@ -1215,7 +1215,7 @@ class Node extends Event {
             }
           }
           else if (s.t === GRADIENT.CONIC) {
-            const gd = getConic(s.stops, s.d, dx2, dy2, w - dx * 2, h - dy * 2);
+            const gd = getConic(s.stops, s.d, dx2, dy2, w - dx2 * 2, h - dy2 * 2);
             const cg = ctx.createConicGradient(gd.angle, gd.cx + dx2, gd.cy + dy2);
             gd.stop.forEach((item) => {
               cg.addColorStop(item.offset, color2rgbaStr(item.color));
