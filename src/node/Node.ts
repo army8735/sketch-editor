@@ -1225,10 +1225,10 @@ class Node extends Event {
         }
         // 注意canvas只有居中描边，内部需用clip模拟，外部比较复杂需离屏擦除
         let os: OffScreen | undefined, ctx2: CanvasRenderingContext2D | undefined;
-        if (p === STROKE_POSITION.INSIDE) {
+        if (p === STROKE_POSITION.INSIDE && isClosed) {
           ctx.lineWidth = strokeWidth[i] * 2 * scale;
         }
-        else if (p === STROKE_POSITION.OUTSIDE) {
+        else if (p === STROKE_POSITION.OUTSIDE && isClosed) {
           os = inject.getOffscreenCanvas(w, h);
           ctx2 = os.ctx;
           ctx2.setLineDash(ctx.getLineDash());
@@ -1250,13 +1250,13 @@ class Node extends Event {
             ctx2.closePath();
           }
         }
-        if (p === STROKE_POSITION.INSIDE) {
+        if (p === STROKE_POSITION.INSIDE && isClosed) {
           ctx.save();
           ctx.clip();
           ctx.stroke();
           ctx.restore();
         }
-        else if (p === STROKE_POSITION.OUTSIDE) {
+        else if (p === STROKE_POSITION.OUTSIDE && isClosed) {
           ctx2!.stroke();
           ctx2!.save();
           ctx2!.clip();
