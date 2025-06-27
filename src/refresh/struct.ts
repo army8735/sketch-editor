@@ -371,7 +371,7 @@ function renderWebglTile(
       }
       // 这里只做计算画板的rect，和noTile不太一样，其它计算在后面步骤
       if (isInScreen) {
-        if (node.isArtBoard && node instanceof ArtBoard) {
+        if (node instanceof ArtBoard) {
           if (total + next) {
             const bbox = node._bbox || node.bbox;
             const ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], matrix);
@@ -395,7 +395,7 @@ function renderWebglTile(
           }
         }
       }
-      else if (node.isArtBoard && node instanceof ArtBoard) {
+      else if (node instanceof ArtBoard) {
         resetTileClip(tileList);
         abRect[0] = 0;
         abRect[1] = 0;
@@ -404,8 +404,8 @@ function renderWebglTile(
         continue;
       }
       // 和普通渲染比没有画布索引部分，仅图片检查内容加载计数器
-      if (isInScreen && node.isBitmap && (node as Bitmap).checkLoader()) {
-        imgLoadList.push(node as Bitmap);
+      if (isInScreen && node instanceof Bitmap && node.checkLoader()) {
+        imgLoadList.push(node);
       }
       // 真正的渲染部分，比普通渲染多出的逻辑是遍历tile并且检查是否在tile中，排除非页面元素
       if (isInScreen) {
@@ -449,7 +449,7 @@ function renderWebglTile(
           t4: { x: number, y: number },
         }[] = [];
         let ab: { x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number };
-        const isArtBoard = node.isArtBoard && node instanceof ArtBoard;
+        const isArtBoard = node instanceof ArtBoard;
         if (isArtBoard) {
           const bbox = node._bbox || node.bbox;
           ab = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
@@ -833,7 +833,7 @@ function renderWebglNoTile(
   const programs = root.programs;
   // 初始化工作
   let pageTexture = root.pageTexture || createTexture(gl, 0, undefined, W, H);
-  let artBoardTexture: WebGLTexture | undefined; // 画布的背景色单独渲染，会干扰mbm的透明判断
+  // let artBoardTexture: WebGLTexture | undefined; // 画布的背景色单独渲染，会干扰mbm的透明判断
   let resTexture = pageTexture;
   let resFrameBuffer = genFrameBufferWithTexture(gl, resTexture, W, H);
   gl.clearColor(0, 0, 0, 0);
@@ -985,13 +985,13 @@ function renderWebglNoTile(
           h: H,
           t: resTexture,
         });
-        const isPageTex = resTexture === pageTexture;
+        // const isPageTex = resTexture === pageTexture;
         genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
         // blur过程会销毁掉原本的bg纹理，赋值要特别注意原本的page纹理
         resTexture = wrap.list[0].t!;
-        if (isPageTex) {
-          pageTexture = resTexture;
-        }
+        // if (isPageTex) {
+        //   pageTexture = resTexture;
+        // }
         gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
         gl.viewport(0, 0, W, H);
         gl.framebufferTexture2D(
@@ -1145,40 +1145,40 @@ export function calWorldMatrixAndOpacity(node: Node, i: number, parent?: Contain
   }
 }
 
-function drawArtBoard2Page(
-  gl: WebGLRenderingContext | WebGL2RenderingContext,
-  program: WebGLProgram,
-  cx: number, cy: number, W: number, H: number,
-  pageTexture: WebGLTexture,
-  artBoardTexture: WebGLTexture,
-) {
-  gl.framebufferTexture2D(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.TEXTURE_2D,
-    pageTexture,
-    0,
-  );
-  drawTextureCache(
-    gl,
-    cx,
-    cy,
-    program,
-    [
-      {
-        opacity: 1,
-        bbox: new Float64Array([0, 0, W, H]),
-        texture: artBoardTexture,
-      },
-    ],
-    0,
-    0,
-    false,
-    -1, -1, 1, 1,
-  );
-  gl.deleteTexture(artBoardTexture);
-  return pageTexture;
-}
+// function drawArtBoard2Page(
+//   gl: WebGLRenderingContext | WebGL2RenderingContext,
+//   program: WebGLProgram,
+//   cx: number, cy: number, W: number, H: number,
+//   pageTexture: WebGLTexture,
+//   artBoardTexture: WebGLTexture,
+// ) {
+//   gl.framebufferTexture2D(
+//     gl.FRAMEBUFFER,
+//     gl.COLOR_ATTACHMENT0,
+//     gl.TEXTURE_2D,
+//     pageTexture,
+//     0,
+//   );
+//   drawTextureCache(
+//     gl,
+//     cx,
+//     cy,
+//     program,
+//     [
+//       {
+//         opacity: 1,
+//         bbox: new Float64Array([0, 0, W, H]),
+//         texture: artBoardTexture,
+//       },
+//     ],
+//     0,
+//     0,
+//     false,
+//     -1, -1, 1, 1,
+//   );
+//   gl.deleteTexture(artBoardTexture);
+//   return pageTexture;
+// }
 
 function renderOverlay(
   gl: WebGLRenderingContext | WebGL2RenderingContext,
