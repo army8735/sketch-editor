@@ -1,8 +1,8 @@
-import Container from './Container';
+import AbstractFrame from './AbstractFrame';
 import { Props } from '../format';
 import Node from './Node';
 
-class Graphic extends Container {
+class Graphic extends AbstractFrame {
   constructor(props: Props, children: Node[]) {
     super(props, children);
     this.isGraphic = true;

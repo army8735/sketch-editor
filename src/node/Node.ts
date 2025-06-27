@@ -1292,18 +1292,20 @@ class Node extends Event {
           canvasCache,
           (this._bbox2 || this.bbox2).slice(0),
         );
-      canvasCache.release();
-      // canvasCache.offscreen.canvas.toBlob((blob) => {
-      //   if (blob) {
-      //     const img = document.createElement('img');
-      //     img.onload = () => {
-      //       canvasCache.release();
-      //     };
-      //     img.src = URL.createObjectURL(blob);
-      //     img.setAttribute('name', this.props.name!);
-      //     document.body.appendChild(img);
-      //   }
+      // canvasCache.list.forEach((item, i) => {
+      //   item.os.canvas.toBlob((blob) => {
+      //     if (blob) {
+      //       const img = document.createElement('img');
+      //       img.onload = () => {
+      //         canvasCache.release();
+      //       };
+      //       img.src = URL.createObjectURL(blob);
+      //       img.setAttribute('name', this.name + i);
+      //       document.body.appendChild(img);
+      //     }
+      //   });
       // });
+      canvasCache.release();
     }
     else {
       this.textureTarget[scaleIndex] = this.textureCache[scaleIndex] =
