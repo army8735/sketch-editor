@@ -832,7 +832,6 @@ function renderWebglNoTile(
     cy = H * 0.5;
   const programs = root.programs;
   // 初始化工作
-  const artBoardIndex: ArtBoard[] = [];
   let pageTexture = root.pageTexture || createTexture(gl, 0, undefined, W, H);
   let artBoardTexture: WebGLTexture | undefined; // 画布的背景色单独渲染，会干扰mbm的透明判断
   let resTexture = pageTexture;
@@ -844,6 +843,7 @@ function renderWebglNoTile(
   const program = programs.program;
   gl.useProgram(programs.program);
   // artboard的裁剪，以及记录artboard的画布rect来判断节点是否超出范围外
+  const artBoardIndex: ArtBoard[] = [];
   let x1 = -1, y1 = -1, x2 = 1, y2 = 1;
   let abRect = new Float64Array([0, 0, W, H]);
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
@@ -874,7 +874,7 @@ function renderWebglNoTile(
         abRect[3] = H;
         x1 = y1 = -1;
         x2 = y2 = 1;
-        resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
+        // resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
       }
       continue;
     }
@@ -921,15 +921,15 @@ function renderWebglNoTile(
           y1 = (ab.y1 - cy) / cy;
           x2 = (ab.x3 - cx) / cx;
           y2 = (ab.y3 - cy) / cy;
-          artBoardTexture = createTexture(gl, 0, undefined, W, H);
-          gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            artBoardTexture,
-            0,
-          );
-          resTexture = artBoardTexture;
+          // artBoardTexture = createTexture(gl, 0, undefined, W, H);
+          // gl.framebufferTexture2D(
+          //   gl.FRAMEBUFFER,
+          //   gl.COLOR_ATTACHMENT0,
+          //   gl.TEXTURE_2D,
+          //   artBoardTexture,
+          //   0,
+          // );
+          // resTexture = artBoardTexture;
         }
       }
       // 检查画布内节点是否在画布范围内，否则可以跳过
@@ -941,7 +941,7 @@ function renderWebglNoTile(
           isInScreen = checkInRect(
             node._filterBbox || node.filterBbox, // 检测用原始的渲染用取整的
             matrix,
-            abRect[0], abRect[1], abRect[2] - abRect[0], abRect[3] - abRect[1]
+            abRect[0], abRect[1], abRect[2] - abRect[0], abRect[3] - abRect[1],
           );
         }
       }
@@ -985,11 +985,11 @@ function renderWebglNoTile(
           h: H,
           t: resTexture,
         });
-        const isPagTex = resTexture === pageTexture;
+        const isPageTex = resTexture === pageTexture;
         genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
         // blur过程会销毁掉原本的bg纹理，赋值要特别注意原本的page纹理
         resTexture = wrap.list[0].t!;
-        if (isPagTex) {
+        if (isPageTex) {
           pageTexture = resTexture;
         }
         gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
@@ -1074,7 +1074,7 @@ function renderWebglNoTile(
       abRect[3] = H;
       x1 = y1 = -1;
       x2 = y2 = 1;
-      resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
+      // resTexture = drawArtBoard2Page(gl, program, cx, cy, W, H, pageTexture, resTexture);
     }
   }
   renderOverlay(gl, cx, cy, W, H, root, false);
