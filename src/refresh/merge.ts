@@ -570,8 +570,8 @@ function genTotal(
       if (needClip) {
         xa = -1 - bbox[0] * 2 / w0;
         ya = -1 - bbox[1] * 2 / h0;
-        xb = 1 + (bbox[2] - w0) * 2 / w0;
-        yb = 1 + (bbox[3] - h0) * 2 / h0;
+        xb = 1 - (bbox[2] - node.width) * 2 / w0;
+        yb = 1 - (bbox[3] - node.height) * 2 / h0;
       }
       listRect.push({
         x: x2 + j * UNIT, // 坐标checkInRect用，同时真实渲染时才创建纹理，防止空白区域浪费显存，最后过滤
