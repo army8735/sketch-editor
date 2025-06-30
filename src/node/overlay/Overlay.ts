@@ -1,21 +1,22 @@
 import { Props } from '../../format';
 import { RefreshLevel } from '../../refresh/level';
+import { calPoint } from '../../math/matrix';
 import ArtBoard from '../ArtBoard';
 import Container from '../Container';
 import Node from '../Node';
 import SymbolMaster from '../SymbolMaster';
 import Text from '../Text';
-import { calPoint } from '../../math/matrix';
+import AbstractFrame from '../AbstractFrame';
 
 class Overlay extends Container {
-  artBoards: Container;
-  artBoardList: { artBoard: ArtBoard; text: Text }[];
+  nameContainer: Container; // artboard,frame,graphic
+  list: { node: ArtBoard | AbstractFrame, text: Text }[];
 
   constructor(props: Props, children: Node[]) {
     super(props, children);
-    this.artBoards = new Container(
+    this.nameContainer = new Container(
       {
-        name: 'overlay-artBoards',
+        name: 'overlay-name-container',
         uuid: '',
         index: 0,
         style: {
@@ -26,17 +27,17 @@ class Overlay extends Container {
       },
       [],
     );
-    this.appendChild(this.artBoards);
-    this.artBoardList = [];
+    this.appendChild(this.nameContainer);
+    this.list = [];
   }
 
-  setArtBoard(list: ArtBoard[]) {
-    this.artBoards.clearChildren();
-    this.artBoardList.splice(0);
+  setList(list: (ArtBoard | AbstractFrame)[]) {
+    this.nameContainer.clearChildren();
+    this.list.splice(0);
     for (let i = 0, len = list.length; i < len; i++) {
-      const artBoard = list[i];
-      const name = 'overlay-' + (artBoard.name || '画板');
-      const color = artBoard instanceof SymbolMaster ? '#b6e' : '#777';
+      const node = list[i];
+      const name = 'overlay-' + (node.name || '画板');
+      const color = node instanceof SymbolMaster ? '#b6e' : '#777';
       const text = new Text({
         name,
         uuid: '',
@@ -45,40 +46,40 @@ class Overlay extends Container {
           fontSize: 24,
           color,
         },
-        content: artBoard.name || '画板',
+        content: node.name || '画板',
       });
-      this.artBoards.appendChild(text);
-      this.artBoardList.push({ artBoard, text });
+      this.nameContainer.appendChild(text);
+      this.list.push({ node, text });
     }
   }
 
-  updateArtBoard(artBoard: ArtBoard) {
-    const list = this.artBoardList;
+  updateList(node: ArtBoard | AbstractFrame) {
+    const list = this.list;
     for (let i = 0, len = list.length; i < len; i++) {
-      if (list[i].artBoard === artBoard) {
-        list[i].text.content = artBoard.name || '画板';
+      if (list[i].node === node) {
+        list[i].text.content = node.name || '画板';
         break;
       }
     }
   }
 
-  removeArtBoard(artBoard: ArtBoard) {
-    const list = this.artBoardList;
+  removeList(node: ArtBoard | AbstractFrame) {
+    const list = this.list;
     for (let i = 0, len = list.length; i < len; i++) {
-      if (list[i].artBoard === artBoard) {
+      if (list[i].node === node) {
         list.splice(i, 1);
-        this.artBoards.removeChild(this.artBoards.children[i]);
+        this.nameContainer.removeChild(this.nameContainer.children[i]);
         break;
       }
     }
   }
 
   update() {
-    const artBoardList = this.artBoardList;
-    for (let i = 0, len = artBoardList.length; i < len; i++) {
-      const { artBoard, text } = artBoardList[i];
-      const rect = artBoard._rect || artBoard.rect;
-      const t = calPoint({ x: rect[0], y: rect[1]}, artBoard.matrixWorld);
+    const list = this.list;
+    for (let i = 0, len = list.length; i < len; i++) {
+      const { node, text } = list[i];
+      const rect = node._rect || node.rect;
+      const t = calPoint({ x: rect[0], y: rect[1]}, node.matrixWorld);
       // 特殊更新，手动更新样式并计算，但不触发刷新，因为是在刷新过程中跟着画板当前位置计算的，避免再刷一次
       const res = text.updateStyleData({
         translateX: t.x,

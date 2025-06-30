@@ -281,11 +281,11 @@ export function getOverlayNodeByPoint(root: Root, x: number, y: number) {
 export function getOverlayArtBoardByPoint(root: Root, x: number, y: number) {
   const n = getOverlayNodeByPoint(root, x, y);
   if (n && n instanceof Text) {
-    const artBoardList = root.overlay.artBoardList;
-    for (let i = 0, len = artBoardList.length; i < len; i++) {
-      const item = artBoardList[i];
+    const list = root.overlay.list;
+    for (let i = 0, len = list.length; i < len; i++) {
+      const item = list[i];
       if (item.text === n) {
-        return item.artBoard;
+        return item.node;
       }
     }
   }

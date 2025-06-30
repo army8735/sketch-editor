@@ -57,6 +57,7 @@ import Page from './Page';
 import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
+import AbstractFrame from './AbstractFrame';
 import { MASK, StyleUnit, VISIBILITY } from '../style/define';
 import inject from '../util/inject';
 
@@ -314,13 +315,13 @@ class Root extends Container implements FrameCallback {
       visibility: 'visible',
     });
     this.lastPage = newPage;
-    const children: ArtBoard[] = [];
+    const children: (ArtBoard | AbstractFrame)[] = [];
     newPage.children.forEach((item) => {
-      if (item instanceof ArtBoard) {
+      if (item instanceof ArtBoard || item instanceof AbstractFrame) {
         children.push(item);
       }
     });
-    this.overlay.setArtBoard(children);
+    this.overlay.setList(children);
     return newPage;
   }
 
@@ -353,8 +354,8 @@ class Root extends Container implements FrameCallback {
       }
     }
     if (removeDom) {
-      if (node instanceof ArtBoard) {
-        this.overlay.removeArtBoard(node);
+      if (node instanceof ArtBoard || node instanceof AbstractFrame) {
+        this.overlay.removeList(node);
       }
       this.emit(Event.WILL_REMOVE_DOM, node);
       // 可能刚添加的就删除了，不会影响tile

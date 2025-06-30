@@ -1866,18 +1866,19 @@ export default class Listener extends Event {
 
   rename(names: string[], nodes = this.selected) {
     if (nodes.length) {
-    const data = nodes.map((item, i) => {
-      const prev = item.name || '';
-      const next = names[i];
-      item.name = next;
-      item.nameIsFixed = true;
-      return {
-        prev,
-        next,
-      };
-    });
-    this.history.addCommand(new RenameCommand(nodes.slice(0), data));
-    this.emit(Listener.RENAME_NODE, nodes.slice(0), data);
+      const data = nodes.map((item, i) => {
+        const prev = item.name || '';
+        const next = names[i];
+        // item.name = next;
+        item.rename(next);
+        item.nameIsFixed = true;
+        return {
+          prev,
+          next,
+        };
+      });
+      this.history.addCommand(new RenameCommand(nodes.slice(0), data));
+      this.emit(Listener.RENAME_NODE, nodes.slice(0), data);
     }
   }
 

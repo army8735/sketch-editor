@@ -33,7 +33,7 @@ class ArtBoard extends Container {
 
   override rename(s: string) {
     super.rename(s);
-    this.root?.overlay?.updateArtBoard(this);
+    this.root?.overlay?.updateList(this);
   }
 
   // 在没有背景色的情况下渲染默认白色背景，有则渲染颜色
