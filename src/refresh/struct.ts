@@ -168,7 +168,7 @@ function renderWebglTile(
   gl.useProgram(programs.program);
   // artboard的裁剪，以及记录artboard的画布rect来判断节点是否超出范围外
   const artBoardIndex: ArtBoard[] = [];
-  let abRect = new Float64Array([0, 0, W, H]);
+  const abRect = new Float64Array([0, 0, W, H]);
   // 先检查所有tile是否完备，如果是直接渲染跳过遍历节点
   let complete = true;
   for (let i = 0, len = tileList.length; i < len; i++) {
@@ -845,7 +845,7 @@ function renderWebglNoTile(
   // artboard的裁剪，以及记录artboard的画布rect来判断节点是否超出范围外
   const artBoardIndex: ArtBoard[] = [];
   let x1 = -1, y1 = -1, x2 = 1, y2 = 1;
-  let abRect = new Float64Array([0, 0, W, H]);
+  const abRect = new Float64Array([0, 0, W, H]);
   // 循环收集数据，同一个纹理内的一次性给出，只1次DrawCall
   for (let i = 0, len = structs.length; i < len; i++) {
     const { node, total, next } = structs[i];

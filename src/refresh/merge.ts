@@ -23,6 +23,7 @@ import Group from '../node/Group';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Text from '../node/Text';
+import AbstractFrame from '../node/AbstractFrame';
 import config from '../util/config';
 import { canvasPolygon } from './paint';
 import { color2gl } from '../style/css';
@@ -35,6 +36,7 @@ import {
   MASK,
   MIX_BLEND_MODE,
   VISIBILITY,
+  OVERFLOW,
 } from '../style/define';
 import inject from '../util/inject';
 import { RefreshLevel } from './level';
@@ -103,6 +105,7 @@ export function genMerge(
       saturate,
       brightness,
       contrast,
+      overflow,
     } = computedStyle;
     // 特殊的group可以指定唯一的fill用作tint色调功能
     if (!tint && node instanceof Group) {
@@ -166,10 +169,10 @@ export function genMerge(
         }
       }
     }
-    const needColor =
-      hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
+    const needColor = hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
+    const needOverflow = overflow === OVERFLOW.HIDDEN && total > 0;
     // 记录汇总的同时以下标为k记录个类hash
-    if (needTotal || needShadow || needBlur || needMask || needColor || needTint) {
+    if (needTotal || needShadow || needBlur || needMask || needColor || needTint || needOverflow) {
       const t: Merge = {
         i,
         lv,
@@ -353,8 +356,8 @@ export function genMerge(
 }
 
 /**
- * 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，所以用rect，其子节点则是需要考虑的
- * 由于根节点视作E且其rect的原点一定是0，因此子节点可以直接使用matrix预乘父节点，不会产生transformOrigin偏移
+ * 汇总作为局部根节点的bbox，注意作为根节点自身不会包含filter/mask等，但又border所以用bbox，其子节点则是需要考虑的
+ * 由于根节点视作E，因此子节点可以直接使用matrix预乘父节点，不会产生transformOrigin偏移
  */
 function genBboxTotal(
   structs: Struct[],
@@ -366,7 +369,7 @@ function genBboxTotal(
   merge: Merge,
   mergeHash: Merge[],
 ) {
-  const res = (node.tempBbox || node._rect || node.rect).slice(0);
+  const res = (node.tempBbox || node._bbox || node.bbox).slice(0);
   toE(node.tempMatrix);
   for (let i = index + 1, len = index + total + 1; i < len; i++) {
     const { node: node2, total: total2, next: next2 } = structs[i];
@@ -401,6 +404,14 @@ function genBboxTotal(
       mg.isTop = false;
       merge.subList.push(mg);
     }
+  }
+  // 如frame类型设置了裁剪，需要判断汇总后上下左右不能超过自己的bbox
+  if (node.computedStyle.overflow === OVERFLOW.HIDDEN) {
+    const bbox = node._bbox || node.bbox;
+    res[0] = Math.max(res[0], bbox[0]);
+    res[1] = Math.max(res[1], bbox[1]);
+    res[2] = Math.min(res[2], bbox[2]);
+    res[3] = Math.min(res[3], bbox[3]);
   }
   return res;
 }
@@ -469,6 +480,10 @@ type ListRect = Omit<SubTexture, 't'> & {
   y: number;
   t?: WebGLTexture;
   ref?: SubTexture;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
 };
 
 function genTotal(
@@ -511,6 +526,14 @@ function genTotal(
     }
     return target;
   }
+  /**
+   * frame类型的overflow为hidden需要裁剪，
+   * 但和盒模型不同的时border占的部分不在渲染考虑范围，需要裁剪掉，
+   * 即节点[0,0,W,H]范围外要裁剪掉子节点内容，仅渲染自己的border。
+   */
+  let needClip = node instanceof AbstractFrame
+    && node.computedStyle.overflow === OVERFLOW.HIDDEN
+    && (bbox[0] < 0 || bbox[1] < 0 || bbox[2] > node.width || bbox[3] > node.height);
   const programs = root.programs;
   const program = programs.program;
   // 创建一个空白纹理来绘制，尺寸由于bbox已包含整棵子树内容可以直接使用
@@ -542,10 +565,22 @@ function genTotal(
         x0 + w0,
         y0 + h0,
       ]);
-      // checkInRect用，同时真实渲染时才创建纹理，防止空白区域浪费显存，最后过滤
-      const x1 = x2 + j * UNIT,
-        y1 = y2 + i * UNIT;
-      listRect.push({ x: x1, y: y1, w: width, h: height, bbox });
+      // 如有设置frame的overflow裁剪
+      let xa = -1, ya = -1, xb = 1, yb = 1;
+      if (needClip) {
+        xa = -1 - bbox[0] * 2 / w0;
+        ya = -1 - bbox[1] * 2 / h0;
+        xb = 1 + (bbox[2] - w0) * 2 / w0;
+        yb = 1 + (bbox[3] - h0) * 2 / h0;
+      }
+      listRect.push({
+        x: x2 + j * UNIT, // 坐标checkInRect用，同时真实渲染时才创建纹理，防止空白区域浪费显存，最后过滤
+        y: y2 + i * UNIT,
+        w: width,
+        h: height,
+        bbox,
+        x1: xa, y1: ya, x2: xb, y2: yb,
+      });
     }
   }
   // 再外循环按节点序，内循环按分块，确保节点序内容先渲染，从而正确生成分块的bgBlur
@@ -622,7 +657,7 @@ function genTotal(
       // 内循环目标分块
       for (let j = 0, len = listRect.length; j < len; j++) {
         const rect = listRect[j];
-        const { x, y, w, h } = rect;
+        const { x, y, w, h, x1, y1, x2, y2 } = rect;
         let t = rect.t;
         const cx = w * 0.5,
           cy = h * 0.5;
@@ -675,7 +710,10 @@ function genTotal(
               -rect.x,
               -rect.y,
               false,
-              -1, -1, 1, 1,
+              i > index ? x1 : -1, // 子节点可能的裁剪，忽略本身
+              i > index ? y1 : -1,
+              i > index ? x2 : 1,
+              i > index ? y2 : 1,
             );
             // 这里才是真正生成mbm
             if (mixBlendMode !== MIX_BLEND_MODE.NORMAL && tex) {
