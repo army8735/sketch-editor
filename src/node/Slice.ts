@@ -13,13 +13,13 @@ class Slice extends Node {
     return this.hasContent = false;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.SLICE;
     return res;
   }
 
-  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>): Promise<SketchFormat.Slice> {
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     const json = await super.toSketchJson(zip, blobHash) as SketchFormat.Slice;
     json._class = SketchFormat.ClassValue.Slice;
     return json;

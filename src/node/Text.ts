@@ -3429,7 +3429,7 @@ class Text extends Node {
     return res;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.TEXT;
     if (this.rich) {
@@ -3468,7 +3468,7 @@ class Text extends Node {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip): Promise<SketchFormat.Text> {
+  override async toSketchJson(zip: JSZip) {
     const json = await super.toSketchJson(zip) as SketchFormat.Text;
     json._class = SketchFormat.ClassValue.Text;
     const rich = this.rich.length ? this.rich : (this._content ? [{

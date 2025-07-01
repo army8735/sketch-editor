@@ -381,14 +381,14 @@ class ShapeGroup extends AbstractGroup {
     return res;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.SHAPE_GROUP;
     return res;
   }
 
   // @ts-ignore
-  override async toSketchJson(zip: JSZip): Promise<SketchFormat.ShapeGroup> {
+  override async toSketchJson(zip: JSZip) {
     // @ts-ignore
     const json = await super.toSketchJson(zip) as SketchFormat.ShapeGroup;
     json._class = SketchFormat.ClassValue.ShapeGroup;

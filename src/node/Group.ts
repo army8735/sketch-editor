@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, Props, TAG_NAME } from '../format';
+import { Override, Props, TAG_NAME } from '../format';
 import { Style } from '../style/define';
 import Node from './Node';
 import Text from './Text';
@@ -61,13 +61,13 @@ class Group extends AbstractGroup {
     return res;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.GROUP;
     return res;
   }
 
-  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>): Promise<SketchFormat.Group> {
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     const json = await super.toSketchJson(zip, blobHash) as SketchFormat.Group;
     json._class = SketchFormat.ClassValue.Group;
     json.hasClickThrough = false;

@@ -190,7 +190,7 @@ class Polyline extends Geom {
     return res;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.POLYLINE;
     (res.props as PolylineProps).points = this.points.map(item => {
@@ -212,7 +212,7 @@ class Polyline extends Geom {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip): Promise<SketchFormat.ShapePath> {
+  override async toSketchJson(zip: JSZip) {
     const json = await super.toSketchJson(zip) as SketchFormat.ShapePath;
     json._class = SketchFormat.ClassValue.ShapePath;
     json.isClosed = this.isClosed;

@@ -206,13 +206,13 @@ class ArtBoard extends Container {
     return res;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.ART_BOARD;
     return res;
   }
 
-  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>): Promise<SketchFormat.Artboard> {
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     const json = await super.toSketchJson(zip, blobHash) as SketchFormat.Artboard;
     json._class = SketchFormat.ClassValue.Artboard;
     json.hasClickThrough = false;

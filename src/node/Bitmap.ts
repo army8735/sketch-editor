@@ -862,14 +862,14 @@ class Bitmap extends Node {
     return res;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.BITMAP;
     (res.props as BitmapProps).src = this._src;
     return res;
   }
 
-  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>): Promise<SketchFormat.Bitmap> {
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     const json = await super.toSketchJson(zip, blobHash) as SketchFormat.Bitmap;
     json._class = SketchFormat.ClassValue.Bitmap;
     json.image = {

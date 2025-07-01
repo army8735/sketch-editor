@@ -173,7 +173,7 @@ class Page extends Container {
     return res;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     // 尚未实例化
     if (this.json) {
       return this.json;
@@ -183,7 +183,7 @@ class Page extends Container {
     return res;
   }
 
-  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>): Promise<SketchFormat.Page> {
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     const json = await super.toSketchJson(zip, blobHash) as SketchFormat.Page;
     json._class = SketchFormat.ClassValue.Page;
     json.hasClickThrough = true;

@@ -28,7 +28,7 @@ class SymbolInstance extends Group {
     return res;
   }
 
-  override toJson(): JNode {
+  override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.SYMBOL_INSTANCE;
     return res;
