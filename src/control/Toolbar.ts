@@ -29,7 +29,7 @@ const geomHtml = `
   <li title="triangle"><b class="triangle"></b><span class="name">三角形</span></li>
 <!--  <li title="star"><b class="star"></b><span class="name">星形</span></li>-->
 <!--  <li class="split"></li>-->
-<!--  <li title="pen"><b class="pen"></b><span class="name">钢笔</span><span class="key">P</span></li>-->
+<!--  <li title="pen"><b class="pen"></b><span class="name">矢量</span><span class="key">P</span></li>-->
 </ul>
 `;
 
@@ -235,7 +235,11 @@ class Toolbar {
         listener.select.hideSelect();
       }
       else if (title === 'arrow') {}
-      else if (title === 'pen') {}
+      else if (title === 'pen') {
+        listener.state = state.ADD_GEOM;
+        listener.dom.classList.add('add-geom');
+        listener.select.hideSelect();
+      }
 
       if (prev !== listener.state) {
         listener.emit(Listener.STATE_CHANGE, prev, listener.state);
@@ -375,6 +379,7 @@ class Toolbar {
       listener.dom.classList.remove('add-round');
       listener.dom.classList.remove('add-triangle');
       listener.dom.classList.remove('add-star');
+      listener.dom.classList.remove('add-geom');
       clear();
       if (keyCode === 86 || code === 'KeyV' || keyCode === 72 || code === 'KeyH') {}
       else {
@@ -435,6 +440,15 @@ class Toolbar {
         div.title = 'line';
         (div.querySelector('b') as HTMLElement).className = 'line';
         geom.querySelector('.sub [title="line"]')?.classList.add('cur');
+      }
+      else if (keyCode === 80 || code === 'KeyP') {
+        listener.state = state.ADD_GEOM;
+        listener.dom.classList.add('add-geom');
+        geom.classList.add('active');
+        const div = geom.querySelector('.ti') as HTMLElement;
+        div.title = 'pen';
+        (div.querySelector('b') as HTMLElement).className = 'pen';
+        geom.querySelector('.sub [title="pen"]')?.classList.add('cur');
       }
       else if (keyCode === 84 || code === 'KeyT') {
         listener.state = state.ADD_TEXT;

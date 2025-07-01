@@ -121,7 +121,7 @@ class TextPanel extends Panel {
         listener.history.addCommand(new RichCommand(nodes, prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         }), RichCommand.COLOR), independence);
-        onBlur();
+        // onBlur();
       }
     };
 

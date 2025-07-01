@@ -2090,6 +2090,7 @@ export default class Listener extends Event {
         || this.state === state.ADD_LINE
         || this.state === state.ADD_TRIANGLE
         || this.state === state.ADD_STAR
+        || this.state === state.ADD_GEOM
         || this.state === state.ADD_CUSTOM_GEOM
         || this.state === state.ADD_TEXT
       ) {
@@ -2099,6 +2100,7 @@ export default class Listener extends Event {
         this.dom.classList.remove('add-line');
         this.dom.classList.remove('add-triangle');
         this.dom.classList.remove('add-star');
+        this.dom.classList.remove('add-geom');
         this.dom.classList.remove('add-custom');
         this.dom.classList.remove('add-text');
         this.customGeom.cancel();
@@ -2644,7 +2646,9 @@ export default class Listener extends Event {
       || keyCode === 79 || code === 'keyO'
       || keyCode === 85 || code === 'KeyU'
       || keyCode === 76 || code === 'KeyL'
-      || keyCode === 84 || code === 'KeyT')
+      || keyCode === 84 || code === 'KeyT'
+      // || keyCode === 80 || code === 'KeyP'
+    )
       && this.state !== state.EDIT_TEXT && !this.metaKey) {
       this.emit(Listener.SHORTCUT_KEY, keyCode, code);
     }
