@@ -303,7 +303,7 @@ export default class Listener extends Event {
     if (this.options.enabled?.selectWithMeta) {
       meta = !meta;
     }
-    let node = getNodeByPoint(
+    return getNodeByPoint(
       this.root,
       x,
       y,
@@ -311,10 +311,6 @@ export default class Listener extends Event {
       this.selected,
       isDbl,
     );
-    if (node instanceof ArtBoard && node.children.length && !meta && !this.selected.includes(node)) {
-      node = undefined;
-    }
-    return node;
   }
 
   beforeResize() {

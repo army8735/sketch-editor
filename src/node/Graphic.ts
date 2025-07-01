@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import AbstractFrame from './AbstractFrame';
 import { Props, TAG_NAME } from '../format';
+import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 
 class Graphic extends AbstractFrame {

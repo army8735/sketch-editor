@@ -6,12 +6,13 @@ import Geom from '../node/geom/Geom';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Container from '../node/Container';
 import Text from '../node/Text';
+import Page from '../node/Page';
+import Polyline from '../node/geom/Polyline';
+import AbstractFrame from '../node/AbstractFrame';
 import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
 import { calRectPoints } from '../math/matrix';
 import { VISIBILITY } from '../style/define';
 import config from '../util/config';
-import Page from '../node/Page';
-import Polyline from '../node/geom/Polyline';
 
 function getTopShapeGroup(node: Geom | ShapeGroup) {
   const root = node.root;
@@ -66,7 +67,10 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
         }
       }
     }
-    if (pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true)) {
+    const inRect = pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true);
+    const overflowVisible = child instanceof AbstractFrame && computedStyle.visibility === VISIBILITY.VISIBLE;
+    // 普通container主要是group，在范围内继续递归子节点寻找
+    if (inRect) {
       if (child instanceof Container) {
         const res = getChildByPoint(child, x, y);
         if (res) {
@@ -75,9 +79,19 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
         if (child instanceof ArtBoard) {
           return child;
         }
+        if (child instanceof AbstractFrame) {
+          return child;
+        }
       }
       else if (computedStyle.pointerEvents) {
         return child;
+      }
+    }
+    // 特殊的frame如果没有裁剪，也要遍历子节点
+    else if (overflowVisible) {
+      const res = getChildByPoint(child, x, y);
+      if (res) {
+        return res;
       }
     }
   }
@@ -124,7 +138,6 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
   const page = root.lastPage;
   if (page) {
     const res = getChildByPoint(page, x, y);
-    // console.log(res);
     if (res) {
       // 按下metaKey，需返回最深的叶子节点，但不返回组，返回画板，同时如果是ShapeGroup的子节点需返回最上层ShapeGroup
       if (metaKey) {
@@ -152,6 +165,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
         return;
       }
       // 点击前没有已选节点时，是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
+      // 新版有了frame之后变成是顶层frame的直接子节点，非空顶层frame不能选
       if (!selected.length) {
         let n = res;
         while (n && n.struct.lv > 3) {
@@ -159,12 +173,19 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           if (p instanceof ArtBoard) {
             break;
           }
+          if (p instanceof AbstractFrame && p.struct.lv <= 3) {
+            break;
+          }
           n = p;
         }
         // 非空画板不能选
-        // if (n instanceof ArtBoard && n.children.length) {
-        //   return;
-        // }
+        if (n instanceof ArtBoard && n.children.length) {
+          return;
+        }
+        // 顶层非空frame不能选
+        if (n instanceof AbstractFrame && n.children.length && n.struct.lv <= 3) {
+          return;
+        }
         return n;
       }
       // 双击下钻已选，一定有已选，遍历所有已选看激活的是哪个的儿子
@@ -241,9 +262,13 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           });
         }
         // 非空画板不能选
-        // if (n instanceof ArtBoard && n.children.length) {
-        //   return;
-        // }
+        if (n instanceof ArtBoard && n.children.length && !selected.includes(n)) {
+          return;
+        }
+        // 顶层非空frame不能选
+        if (n instanceof AbstractFrame && n.children.length && n.struct.lv <= 3) {
+          return;
+        }
         return n;
       }
     }
