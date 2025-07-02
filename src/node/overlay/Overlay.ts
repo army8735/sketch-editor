@@ -79,7 +79,16 @@ class Overlay extends Container {
     for (let i = 0, len = list.length; i < len; i++) {
       const { node, text } = list[i];
       const rect = node._rect || node.rect;
-      const t = calPoint({ x: rect[0], y: rect[1]}, node.matrixWorld);
+      // 画板可能有镜像，名字不能应用，需翻转
+      let x = rect[0];
+      let y = rect[1];
+      if (node.computedStyle.scaleX === -1) {
+        x = rect[2];
+      }
+      if (node.computedStyle.scaleY === -1) {
+        y = rect[3];
+      }
+      const t = calPoint({ x, y }, node.matrixWorld);
       // 特殊更新，手动更新样式并计算，但不触发刷新，因为是在刷新过程中跟着画板当前位置计算的，避免再刷一次
       const res = text.updateStyleData({
         translateX: t.x,
