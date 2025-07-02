@@ -4,6 +4,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
+import AbstractFrame from '../node/AbstractFrame';
 import picker from './picker';
 import { color2hexStr, color2rgbaInt, color2rgbaStr, getCssFillStroke } from '../style/css';
 import Listener from './Listener';
@@ -534,6 +535,7 @@ class FillPanel extends Panel {
         || item instanceof ShapeGroup
         || item instanceof Text
         || item instanceof Bitmap
+        || item instanceof AbstractFrame
       ) {
         return true;
       }

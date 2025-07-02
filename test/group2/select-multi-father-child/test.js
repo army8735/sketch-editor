@@ -33,6 +33,7 @@ module.exports = {
 
       .moveToElement('canvas', 50, 50)
       .keys(browser.Keys.META)
+      .keys(browser.Keys.SHIFT)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)

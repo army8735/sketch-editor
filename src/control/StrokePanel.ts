@@ -4,6 +4,7 @@ import ShapeGroup from '../node/geom/ShapeGroup';
 import Polyline from '../node/geom/Polyline';
 import Text from '../node/Text';
 import Bitmap from '../node/Bitmap';
+import AbstractFrame from '../node/AbstractFrame';
 import picker from './picker';
 import Listener from './Listener';
 import { ComputedGradient, ComputedPattern } from '../style/define';
@@ -501,6 +502,7 @@ class StrokePanel extends Panel {
         || item instanceof ShapeGroup
         || item instanceof Text
         || item instanceof Bitmap
+        || item instanceof AbstractFrame
       ) {
         return true;
       }
