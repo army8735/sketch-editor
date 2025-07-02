@@ -606,15 +606,15 @@ export default class Listener extends Event {
           if (!this.shiftKey) {
             selected.splice(0);
           }
-          // 特殊的地方，即便按下shift，但如果已选画板内子元素去选画板将无视，已选画板去选其子元素将取消画板
+          // 多选，但要排除父子规则，已选择子祖父全忽略，已选择祖父再选子依旧忽略祖父
           else {
             for (let i = selected.length - 1; i >= 0; i--) {
               const item = selected[i];
-              if (node.isArtBoard && item.artBoard === node && node !== item) {
-                return;
-              }
-              if (item.isArtBoard && node.artBoard === item && node !== item) {
+              if (node.isParent(item)) {
                 selected.splice(i, 1);
+              }
+              else if (node.isChild(item)) {
+                return;
               }
             }
           }
