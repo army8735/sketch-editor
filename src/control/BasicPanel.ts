@@ -2,19 +2,22 @@ import Node from '../node/Node';
 import Root from '../node/Root';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
+import AbstractFrame from '../node/AbstractFrame';
+import ArtBoard from '../node/ArtBoard';
 import { toPrecision } from '../math';
 import Listener from './Listener';
+import { getBasicInfo } from '../tools/node';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
-import { getBasicInfo } from '../tools/node';
-import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
-import UpdateStyleCommand, { UpdateStyleData } from '../history/UpdateStyleCommand';
-import Panel from './Panel';
-import { ComputedStyle, Style, StyleUnit } from '../style/define';
 import ConstrainProportionCommand, { ConstrainProportionData } from '../history/ConstrainProportionCommand';
+import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
+import OverflowCommand, { OverflowData } from '../history/OverflowCommand';
+import FlipHCommand, { FlipHData } from '../history/FlipHCommand';
+import FlipVCommand, { FlipVData } from '../history/FlipVCommand';
+import { ComputedStyle, OVERFLOW, Style, StyleUnit } from '../style/define';
 import { JStyle } from '../format';
 import state from './state';
-import ArtBoard from '../node/ArtBoard';
+import Panel from './Panel';
 
 const html = `
   <div class="line">
@@ -44,6 +47,10 @@ const html = `
     <span class="fh" title="水平翻转"></span>
     <span class="fv" title="垂直翻转"></span>
   </div>
+  <div class="line">
+    <span class="ov"></span>
+    <span>裁剪内容</span>
+  </div>
 `;
 
 class BasicPanel extends Panel {
@@ -68,6 +75,7 @@ class BasicPanel extends Panel {
     const cp = panel.querySelector('.cp') as HTMLElement;
     const fh = panel.querySelector('.fh') as HTMLElement;
     const fv = panel.querySelector('.fv') as HTMLElement;
+    const ov = panel.querySelector('.ov') as HTMLElement;
 
     let nodes: Node[] = [];
     let originStyle: Style[] = [];
@@ -478,7 +486,7 @@ class BasicPanel extends Panel {
         fh.classList.add('active');
       }
       const nodes: Node[] = [];
-      const data: UpdateStyleData[] = [];
+      const data: FlipHData[] = [];
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.scaleX;
         const next = fh.classList.contains('active') ? -1 : 1;
@@ -494,7 +502,7 @@ class BasicPanel extends Panel {
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes, data));
+        listener.history.addCommand(new FlipHCommand(nodes, data));
         listener.select.updateSelect(this.nodes);
         listener.emit(Listener.FLIP_H_NODE, nodes.slice(0));
       }
@@ -510,7 +518,7 @@ class BasicPanel extends Panel {
         fv.classList.add('active');
       }
       const nodes: Node[] = [];
-      const data: UpdateStyleData[] = [];
+      const data: FlipVData[] = [];
       this.nodes.forEach((node, i) => {
         const prev = node.computedStyle.scaleY;
         const next = fv.classList.contains('active') ? -1 : 1;
@@ -520,18 +528,67 @@ class BasicPanel extends Panel {
           });
           nodes.push(node);
           data.push({
-            prev: { scaleX: prev },
-            next: { scaleX: next },
+            prev: { scaleY: prev },
+            next: { scaleY: next },
           });
         }
       });
       if (nodes.length) {
-        listener.history.addCommand(new UpdateStyleCommand(nodes, data));
+        listener.history.addCommand(new FlipVCommand(nodes, data));
         listener.select.updateSelect(this.nodes);
         listener.emit(Listener.FLIP_V_NODE, nodes.slice(0));
       }
       this.silence = false;
     });
+
+    const onOverflowChange = () => {
+      this.silence = true;
+      if (ov.classList.contains('checked')) {
+        ov.className = 'ov un-checked';
+      }
+      else {
+        ov.className = 'ov checked';
+      }
+      const nodes: Node[] = [];
+      const data: OverflowData[] = [];
+      this.nodes.forEach((node, i) => {
+        nodes.push(node);
+        const prev = node.computedStyle.overflow;
+        if (node instanceof AbstractFrame) {
+          const next = ov.classList.contains('checked') ? 'hidden' : 'visible';
+          data.push({
+            prev: {
+              overflow: (['visible', 'hidden'][prev] || 'visible') as JStyle['overflow'],
+            },
+            next: {
+              overflow: next as JStyle['overflow'],
+            },
+          });
+          node.updateStyle({
+            overflow: next,
+          });
+        }
+        else {
+          data.push({
+            prev: {
+              overflow: (['visible', 'hidden'][prev] || 'visible') as JStyle['overflow'],
+            },
+            next: {
+              overflow: (['visible', 'hidden'][prev] || 'visible') as JStyle['overflow'],
+            },
+          });
+        }
+      });
+      if (nodes.length) {
+        listener.history.addCommand(new OverflowCommand(nodes, data));
+        listener.select.updateSelect(this.nodes);
+        listener.emit(Listener.OVERFLOW_NODE, nodes.slice(0));
+      }
+      this.silence = false;
+    };
+
+    ov.addEventListener('click', onOverflowChange);
+    ov.nextElementSibling?.addEventListener('click', onOverflowChange);
 
     listener.on([
       Listener.MOVE_NODE,
@@ -540,6 +597,7 @@ class BasicPanel extends Panel {
       Listener.FLIP_H_NODE,
       Listener.FLIP_V_NODE,
       Listener.CONSTRAIN_PROPORTION_NODE,
+      Listener.OVERFLOW_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {
@@ -573,6 +631,7 @@ class BasicPanel extends Panel {
         item.placeholder = '';
         item.value = '';
       });
+      panel.querySelector('.ov')!.parentElement!.style.display = 'none';
       return;
     }
     panel.querySelectorAll('.input-unit,.cp,.fh,.fv').forEach(item => {
@@ -591,6 +650,7 @@ class BasicPanel extends Panel {
     const cps: boolean[] = [];
     const fhs: boolean[] = [];
     const fvs: boolean[] = [];
+    const ovs: OVERFLOW[] = [];
     nodes.forEach(item => {
       const o = getBasicInfo(item);
       let {
@@ -602,6 +662,7 @@ class BasicPanel extends Panel {
         isFlippedHorizontal,
         isFlippedVertical,
         constrainProportions,
+        overflow,
       } = o;
       this.data.push(o);
       if (!xs.includes(x)) {
@@ -628,6 +689,9 @@ class BasicPanel extends Panel {
       if (!fvs.includes(isFlippedVertical)) {
         fvs.push(isFlippedVertical);
       }
+      if (item instanceof AbstractFrame && !ovs.includes(overflow)) {
+        ovs.push(overflow);
+      }
     });
     const x = panel.querySelector('.x') as HTMLInputElement;
     const y = panel.querySelector('.y') as HTMLInputElement;
@@ -637,6 +701,7 @@ class BasicPanel extends Panel {
     const cp = panel.querySelector('.cp') as HTMLElement;
     const fh = panel.querySelector('.fh') as HTMLElement;
     const fv = panel.querySelector('.fv') as HTMLElement;
+    const ov = panel.querySelector('.ov') as HTMLElement;
     if (xs.length > 1) {
       x.placeholder = '多个';
     }
@@ -685,6 +750,21 @@ class BasicPanel extends Panel {
     }
     else {
       fv.classList.remove('active');
+    }
+    if (ovs.length) {
+      ov.parentElement!.style.display = 'flex';
+      if (ovs.length > 1) {
+        ov.className = 'ov multi-checked';
+      }
+      else if (ovs[0] === OVERFLOW.VISIBLE) {
+        ov.className = 'ov un-checked';
+      }
+      else if (ovs[0] === OVERFLOW.HIDDEN) {
+        ov.className = 'ov checked';
+      }
+    }
+    else {
+      ov.parentElement!.style.display = 'none';
     }
   }
 }

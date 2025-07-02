@@ -24,6 +24,7 @@ import picker from './picker';
 import contextMenu from './contextMenu';
 import CustomGeom from './CustomGeom';
 import { clone } from '../util/type';
+import inject from '../util/inject';
 import { ArtBoardProps, BreakMaskStyle, Point, JStyle, MaskModeStyle } from '../format';
 import {
   addNode,
@@ -31,9 +32,21 @@ import {
   getNodeByPoint,
   getOverlayArtBoardByPoint,
 } from '../tools/root';
+import { appendWithPosAndSize } from '../tools/container';
+import {
+  createLine,
+  createOval,
+  createRect,
+  createRound,
+  createTriangle,
+  getFrameVertexes,
+  getPointsAbsByDsp,
+} from '../tools/polyline';
+import { createText } from '../tools/text';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';
+import { toPrecision } from '../math';
 import History from '../history/History';
 import AbstractCommand from '../history/AbstractCommand';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
@@ -57,7 +70,9 @@ import UnGroupCommand from '../history/UnGroupCommand';
 import RenameCommand from '../history/RenameCommand';
 import LockCommand from '../history/LockCommand';
 import VisibleCommand from '../history/VisibleCommand';
-import { toPrecision } from '../math';
+import FlipHCommand from '../history/FlipHCommand';
+import FlipVCommand from '../history/FlipVCommand';
+import OverflowCommand from '../history/OverflowCommand';
 import AddCommand, { AddData } from '../history/AddCommand';
 import PointCommand, { PointData } from '../history/PointCommand';
 import BoolGroupCommand from '../history/BoolGroupCommand';
@@ -66,18 +81,6 @@ import PrevCommand from '../history/PrevCommand';
 import NextCommand from '../history/NextCommand';
 import PositionCommand from '../history/PositionCommand';
 import TintCommand, { TintData } from '../history/TintCommand';
-import { appendWithPosAndSize } from '../tools/container';
-import {
-  createLine,
-  createOval,
-  createRect,
-  createRound,
-  createTriangle,
-  getFrameVertexes,
-  getPointsAbsByDsp,
-} from '../tools/polyline';
-import { createText } from '../tools/text';
-import inject from '../util/inject';
 
 export type ListenerOptions = {
   enabled?: {
@@ -2428,6 +2431,15 @@ export default class Listener extends Event {
         else if (c instanceof StrokeCommand) {
           this.emit(Listener.STROKE_NODE, nodes.slice(0), (c.data as StrokeData[]).map(item => item.index));
         }
+        else if (c instanceof OverflowCommand) {
+          this.emit(Listener.OVERFLOW_NODE, nodes.slice(0));
+        }
+        else if (c instanceof FlipHCommand) {
+          this.emit(Listener.FLIP_H_NODE, nodes.slice(0));
+        }
+        else if (c instanceof FlipVCommand) {
+          this.emit(Listener.FLIP_V_NODE, nodes.slice(0));
+        }
         // 编组之类强制更新并选择节点
         else if (c instanceof GroupCommand) {
           this.selected.splice(0);
@@ -2844,6 +2856,7 @@ export default class Listener extends Event {
   static RENAME_NODE = 'RENAME_NODE';
   static LOCK_NODE = 'LOCK_NODE';
   static VISIBLE_NODE = 'VISIBLE_NODE';
+  static OVERFLOW_NODE = 'OVERFLOW_NODE';
   static ART_BOARD_NODE = 'ART_BOARD_NODE'; // 改变画板
   static CONSTRAIN_PROPORTION_NODE = 'CONSTRAIN_PROPORTION_NODE';
   static POINT_NODE = 'POINT_NODE'; // 改变矢量点

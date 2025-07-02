@@ -1223,6 +1223,7 @@ export function getBasicInfo(node: Node) {
     mixBlendMode: computedStyle.mixBlendMode,
     constrainProportions: !!node.constrainProportions,
     matrix: m,
+    overflow: computedStyle.overflow,
     // isLine: false,
     // length: 0,
     // angle: 0,

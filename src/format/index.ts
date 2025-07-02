@@ -177,6 +177,7 @@ export type JStyle = {
   saturate: number | string;
   brightness: number | string;
   contrast: number | string;
+  overflow: 'visible' | 'hidden';
 };
 
 export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
@@ -345,6 +346,12 @@ export type MaskModeStyle = Pick<JStyle, 'maskMode'>;
 export type BreakMaskStyle = Pick<JStyle, 'breakMask'>;
 
 export type VisibleStyle = Pick<JStyle, 'visibility'>;
+
+export type FlipHStyle = Pick<JStyle, 'scaleX'>;
+
+export type FlipVStyle = Pick<JStyle, 'scaleY'>;
+
+export type OverflowStyle = Pick<JStyle, 'overflow'>;
 
 export default {
   TAG_NAME,
