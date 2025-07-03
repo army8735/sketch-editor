@@ -9,19 +9,19 @@ module.exports = {
       .pause(20)
       .moveToElement('canvas', 50, 50)
       .doubleClick()
-      .assert.cssProperty('#side .point-panel .closed', 'display', 'none')
+      .assert.cssProperty('#side .point-panel .close', 'display', 'none')
       .assert.cssProperty('#side .point-panel .open', 'display', 'block')
       .assert.elementPresent('#main .geometry svg path[title="3"]')
 
       .click('#side .point-panel .open')
-      .assert.cssProperty('#side .point-panel .closed', 'display', 'block')
+      .assert.cssProperty('#side .point-panel .close', 'display', 'block')
       .assert.cssProperty('#side .point-panel .open', 'display', 'none')
       .assert.not.elementPresent('#main .geometry svg path[title="3"]')
 
       .keys(browser.Keys.META)
       .keys('z')
       .keys(browser.Keys.NULL)
-      .assert.cssProperty('#side .point-panel .closed', 'display', 'none')
+      .assert.cssProperty('#side .point-panel .close', 'display', 'none')
       .assert.cssProperty('#side .point-panel .open', 'display', 'block')
       .assert.elementPresent('#main .geometry svg path[title="3"]')
 
@@ -29,7 +29,7 @@ module.exports = {
       .keys(browser.Keys.SHIFT)
       .keys('z')
       .keys(browser.Keys.NULL)
-      .assert.cssProperty('#side .point-panel .closed', 'display', 'block')
+      .assert.cssProperty('#side .point-panel .close', 'display', 'block')
       .assert.cssProperty('#side .point-panel .open', 'display', 'none')
       .assert.not.elementPresent('#main .geometry svg path[title="3"]')
 
