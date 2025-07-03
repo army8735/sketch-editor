@@ -7,6 +7,7 @@ import Polyline from '../node/geom/Polyline';
 import { CURVE_MODE } from '../style/define';
 import { Point } from '../format';
 import { clone } from '../util/type';
+import ClosedCommand from '../history/ClosedCommand';
 import PointCommand from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
 import { toPrecision } from '../math';
@@ -38,6 +39,11 @@ const html = `
       <input type="number" class="r" min="0" max="100" step="1" value=""/>
     </div>
   </div>
+  <div class="line">
+    <span class="close">闭合路径</span>
+    <span class="open">打开路径</span>
+    <span class="end">结束编辑</span>
+  </div>
 `;
 
 class PointPanel extends Panel {
@@ -63,14 +69,14 @@ class PointPanel extends Panel {
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
       const { geometry: { nodes: nodes2, idxes } } = listener;
-      nodes2.forEach((node, i) => {
-        const is = idxes[i];
-        if (is.length) {
-          nodes.push(node);
-          prevPoints.push(clone(node.points));
-        }
-      });
       if (tagName === 'LI' && !classList.contains('cur')) {
+        nodes2.forEach((node, i) => {
+          const is = idxes[i];
+          if (is.length) {
+            nodes.push(node);
+            prevPoints.push(clone(node.points));
+          }
+        });
         panel.querySelector('.type .cur')?.classList.remove('cur');
         classList.add('cur');
         nodes.splice(0);
@@ -178,7 +184,6 @@ class PointPanel extends Panel {
       const value = parseFloat(isX ? x.value : y.value) || 0;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
-      const data: Point[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {
@@ -272,10 +277,9 @@ class PointPanel extends Panel {
           node.reflectPoints(points);
           node.refresh();
           listener.geometry.updateVertex(node);
-          data.push(points);
         }
       });
-      listener.emit(Listener.POINT_NODE, nodes.slice(0), data);
+      listener.emit(Listener.POINT_NODE, nodes.slice(0));
       this.silence = false;
     };
 
@@ -301,7 +305,6 @@ class PointPanel extends Panel {
       const value = parseFloat(range.value) || 0;
       rangeAlt = false;
       const isFirst = !nodes.length;
-      const data: Point[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {
@@ -326,12 +329,11 @@ class PointPanel extends Panel {
             parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
           }
           listener.geometry.updateVertex(node);
-          data.push(points);
         }
       });
       range.placeholder = number.placeholder = '';
       number.value = range.value;
-      listener.emit(Listener.POINT_NODE, nodes.slice(0), data);
+      listener.emit(Listener.POINT_NODE, nodes.slice(0));
       this.silence = false;
     });
     range.addEventListener('change', () => {
@@ -346,7 +348,6 @@ class PointPanel extends Panel {
       rangeAlt = false;
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       const isFirst = !nodes.length;
-      const data: Point[][] = [];
       nodes2.forEach((node, i) => {
         const is = idxes[i];
         if (is.length) {
@@ -414,14 +415,51 @@ class PointPanel extends Panel {
             parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
           }
           listener.geometry.updateVertex(node);
-          data.push(points);
         }
       });
-      listener.emit(Listener.POINT_NODE, nodes.slice(0), data);
+      listener.emit(Listener.POINT_NODE, nodes.slice(0));
       this.silence = false;
     });
     number.addEventListener('change', () => onChange());
     number.addEventListener('blur', () => onBlur());
+
+    const open = panel.querySelector('.open') as HTMLElement;
+    const close = panel.querySelector('.close') as HTMLElement;
+
+    const onChangeClosed = (isClosed: boolean) => {
+      this.silence = true;
+      const nodes = listener.geometry.nodes.slice(0);
+      listener.history.addCommand(new ClosedCommand(nodes.slice(0), nodes.map(item => {
+        const prev = item.isClosed;
+        if (prev !== isClosed) {
+          item.isClosed = isClosed;
+          item.refresh();
+        }
+        return {
+          prev,
+          next: isClosed,
+        };
+      })));
+      this.updateClosed();
+      listener.geometry.updateAll(true);
+      listener.emit(Listener.CLOSED_NODE, nodes);
+      this.silence = false;
+    };
+
+    open.addEventListener('click', () => {
+      onChangeClosed(false);
+    });
+    close.addEventListener('click', () => {
+      onChangeClosed(true);
+    });
+
+    const end = panel.querySelector('.end') as HTMLElement;
+    end.addEventListener('click', () => {
+      if (listener.geometry.hasEditPoint()) {
+        listener.geometry.clearCur();
+      }
+      listener.cancelEditGeom();
+    });
 
     listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
       // 出现或消失
@@ -435,12 +473,14 @@ class PointPanel extends Panel {
     listener.on([
       Listener.SELECT_POINT,
       Listener.POINT_NODE,
+      Listener.CLOSED_NODE,
     ], () => {
       if (this.silence) {
         return;
       }
       nodes.splice(0);
       prevPoints.splice(0);
+      this.updateClosed();
       this.updateCoords();
       this.updateType();
       this.updateRange();
@@ -455,9 +495,27 @@ class PointPanel extends Panel {
       return;
     }
     panel.style.display = 'block';
+    this.updateClosed();
     this.updateCoords();
     this.updateType();
     this.updateRange();
+  }
+
+  updateClosed() {
+    const { panel, listener: { geometry: { nodes } } } = this;
+    const open = panel.querySelector('.open') as HTMLElement;
+    const close = panel.querySelector('.close') as HTMLElement;
+    const opened = nodes.find((item) => {
+      return !item.isClosed;
+    });
+    if (opened) {
+      open.style.display = 'none';
+      close.style.display = 'block';
+    }
+    else {
+      open.style.display = 'block';
+      close.style.display = 'none';
+    }
   }
 
   updateCoords() {

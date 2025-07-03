@@ -245,7 +245,7 @@ export default class Geometry {
               }
             });
             listener.history.addCommand(new PointCommand(this.nodes.slice(0), data), true);
-            listener.emit(Listener.POINT_NODE, [node], [[mid]]);
+            listener.emit(Listener.POINT_NODE, [node]);
             isDrag = true;
             this.setClonePoints();
             pathIdx = -1;
@@ -294,6 +294,7 @@ export default class Geometry {
         listener.emit(Listener.SELECT_POINT, [], []);
       }
     });
+
     document.addEventListener('mousemove', (e) => {
       // 当前按下移动的那个point属于的node，用来算diff距离，多个其它node上的point会跟着这个点一起变
       const node = this.nodes[nodeIdx];
@@ -322,7 +323,6 @@ export default class Geometry {
       // 拖动顶点，多个顶点的话其它的也随之变动
       if (isDrag) {
         const nodes: Polyline[] = [];
-        const data: Point[][] = [];
         this.nodes.forEach((item, i) => {
           const pts = this.idxes[i].map(j => {
             const p = item.points[j];
@@ -345,10 +345,9 @@ export default class Geometry {
             }
             this.updateVertex(item);
             nodes.push(item);
-            data.push(pts);
           }
         });
-        listener.emit(Listener.POINT_NODE, nodes, data);
+        listener.emit(Listener.POINT_NODE, nodes);
       }
       // 拖控制点
       else if (isControlF || isControlT) {
@@ -391,10 +390,11 @@ export default class Geometry {
           parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
         }
         this.updateVertex(node);
-        listener.emit(Listener.POINT_NODE, [node], [[p]]);
+        listener.emit(Listener.POINT_NODE, [node]);
       }
       isMove = true;
     });
+
     document.addEventListener('mouseup', () => {
       const node = this.nodes[nodeIdx];
       if (!node) {
@@ -491,6 +491,7 @@ export default class Geometry {
       }
       pj = panel.querySelector(`.item[idx="${nodeIdx}"] .pj`) as HTMLElement;
     });
+
     panel.addEventListener('mousemove', (e) => {
       const node = this.nodes[nodeIdx];
       if (pathIdx > -1 && node) {
@@ -514,6 +515,7 @@ export default class Geometry {
         }
       }
     });
+
     panel.addEventListener('mouseout', (e) => {
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
@@ -635,16 +637,16 @@ export default class Geometry {
       s2 += '</div>';
       if (isStraight) {
         // 最后一个判断是否闭合
-        if (item.cornerRadius && (i < len || node.isClosed)) {
+        if (item.cornerRadius && (i < (len - 1) || node.isClosed)) {
           s += `<path title="cr${i}" idx="${count++}" d=""></path>`;
         }
-        if (i < len || node.isClosed) {
+        if (i < (len - 1) || node.isClosed) {
           s += `<path title="${i}" idx="${count++}" d=""></path>`;
         }
       }
       else {
         // 最后一个判断是否闭合
-        if (i < len || node.isClosed) {
+        if (i < (len - 1) || node.isClosed) {
           s += `<path title="${i}" idx="${count++}" d=""></path>`;
         }
       }

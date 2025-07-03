@@ -236,8 +236,8 @@ class Toolbar {
       }
       else if (title === 'arrow') {}
       else if (title === 'pen') {
-        listener.state = state.ADD_GEOM;
-        listener.dom.classList.add('add-geom');
+        listener.state = state.ADD_PEN;
+        listener.dom.classList.add('add-pen');
         listener.select.hideSelect();
       }
 
@@ -379,7 +379,7 @@ class Toolbar {
       listener.dom.classList.remove('add-round');
       listener.dom.classList.remove('add-triangle');
       listener.dom.classList.remove('add-star');
-      listener.dom.classList.remove('add-geom');
+      listener.dom.classList.remove('add-pen');
       clear();
       if (keyCode === 86 || code === 'KeyV' || keyCode === 72 || code === 'KeyH') {}
       else {
@@ -442,8 +442,8 @@ class Toolbar {
         geom.querySelector('.sub [title="line"]')?.classList.add('cur');
       }
       else if (keyCode === 80 || code === 'KeyP') {
-        listener.state = state.ADD_GEOM;
-        listener.dom.classList.add('add-geom');
+        listener.state = state.ADD_PEN;
+        listener.dom.classList.add('add-pen');
         geom.classList.add('active');
         const div = geom.querySelector('.ti') as HTMLElement;
         div.title = 'pen';

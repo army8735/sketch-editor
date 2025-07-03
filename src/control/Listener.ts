@@ -81,6 +81,7 @@ import PrevCommand from '../history/PrevCommand';
 import NextCommand from '../history/NextCommand';
 import PositionCommand from '../history/PositionCommand';
 import TintCommand, { TintData } from '../history/TintCommand';
+import ClosedCommand from '../history/ClosedCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1378,6 +1379,9 @@ export default class Listener extends Event {
       if (!this.geometry.keep) {
         this.cancelEditGeom();
       }
+      else if (this.isFrame) {
+        this.select.hideFrame();
+      }
     }
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
@@ -1496,7 +1500,7 @@ export default class Listener extends Event {
   onDblClick(e: MouseEvent) {
     const root = this.root;
     const page = root.getCurPage();
-    if (!page) {
+    if (!page || this.state === state.HAND || this.spaceKey || this.middleKey) {
       return;
     }
     const oldSelected = this.selected.slice(0);
@@ -1544,7 +1548,7 @@ export default class Listener extends Event {
           this.emit(Listener.STATE_CHANGE, old, this.state);
         }
       }
-      this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+      // this.emit(Listener.SELECT_NODE, this.selected.slice(0));
     }
   }
 
@@ -2089,7 +2093,7 @@ export default class Listener extends Event {
         || this.state === state.ADD_LINE
         || this.state === state.ADD_TRIANGLE
         || this.state === state.ADD_STAR
-        || this.state === state.ADD_GEOM
+        || this.state === state.ADD_PEN
         || this.state === state.ADD_CUSTOM_GEOM
         || this.state === state.ADD_TEXT
       ) {
@@ -2099,7 +2103,7 @@ export default class Listener extends Event {
         this.dom.classList.remove('add-line');
         this.dom.classList.remove('add-triangle');
         this.dom.classList.remove('add-star');
-        this.dom.classList.remove('add-geom');
+        this.dom.classList.remove('add-pen');
         this.dom.classList.remove('add-custom');
         this.dom.classList.remove('add-text');
         this.customGeom.cancel();
@@ -2224,7 +2228,6 @@ export default class Listener extends Event {
           const geometry = this.geometry;
           const nodes: Polyline[] = [];
           const data: PointData[] = [];
-          const points: Point[][] = [];
           geometry.nodes.forEach((node, i) => {
             const idxes = geometry.idxes[i];
             // 应该肯定有
@@ -2248,11 +2251,10 @@ export default class Listener extends Event {
                 prev,
                 next: clone(node.points),
               });
-              points.push(pts);
             }
           });
           if (nodes.length) {
-            this.emit(Listener.POINT_NODE, nodes, points);
+            this.emit(Listener.POINT_NODE, nodes);
             this.history.addCommand(new PointCommand(nodes, data));
           }
         }
@@ -2350,6 +2352,7 @@ export default class Listener extends Event {
           && !(c instanceof UnGroupCommand)
           && !(c instanceof BoolGroupCommand)
           && !(c instanceof PointCommand)
+          && !(c instanceof ClosedCommand)
           && !(c instanceof FlattenCommand)
         ) {
           this.selected.splice(0);
@@ -2573,7 +2576,7 @@ export default class Listener extends Event {
           }
           this.emit([Listener.TEXT_CONTENT_NODE], nodes.slice(0));
         }
-        else if (c instanceof PointCommand) {
+        else if (c instanceof PointCommand || c instanceof ClosedCommand) {
           this.emit(Listener.SELECT_NODE, nodes.slice(0));
           // 编辑态特殊，强制选择这些节点，如果一直处在编辑态中且node没变过，选中idx的顶点
           if (this.state === state.EDIT_GEOM) {
@@ -2602,7 +2605,12 @@ export default class Listener extends Event {
             this.selected.push(...nodes);
             this.updateActive();
           }
-          this.emit(Listener.POINT_NODE, nodes.slice(0));
+          if (c instanceof PointCommand) {
+            this.emit(Listener.POINT_NODE, nodes.slice(0));
+          }
+          else {
+            this.emit(Listener.CLOSED_NODE, nodes.slice(0));
+          }
         }
         else if (c instanceof RenameCommand) {
           this.emit(Listener.RENAME_NODE, nodes.slice(0));
@@ -2860,6 +2868,7 @@ export default class Listener extends Event {
   static ART_BOARD_NODE = 'ART_BOARD_NODE'; // 改变画板
   static CONSTRAIN_PROPORTION_NODE = 'CONSTRAIN_PROPORTION_NODE';
   static POINT_NODE = 'POINT_NODE'; // 改变矢量点
+  static CLOSED_NODE = 'CLOSED_NODE';
   static SELECT_POINT = 'SELECT_POINT'; // 选择矢量点
   static TINT_NODE = 'TINT_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
