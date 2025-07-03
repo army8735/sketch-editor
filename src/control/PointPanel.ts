@@ -464,8 +464,7 @@ class PointPanel extends Panel {
     listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
       // 出现或消失
       if (next === state.EDIT_GEOM || prev === state.EDIT_GEOM) {
-        nodes.splice(0);
-        prevPoints.splice(0);
+        onBlur();
         this.show(listener.selected);
       }
     });

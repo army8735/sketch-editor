@@ -713,6 +713,14 @@ class TextPanel extends Panel {
       }
     });
 
+    listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
+      // 出现或消失
+      if (next === state.EDIT_TEXT || prev === state.EDIT_TEXT) {
+        onBlur();
+        this.show(listener.selected);
+      }
+    });
+
     listener.on([
       Listener.RESIZE_NODE,
       Listener.FONT_SIZE_NODE,
