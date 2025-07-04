@@ -36,7 +36,7 @@ export default class Geometry {
 
     let nodeIdx = -1; // 当前按下的节点索引
     let idx = -1; // 当前按下点的索引
-    let isDrag = false;
+    let isVt = false;
     let isControlF = false;
     let isControlT = false;
     let isMove = false;
@@ -59,7 +59,7 @@ export default class Geometry {
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
-      isDrag = isControlF = isControlT = isMove = false;
+      isVt = isControlF = isControlT = isMove = false;
       isSelected = false;
       isShift = false;
       startX = e.clientX;
@@ -96,7 +96,7 @@ export default class Geometry {
           target.nextElementSibling?.classList.add('t');
           target.previousElementSibling?.classList.add('f');
         }
-        isDrag = true;
+        isVt = true;
         this.setClonePoints();
         this.emitSelectPoint();
       }
@@ -105,7 +105,7 @@ export default class Geometry {
         nodeIdx = +target.parentElement!.parentElement!.getAttribute('idx')!;
         node = this.nodes[nodeIdx];
         const title = target.getAttribute('title')!;
-        idx = parseInt(title);
+        idx = parseInt(title); // 这里指向的是第几个path
         // 肯定有，兜底
         if (!isNaN(idx)) {
           const x = e.offsetX;
@@ -246,7 +246,7 @@ export default class Geometry {
             });
             listener.history.addCommand(new PointCommand(this.nodes.slice(0), data), true);
             listener.emit(Listener.POINT_NODE, [node]);
-            isDrag = true;
+            isVt = true;
             this.setClonePoints();
             pathIdx = -1;
           }
@@ -294,7 +294,7 @@ export default class Geometry {
         listener.emit(Listener.SELECT_POINT, [], []);
       }
     });
-
+    // 已选节点可能移出panel范围，所以侦听document
     document.addEventListener('mousemove', (e) => {
       // 当前按下移动的那个point属于的node，用来算diff距离，多个其它node上的point会跟着这个点一起变
       const node = this.nodes[nodeIdx];
@@ -321,7 +321,7 @@ export default class Geometry {
         }
       }
       // 拖动顶点，多个顶点的话其它的也随之变动
-      if (isDrag) {
+      if (isVt) {
         const nodes: Polyline[] = [];
         this.nodes.forEach((item, i) => {
           const pts = this.idxes[i].map(j => {
@@ -401,7 +401,7 @@ export default class Geometry {
         return;
       }
       // 顶点抬起时特殊判断，没有移动过的多选在已选时点击，shift视为取消选择，非是变为单选
-      if (isDrag && !isMove && isSelected) {
+      if (isVt && !isMove && isSelected) {
         if (isShift) {
           panel.querySelector(`div.item[idx="${nodeIdx}"]`)!.querySelector(`div.vt[title="${idx}"]`)?.classList.remove('cur');
           const idxes = this.idxes[nodeIdx];
@@ -432,8 +432,8 @@ export default class Geometry {
           this.emitSelectPoint();
         }
       }
-      // 移动可能会回原点，有变化的改变顶点控制点才更新
-      if (isMove && (isDrag || isControlF || isControlT)) {
+      // 移动可能会回原点，有变化的改变顶点/控制点才更新
+      else if (isMove && (isVt || isControlF || isControlT)) {
         const nodes: Polyline[] = [];
         const data: PointData[] = [];
         this.nodes.forEach((item, i) => {
@@ -463,7 +463,7 @@ export default class Geometry {
           listener.history.addCommand(new PointCommand(nodes, data), true);
         }
       }
-      isDrag = isControlF = isControlT = isMove = false;
+      isVt = isControlF = isControlT = isMove = false;
     });
 
     // 侦听在path上的移动，高亮当前path以及投影点
@@ -529,7 +529,7 @@ export default class Geometry {
 
     // 操作过程阻止滚轮拖动
     panel.addEventListener('wheel', (e) => {
-      if (isDrag || isControlF || isControlT) {
+      if (isVt || isControlF || isControlT) {
         e.stopPropagation();
       }
     });
