@@ -36,16 +36,16 @@ class PositionCommand extends AbstractCommand {
         target.fixedPosAndSize = false;
         target.checkPosSizeSelf();
       }
-      const dt = el.querySelector('dt') as HTMLElement;
-      this.data.forEach((item) => {
-        const p = item.el.parentElement!;
-        if (dt.nextElementSibling) {
-          el.insertBefore(p, dt.nextElementSibling);
-        }
-        else {
-          el.prepend(p);
-        }
-      });
+      // const dt = el.querySelector('dt') as HTMLElement;
+      // this.data.forEach((item) => {
+      //   const p = item.el.parentElement!;
+      //   if (dt.nextElementSibling) {
+      //     el.insertBefore(p, dt.nextElementSibling);
+      //   }
+      //   else {
+      //     el.prepend(p);
+      //   }
+      // });
     }
     else {
       const p = target.parent;
@@ -54,23 +54,23 @@ class PositionCommand extends AbstractCommand {
       }
       if (ps === 'after') {
         moveAfter(this.nodes, target);
-        data.slice(0).reverse().forEach((item, i) => {
-          const dd = el.parentElement!;
-          dd.parentElement!.insertBefore(item.el.parentElement!, dd);
-        });
+        // data.slice(0).reverse().forEach((item, i) => {
+        //   const dd = el.parentElement!;
+        //   dd.parentElement!.insertBefore(item.el.parentElement!, dd);
+        // });
       }
       else if (ps === 'before') {
         moveBefore(this.nodes, target);
-        data.forEach((item) => {
-          const dd = el.parentElement!;
-          const prev = dd.nextElementSibling;
-          if (prev) {
-            dd.parentElement!.insertBefore(item.el.parentElement!, prev);
-          }
-          else {
-            dd.parentElement!.append(item.el.parentElement!);
-          }
-        });
+        // data.forEach((item) => {
+        //   const dd = el.parentElement!;
+        //   const prev = dd.nextElementSibling;
+        //   if (prev) {
+        //     dd.parentElement!.insertBefore(item.el.parentElement!, prev);
+        //   }
+        //   else {
+        //     dd.parentElement!.append(item.el.parentElement!);
+        //   }
+        // });
       }
       if (p instanceof AbstractGroup) {
         p.fixedPosAndSize = false;
@@ -85,29 +85,29 @@ class PositionCommand extends AbstractCommand {
     data.forEach((item, i) => {
       const { el, sel, sps } = item;
       const node = this.nodes[i];
-      const dd = el.parentElement!;
+      // const dd = el.parentElement!;
       if (sps === 'append') {
-        sel.parentElement!.append(dd);
+        // sel.parentElement!.append(dd);
         const dl = sel.querySelector('dl') as HTMLElement;
         const uuid = dl.getAttribute('uuid')!;
         const target = node.root!.refs[uuid] as Container;
         target.appendChild(node);
       }
       else if (sps === 'after') {
-        sel.parentElement!.insertBefore(dd, sel);
+        // sel.parentElement!.insertBefore(dd, sel);
         const dl = sel.querySelector('dl') as HTMLElement;
         const uuid = dl.getAttribute('uuid')!;
         const target = node.root!.refs[uuid];
         target.insertAfter(node);
       }
       else if (sps === 'before') {
-        const next = sel.nextElementSibling;
-        if (next) {
-          sel.parentElement!.insertBefore(dd, next);
-        }
-        else {
-          sel.parentElement!.append(dd);
-        }
+        // const next = sel.nextElementSibling;
+        // if (next) {
+        //   sel.parentElement!.insertBefore(dd, next);
+        // }
+        // else {
+        //   sel.parentElement!.append(dd);
+        // }
         const dl = sel.querySelector('dl') as HTMLElement;
         const uuid = dl.getAttribute('uuid')!;
         const target = node.root!.refs[uuid];
@@ -119,11 +119,11 @@ class PositionCommand extends AbstractCommand {
 
   private update() {
     // 更新dl/dt的样式和信息
-    this.data.forEach((item, i) => {
-      const lv = this.nodes[i].struct.lv;
-      item.el.setAttribute('lv', lv.toString());
-      item.el.querySelector('dt')!.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
-    });
+    // this.data.forEach((item, i) => {
+    //   const lv = this.nodes[i].struct.lv;
+    //   item.el.setAttribute('lv', lv.toString());
+    //   item.el.querySelector('dt')!.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+    // });
   }
 }
 
