@@ -22,7 +22,11 @@ class Page extends Container {
   constructor(props: PageProps, children: Node[]) {
     super(props, children);
     this.isPage = true;
+  }
+
+  override willMount() {
     this.page = this;
+    super.willMount();
   }
 
   initIfNot() {

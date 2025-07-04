@@ -1,6 +1,7 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
 import Geom from '../node/geom/Geom';
+import Page from '../node/Page';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import ArtBoard from '../node/ArtBoard';
 import SymbolInstance from '../node/SymbolInstance';
@@ -152,39 +153,56 @@ export default class Tree {
       this.select(nodes);
     });
 
-    listener.on(Listener.REMOVE_NODE, (nodes: Node[]) => {
-      nodes.forEach((item) => {
-        const uuid = item.uuid;
-        if (uuid) {
-          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-          if (dl) {
-            dl.parentElement!.remove();
-          }
+    const removeNode = (node: Node) => {
+      const uuid = node.uuid;
+      if (uuid) {
+        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+        if (dl) {
+          dl.parentElement!.remove();
         }
-      });
+      }
+    };
+    // listener.on(Listener.REMOVE_NODE, (nodes: Node[]) => {
+    //   nodes.forEach((item) => {
+    //     removeNode(item);
+    //   });
+    // });
+    root.on(Root.WILL_REMOVE_DOM, (node) => {
+      removeNode(node);
     });
 
-    listener.on(Listener.ADD_NODE, (nodes: Node[]) => {
-      nodes.forEach((item) => {
-        const res = genNodeTree(item, item.struct.lv);
-        const dd = document.createElement('dd');
-        dd.appendChild(res);
-        const prev = item.prev?.uuid;
-        if (prev) {
-          const dl = dom.querySelector(`dl[uuid="${prev}"]`);
-          if (dl) {
-            const sibling = dl.parentElement!;
-            sibling.before(dd);
-          }
+    const addNode = (node: Node) => {
+      // 新增页面时，删除老页面
+      if (node instanceof Page) {
+        this.init();
+        return;
+      }
+      const res = genNodeTree(node, node.struct.lv);
+      const dd = document.createElement('dd');
+      dd.appendChild(res);
+      const prev = node.prev?.uuid;
+      if (prev) {
+        const dl = dom.querySelector(`dl[uuid="${prev}"]`);
+        if (dl) {
+          const sibling = dl.parentElement!;
+          sibling.before(dd);
         }
-        else {
-          const uuid = item.parent!.uuid;
-          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-          if (dl) {
-            dl.appendChild(dd);
-          }
+      }
+      else {
+        const uuid = node.parent!.uuid;
+        const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+        if (dl) {
+          dl.appendChild(dd);
         }
-      });
+      }
+    }
+    // listener.on(Listener.ADD_NODE, (nodes: Node[]) => {
+    //   nodes.forEach((item) => {
+    //     addNode(item);
+    //   });
+    // });
+    root.on(Root.DID_ADD_DOM, (node) => {
+      addNode(node);
     });
 
     listener.on([Listener.GROUP_NODE, Listener.BOOL_GROUP_NODE], (groups: Group[], nodes: Node[][]) => {
@@ -1135,8 +1153,8 @@ export default class Tree {
   }
 
   init() {
+    this.dom.querySelector('dl')?.remove();
     const dl = document.createElement('dl');
-    this.dom.appendChild(dl);
     const page = this.root.getCurPage();
     if (page) {
       dl.setAttribute('uuid', page.uuid);
@@ -1144,16 +1162,15 @@ export default class Tree {
       if (!children.length) {
         return;
       }
-      const fragment = new DocumentFragment();
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i];
         const res = genNodeTree(child, child.struct.lv);
         const dd = document.createElement('dd');
         dd.appendChild(res);
-        fragment.appendChild(dd);
+        dl.appendChild(dd);
       }
-      dl.appendChild(fragment);
     }
+    this.dom.appendChild(dl);
   }
 
   hover(node: Node) {

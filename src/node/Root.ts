@@ -307,14 +307,14 @@ class Root extends Container implements FrameCallback {
       });
     }
     // 先置空，否则新页初始化添加DOM会触发事件到老页上
-    this.lastPage = undefined;
-    let newPage = this.pageContainer.children[index];
+    // this.lastPage = undefined;
+    let newPage = this.lastPage = this.pageContainer.children[index];
     // 延迟初始化，第一次需要显示时才从json初始化Page对象
     newPage.initIfNot();
     newPage.updateStyle({
       visibility: 'visible',
     });
-    this.lastPage = newPage;
+    // this.lastPage = newPage;
     const children: (ArtBoard | AbstractFrame)[] = [];
     newPage.children.forEach((item) => {
       if (item instanceof ArtBoard || item instanceof AbstractFrame) {
@@ -357,7 +357,11 @@ class Root extends Container implements FrameCallback {
       if (node instanceof ArtBoard || node instanceof AbstractFrame) {
         this.overlay.removeList(node);
       }
-      this.emit(Event.WILL_REMOVE_DOM, node);
+      // 防止overlay中的图层
+      if (node.page) {
+        this.emit(Event.WILL_REMOVE_DOM, node);
+      }
+      node.willUnmount();
       // 可能刚添加的就删除了，不会影响tile
       const uuid = node.uuid;
       if (uuid && this.tileRecord[uuid]) {
@@ -379,8 +383,8 @@ class Root extends Container implements FrameCallback {
         this.emit(Event.REFRESH_COMPLETE, RefreshLevel.NONE);
       }
     }
-    // 切页过程中page不存在不触发，防止新老错乱，还要防止overlay中的图层
-    if (this.lastPage && node.page) {
+    // 防止overlay中的图层
+    if (node.page) {
       if (addDom) {
         this.emit(Event.DID_ADD_DOM, node);
       }

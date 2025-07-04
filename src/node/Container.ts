@@ -69,12 +69,21 @@ class Container<T extends Node = Node> extends Node {
 
   // 冒泡的didMount
   override didMount() {
+    super.didMount();
     const { children } = this;
     const len = children.length;
     for (let i = 0; i < len; i++) {
       children[i].didMount();
     }
-    super.didMount();
+  }
+
+  override willUnmount() {
+    super.willUnmount();
+    const { children } = this;
+    const len = children.length;
+    for (let i = 0; i < len; i++) {
+      children[i].willUnmount();
+    }
   }
 
   override lay(data: LayoutData) {

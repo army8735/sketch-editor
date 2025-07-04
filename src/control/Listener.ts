@@ -1915,7 +1915,7 @@ export default class Listener extends Event {
       });
       this.select.hideSelect();
       this.history.addCommand(new RemoveCommand(nodes2, data));
-      this.emit(Listener.REMOVE_NODE, nodes2.slice(0));
+      // this.emit(Listener.REMOVE_NODE, nodes2.slice(0));
       this.emit(Listener.SELECT_NODE, []);
     }
   }
@@ -2371,7 +2371,7 @@ export default class Listener extends Event {
           if (this.shiftKey) {
             this.selected.splice(0);
             this.select.hideSelect();
-            this.emit(Listener.REMOVE_NODE, nodes.slice(0));
+            // this.emit(Listener.REMOVE_NODE, nodes.slice(0));
             this.emit(Listener.SELECT_NODE, []);
           }
           else {
@@ -2394,7 +2394,7 @@ export default class Listener extends Event {
           else {
             this.selected.splice(0);
             this.select.hideSelect();
-            this.emit(Listener.REMOVE_NODE, nodes.slice(0));
+            // this.emit(Listener.REMOVE_NODE, nodes.slice(0));
             this.emit(Listener.SELECT_NODE, []);
             // 新增后撤销
             if (this.state === state.EDIT_TEXT) {
@@ -2865,7 +2865,7 @@ export default class Listener extends Event {
   static LOCK_NODE = 'LOCK_NODE';
   static VISIBLE_NODE = 'VISIBLE_NODE';
   static OVERFLOW_NODE = 'OVERFLOW_NODE';
-  static ART_BOARD_NODE = 'ART_BOARD_NODE'; // 改变画板
+  static ART_BOARD_NODE = 'ART_BOARD_NODE'; // 改变属于的画板
   static CONSTRAIN_PROPORTION_NODE = 'CONSTRAIN_PROPORTION_NODE';
   static POINT_NODE = 'POINT_NODE'; // 改变矢量点
   static CLOSED_NODE = 'CLOSED_NODE';

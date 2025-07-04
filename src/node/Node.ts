@@ -230,6 +230,14 @@ class Node extends Event {
     this.isMounted = true;
   }
 
+  willUnmount() {
+    // 无论是否真实dom，都清空
+    this.prev = this.next = undefined;
+    this.page = undefined;
+    this.artBoard = undefined;
+    this.symbolInstance = undefined;
+  }
+
   lay(data: LayoutData) {
     this.refreshLevel = RefreshLevel.REFLOW;
     // 布局时计算所有样式，更新时根据不同级别调用
@@ -1429,18 +1437,6 @@ class Node extends Event {
       if (next) {
         next.prev = prev;
       }
-    }
-    // 无论是否真实dom，都清空
-    this.prev = this.next = undefined;
-    // 特殊的判断，防止Page/ArtBoard自身删除了引用
-    if (!this.isPage) {
-      this.page = undefined;
-    }
-    if (!this.isArtBoard) {
-      this.artBoard = undefined;
-    }
-    if (!this.isSymbolInstance) {
-      this.symbolInstance = undefined;
     }
     // 未添加到dom时
     if (this.isDestroyed) {

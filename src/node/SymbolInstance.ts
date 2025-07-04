@@ -12,8 +12,12 @@ class SymbolInstance extends Group {
     super(props, symbolMaster.children.map(item => item.clone(overrideValues)));
     this.isSymbolInstance = true;
     this.symbolMaster = symbolMaster;
-    this.symbolInstance = this;
     symbolMaster.addSymbolInstance(this);
+  }
+
+  override willMount() {
+    this.symbolInstance = this;
+    super.willMount();
   }
 
   override clone(override?: Record<string, Override[]>) {

@@ -23,7 +23,11 @@ class ArtBoard extends Container {
     this.resizesContent = !!props.resizesContent;
     this.includeBackgroundColorInExport = !!props.includeBackgroundColorInExport;
     this.isArtBoard = true;
+  }
+
+  override willMount() {
     this.artBoard = this;
+    super.willMount();
   }
 
   // 画板有自定义背景色时有内容
