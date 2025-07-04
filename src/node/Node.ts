@@ -236,6 +236,7 @@ class Node extends Event {
     this.page = undefined;
     this.artBoard = undefined;
     this.symbolInstance = undefined;
+    this.parent = this.root = this.mask = undefined;
   }
 
   lay(data: LayoutData) {
@@ -1454,7 +1455,6 @@ class Node extends Event {
     this.isDestroyed = true;
     this.isMounted = false;
     this.clearCache(true);
-    this.parent = this.root = this.mask = undefined;
   }
 
   structure(lv: number): Array<Struct> {

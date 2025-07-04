@@ -361,7 +361,6 @@ class Root extends Container implements FrameCallback {
       if (node.page) {
         this.emit(Event.WILL_REMOVE_DOM, node);
       }
-      node.willUnmount();
       // 可能刚添加的就删除了，不会影响tile
       const uuid = node.uuid;
       if (uuid && this.tileRecord[uuid]) {

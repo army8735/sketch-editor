@@ -19,6 +19,7 @@ export function checkReflow(node: Node, addDom: boolean, removeDom: boolean) {
     const mask = node.mask;
     node.checkPosSizeUpward();
     node.clearCacheUpward(false);
+    node.willUnmount();
     node.destroy();
     // destroy后mask就没了，先拿到引用再清除
     if (mask) {
