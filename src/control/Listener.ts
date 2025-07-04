@@ -1254,7 +1254,7 @@ export default class Listener extends Event {
         y: text.computedStyle.top,
         parent: text.parent!,
       }]));
-      this.emit(Listener.ADD_NODE, [text]);
+      // this.emit(Listener.ADD_NODE, [text]);
       const old = this.state;
       this.state = state.EDIT_TEXT;
       this.emit(Listener.STATE_CHANGE, old, this.state);
@@ -1314,7 +1314,7 @@ export default class Listener extends Event {
             y: node.computedStyle.top,
             parent: node.parent!,
           }]));
-          this.emit(Listener.ADD_NODE, [node]);
+          // this.emit(Listener.ADD_NODE, [node]);
         }
       }
       this.customGeom.cancel();
@@ -1364,7 +1364,7 @@ export default class Listener extends Event {
           y: bitmap.computedStyle.top,
           parent: bitmap.parent!,
         }]));
-        this.emit(Listener.ADD_NODE, [bitmap]);
+        // this.emit(Listener.ADD_NODE, [bitmap]);
         this.img.remove();
         this.img = undefined;
       }
@@ -1964,7 +1964,7 @@ export default class Listener extends Event {
         this.history.addCommand(new AddCommand(nodes2, data));
         this.selected = nodes2.slice(0);
         this.updateActive();
-        this.emit(Listener.ADD_NODE, nodes2.slice(0));
+        // this.emit(Listener.ADD_NODE, nodes2.slice(0));
         this.emit(Listener.SELECT_NODE, nodes2.slice(0));
       }
     }
@@ -2379,7 +2379,7 @@ export default class Listener extends Event {
               return c.data[i].selected || item;
             });
             this.updateActive();
-            this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
+            // this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
             this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
         }
@@ -2388,7 +2388,7 @@ export default class Listener extends Event {
             this.selected.splice(0);
             this.selected.push(...nodes)
             this.updateActive();
-            this.emit(Listener.ADD_NODE, nodes.slice(0));
+            // this.emit(Listener.ADD_NODE, nodes.slice(0));
             this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
           else {
@@ -2728,7 +2728,7 @@ export default class Listener extends Event {
             y: bitmap.computedStyle.top,
             parent: bitmap.parent!,
           }]));
-          this.emit(Listener.ADD_NODE, [bitmap]);
+          // this.emit(Listener.ADD_NODE, [bitmap]);
           this.emit(Listener.SELECT_NODE, [bitmap]);
         });
       };
@@ -2848,8 +2848,8 @@ export default class Listener extends Event {
   static SHADOW_NODE = 'SHADOW_NODE';
   static BLUR_NODE = 'BLUR_NODE';
   static COLOR_ADJUST_NODE = 'COLOR_ADJUST_NODE';
-  static REMOVE_NODE = 'REMOVE_NODE';
-  static ADD_NODE = 'ADD_NODE';
+  // static REMOVE_NODE = 'REMOVE_NODE';
+  // static ADD_NODE = 'ADD_NODE';
   static PREV_NODE = 'PREV_NODE';
   static NEXT_NODE = 'NEXT_NODE';
   static POSITION_NODE = 'POSITION_NODE';

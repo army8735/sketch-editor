@@ -140,6 +140,9 @@ export default class Tree {
     if (page) {
       this.init();
     }
+    root.on(Root.PAGE_CHANGED, () => {
+      this.init();
+    });
 
     listener.on(Listener.HOVER_NODE, (node: Node) => {
       this.hover(node);
