@@ -3,6 +3,9 @@ import Node from './Node';
 import { Props } from '../format';
 import { StyleUnit } from '../style/define';
 import { RefreshLevel } from '../refresh/level';
+import { calPoint, identity, multiply, multiplyTranslate } from '../math/matrix';
+import { calMatrixByOrigin, calRotateZ } from '../style/transform';
+import { calSize } from '../style/css';
 
 const EPS = 1e-4;
 
@@ -36,9 +39,39 @@ abstract class AbstractGroup extends Container {
     if (Math.abs(dx1) > EPS
       || Math.abs(dy1) > EPS
       || Math.abs(dx2) > EPS
-      || Math.abs(dy2) > EPS) {
+      || Math.abs(dy2) > EPS)
+    {
+      const { transformOrigin, rotateZ } = this.computedStyle;
+      if (rotateZ) {
+        // 先计算左上原点/右下点逆旋转后的位置作为定位参考
+        const i1 = identity();
+        calRotateZ(i1, -rotateZ);
+        let m1 = calMatrixByOrigin(i1, transformOrigin[0], transformOrigin[1]);
+        m1 = multiply(this.matrix, m1);
+        const p1 = calPoint({ x: 0, y: 0 }, m1);
+        const p2 = calPoint({ x: this.width, y: this.height }, m1);
+        const nw = this.width - dx1 + dx2;
+        const nh = this.height - dy1 + dy2;
+        // 计算新的transformOrigin，目前都是中心点
+        const [cx, cy] = this.style.transformOrigin.map((item, i) => {
+          return calSize(item, i ? nh : nw);
+        });
+        // 用新的tfo逆旋转回去，位置可能发生了位移
+        const i = identity();
+        if (dx1 || dy1) {
+          multiplyTranslate(i, dx1, dy1);
+        }
+        calRotateZ(i, -rotateZ);
+        let m2 = calMatrixByOrigin(i, cx, cy);
+        m2 = multiply(this.matrix, m2);
+        const n1 = calPoint({ x: 0, y: 0 }, m2);
+        const n2 = calPoint({ x: nw, y: nh }, m2);
+        this.adjustPosAndSizeSelf(n1.x - p1.x, n1.y - p1.y, n2.x - p2.x, n2.y - p2.y);
+      }
+      else {
+        this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
+      }
       // 先调整自己，之后尺寸更新用新wh
-      this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
       width = this.width;
       height = this.height;
       // 再改孩子的，后面孩子计算要根据新的值，无需递归向下

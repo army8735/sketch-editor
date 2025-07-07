@@ -67,14 +67,14 @@ class Container<T extends Node = Node> extends Node {
     }
   }
 
-  // 冒泡的didMount
+  // 冒泡的didMount，因为group尺寸、矢量点归一化都需要冒泡进行
   override didMount() {
-    super.didMount();
     const { children } = this;
     const len = children.length;
     for (let i = 0; i < len; i++) {
       children[i].didMount();
     }
+    super.didMount();
   }
 
   override willUnmount() {

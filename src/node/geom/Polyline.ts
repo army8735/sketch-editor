@@ -94,7 +94,11 @@ class Polyline extends Geom {
       return;
     }
     // 检查真正有变化才继续，位置相对于自己原本位置为原点
-    if (Math.abs(dx1) > EPS || Math.abs(dy1) > EPS || Math.abs(dx2) > EPS || Math.abs(dy2) > EPS) {
+    if (Math.abs(dx1) > EPS
+      || Math.abs(dy1) > EPS
+      || Math.abs(dx2) > EPS
+      || Math.abs(dy2) > EPS)
+    {
       const { style, computedStyle } = this;
       const { transformOrigin, rotateZ } = computedStyle;
       // 旋转特殊考虑，计算新的和原始的逆旋转还原后的差值
