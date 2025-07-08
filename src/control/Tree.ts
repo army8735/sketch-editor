@@ -208,85 +208,85 @@ export default class Tree {
       addNode(node);
     });
 
-    listener.on([Listener.GROUP_NODE, Listener.BOOL_GROUP_NODE], (groups: Group[], nodes: Node[][]) => {
-      groups.forEach((group, i) => {
-        const res = genNodeTree(group, group.struct.lv, true);
-        const dd = document.createElement('dd');
-        dd.appendChild(res);
-        nodes[i].slice(0).reverse().forEach(item => {
-          const uuid = item.uuid;
-          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-          if (dl) {
-            // 本身lv变化
-            const lv = item.struct.lv;
-            dl.setAttribute('lv', lv.toString());
-            const dt2 = dl.querySelector('dt')!;
-            dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
-            const list = dl.querySelectorAll('dl');
-            // 所有子节点
-            list.forEach(item => {
-              const dt3 = item.firstChild as HTMLElement;
-              const lv = item.getAttribute('lv')!;
-              item.setAttribute('lv', (+lv + 1).toString());
-              dt3.style.paddingLeft = (+lv + 1 - 3) * config.treeLvPadding + 'px';
-            });
-            res.appendChild(dl.parentElement!);
-          }
-        });
-        const prev = group.prev?.uuid;
-        if (prev) {
-          const dl = dom.querySelector(`dl[uuid="${prev}"]`);
-          if (dl) {
-            const sibling = dl.parentElement!;
-            sibling.before(dd);
-          }
-        }
-        else {
-          const uuid = group.parent!.uuid;
-          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-          if (dl) {
-            dl.appendChild(dd);
-          }
-        }
-      });
-    });
-
-    listener.on([Listener.UN_GROUP_NODE, Listener.UN_BOOL_GROUP_NODE], (nodes: Node[][], groups: Group[]) => {
-      nodes.forEach((items, i) => {
-        const uuid = groups[i].uuid;
-        if (uuid) {
-          const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
-          if (dl) {
-            const dd = dl.parentElement!;
-            const fragment = document.createDocumentFragment();
-            items.slice(0).reverse().forEach(item => {
-              const uuid2 = item.uuid;
-              if (uuid2) {
-                const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
-                if (dl2) {
-                  // 本身lv变化
-                  const lv = item.struct.lv;
-                  dl2.setAttribute('lv', lv.toString());
-                  const dt2 = dl2.querySelector('dt')!;
-                  dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
-                  const list = dl2.querySelectorAll('dl');
-                  // 所有子节点
-                  list.forEach(item => {
-                    const dt3 = item.firstChild as HTMLElement;
-                    const lv = item.getAttribute('lv')!;
-                    item.setAttribute('lv', (+lv - 1).toString());
-                    dt3.style.paddingLeft = (+lv - 1 - 3) * config.treeLvPadding + 'px';
-                  });
-                  fragment.appendChild(dl2.parentElement!);
-                }
-              }
-            });
-            dd.before(fragment);
-            dd.remove();
-          }
-        }
-      });
-    });
+    // listener.on([Listener.GROUP_NODE, Listener.BOOL_GROUP_NODE], (groups: Group[], nodes: Node[][]) => {
+    //   groups.forEach((group, i) => {
+    //     const res = genNodeTree(group, group.struct.lv, true);
+    //     const dd = document.createElement('dd');
+    //     dd.appendChild(res);
+    //     nodes[i].slice(0).reverse().forEach(item => {
+    //       const uuid = item.uuid;
+    //       const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+    //       if (dl) {
+    //         // 本身lv变化
+    //         const lv = item.struct.lv;
+    //         dl.setAttribute('lv', lv.toString());
+    //         const dt2 = dl.querySelector('dt')!;
+    //         dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+    //         const list = dl.querySelectorAll('dl');
+    //         // 所有子节点
+    //         list.forEach(item => {
+    //           const dt3 = item.firstChild as HTMLElement;
+    //           const lv = item.getAttribute('lv')!;
+    //           item.setAttribute('lv', (+lv + 1).toString());
+    //           dt3.style.paddingLeft = (+lv + 1 - 3) * config.treeLvPadding + 'px';
+    //         });
+    //         res.appendChild(dl.parentElement!);
+    //       }
+    //     });
+    //     const prev = group.prev?.uuid;
+    //     if (prev) {
+    //       const dl = dom.querySelector(`dl[uuid="${prev}"]`);
+    //       if (dl) {
+    //         const sibling = dl.parentElement!;
+    //         sibling.before(dd);
+    //       }
+    //     }
+    //     else {
+    //       const uuid = group.parent!.uuid;
+    //       const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+    //       if (dl) {
+    //         dl.appendChild(dd);
+    //       }
+    //     }
+    //   });
+    // });
+    //
+    // listener.on([Listener.UN_GROUP_NODE, Listener.UN_BOOL_GROUP_NODE], (nodes: Node[][], groups: Group[]) => {
+    //   nodes.forEach((items, i) => {
+    //     const uuid = groups[i].uuid;
+    //     if (uuid) {
+    //       const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
+    //       if (dl) {
+    //         const dd = dl.parentElement!;
+    //         const fragment = document.createDocumentFragment();
+    //         items.slice(0).reverse().forEach(item => {
+    //           const uuid2 = item.uuid;
+    //           if (uuid2) {
+    //             const dl2 = dom.querySelector(`dl[uuid="${uuid2}"]`);
+    //             if (dl2) {
+    //               // 本身lv变化
+    //               const lv = item.struct.lv;
+    //               dl2.setAttribute('lv', lv.toString());
+    //               const dt2 = dl2.querySelector('dt')!;
+    //               dt2.style.paddingLeft = (lv - 3) * config.treeLvPadding + 'px';
+    //               const list = dl2.querySelectorAll('dl');
+    //               // 所有子节点
+    //               list.forEach(item => {
+    //                 const dt3 = item.firstChild as HTMLElement;
+    //                 const lv = item.getAttribute('lv')!;
+    //                 item.setAttribute('lv', (+lv - 1).toString());
+    //                 dt3.style.paddingLeft = (+lv - 1 - 3) * config.treeLvPadding + 'px';
+    //               });
+    //               fragment.appendChild(dl2.parentElement!);
+    //             }
+    //           }
+    //         });
+    //         dd.before(fragment);
+    //         dd.remove();
+    //       }
+    //     }
+    //   });
+    // });
 
     listener.on(Listener.MASK_NODE, (nodes: Node[]) => {
       nodes.forEach(item => {
