@@ -3,7 +3,7 @@ import Node from './Node';
 import { Props } from '../format';
 import { StyleUnit } from '../style/define';
 import { RefreshLevel } from '../refresh/level';
-import { calPoint, identity, multiply, multiplyTranslate } from '../math/matrix';
+import { calPoint, identity, multiply, multiplyScaleX, multiplyScaleY, multiplyTranslate } from '../math/matrix';
 import { calMatrixByOrigin, calRotateZ } from '../style/transform';
 import { calSize } from '../style/css';
 
@@ -41,15 +41,11 @@ abstract class AbstractGroup extends Container {
       || Math.abs(dx2) > EPS
       || Math.abs(dy2) > EPS)
     {
-      const { transformOrigin, rotateZ } = this.computedStyle;
-      if (rotateZ) {
-        // 先计算左上原点/右下点逆旋转后的位置作为定位参考
-        const i1 = identity();
-        calRotateZ(i1, -rotateZ);
-        let m1 = calMatrixByOrigin(i1, transformOrigin[0], transformOrigin[1]);
-        m1 = multiply(this.matrix, m1);
-        const p1 = calPoint({ x: 0, y: 0 }, m1);
-        const p2 = calPoint({ x: this.width, y: this.height }, m1);
+      const { left, top, translateX, translateY, rotateZ, scaleX, scaleY } = this.computedStyle;
+      if (rotateZ || scaleX !== 1 || scaleY !== 1) {
+        // 先计算左上原点/右下点原始位置作为定位参考
+        const p1 = { x: left + translateX, y: top + translateY };
+        const p2 = { x: p1.x + this.width, y: p1.y + this.height };
         const nw = this.width - dx1 + dx2;
         const nh = this.height - dy1 + dy2;
         // 计算新的transformOrigin，目前都是中心点
@@ -61,7 +57,14 @@ abstract class AbstractGroup extends Container {
         if (dx1 || dy1) {
           multiplyTranslate(i, dx1, dy1);
         }
+        // 和正常的calMatrix顺序反了过来，因为在flip+rotate的情况下模拟逆运算，先逆旋转再逆flip
         calRotateZ(i, -rotateZ);
+        if (scaleX === -1) {
+          multiplyScaleX(i, -1);
+        }
+        if (scaleY === -1) {
+          multiplyScaleY(i, -1);
+        }
         let m2 = calMatrixByOrigin(i, cx, cy);
         m2 = multiply(this.matrix, m2);
         const n1 = calPoint({ x: 0, y: 0 }, m2);

@@ -1,32 +1,17 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { Point, JNode, Override, PolylineProps, TAG_NAME, JPoint } from '../../format';
-import CanvasCache from '../../refresh/CanvasCache';
-import { canvasPolygon } from '../../refresh/paint';
-import { calSize, color2rgbaInt, color2rgbaStr, normalizePoints } from '../../style/css';
+import { Point, Override, PolylineProps, TAG_NAME, JPoint } from '../../format';
+import { calSize, color2rgbaInt, normalizePoints } from '../../style/css';
 import {
-  ComputedGradient,
-  ComputedPattern,
   CURVE_MODE,
-  FILL_RULE,
-  GRADIENT,
-  MIX_BLEND_MODE,
-  PATTERN_FILL_TYPE,
-  STROKE_LINE_CAP,
-  STROKE_LINE_JOIN,
-  STROKE_POSITION,
   StyleUnit,
 } from '../../style/define';
-import { getConic, getLinear, getRadial } from '../../style/gradient';
-import inject, { OffScreen } from '../../util/inject';
 import { clone } from '../../util/type';
 import Geom from './Geom';
-import { RefreshLevel } from '../../refresh/level';
-import { getCanvasGCO } from '../../style/mbm';
 import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
-import { calPoint, identity, multiply, multiplyTranslate } from '../../math/matrix';
+import { calPoint, identity, multiply, multiplyScaleX, multiplyScaleY, multiplyTranslate } from '../../math/matrix';
 import { calMatrixByOrigin, calRotateZ } from '../../style/transform';
 
 const EPS = 1e-4;
@@ -100,16 +85,11 @@ class Polyline extends Geom {
       || Math.abs(dy2) > EPS)
     {
       const { style, computedStyle } = this;
-      const { transformOrigin, rotateZ } = computedStyle;
-      // 旋转特殊考虑，计算新的和原始的逆旋转还原后的差值
-      if (rotateZ) {
-        // 先计算定位2点逆旋转的位置
-        const i1 = identity();
-        calRotateZ(i1, -rotateZ);
-        let m1 = calMatrixByOrigin(i1, transformOrigin[0], transformOrigin[1]);
-        m1 = multiply(this.matrix, m1);
-        const p1 = calPoint({ x: 0, y: 0 }, m1);
-        const p2 = calPoint({ x: this.width, y: this.height }, m1);
+      const { left, top, translateX, translateY, rotateZ, scaleX, scaleY } = computedStyle;
+      if (rotateZ || scaleX !== 1 || scaleY !== 1) {
+        // 先计算左上原点/右下点原始位置作为定位参考
+        const p1 = { x: left + translateX, y: top + translateY };
+        const p2 = { x: p1.x + this.width, y: p1.y + this.height };
         const nw = rect[2] - rect[0];
         const nh = rect[3] - rect[1];
         // 计算新的transformOrigin，目前都是中心点
@@ -122,6 +102,12 @@ class Polyline extends Geom {
           multiplyTranslate(i, rect[0], rect[1]);
         }
         calRotateZ(i, -rotateZ);
+        if (scaleX === -1) {
+          multiplyScaleX(i, -1);
+        }
+        if (scaleY === -1) {
+          multiplyScaleY(i, -1);
+        }
         let m2 = calMatrixByOrigin(i, cx, cy);
         m2 = multiply(this.matrix, m2);
         const n1 = calPoint({ x: 0, y: 0 }, m2);

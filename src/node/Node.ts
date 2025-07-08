@@ -753,7 +753,7 @@ class Node extends Event {
           multiplyScaleY(transform, scaleY);
         }
       }
-      if (isE(transform)) {
+      if (isE(transform) && rotateZ) {
         calRotateZ(transform, rotateZ);
       }
       else if (rotateZ) {
