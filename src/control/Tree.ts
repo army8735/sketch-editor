@@ -1210,7 +1210,8 @@ export default class Tree {
       if (dt) {
         let dl = dt.parentElement;
         while (dl) {
-          if (dl.nodeName === 'DL') {
+          // 自动向上展开，自己不展开
+          if (dl.nodeName === 'DL' && dl !== dt.parentElement) {
             dl.classList.add('expand');
             const uuid = dl.getAttribute('uuid');
             if (uuid) {
