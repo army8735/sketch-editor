@@ -8,11 +8,11 @@ import {
   multiplyScaleY
 } from '../math/matrix';
 import Container from '../node/Container';
-import Group from '../node/Group';
+import AbstractGroup from '../node/AbstractGroup';
 import Node from '../node/Node';
 import Root from '../node/Root';
 import { ComputedStyle, StyleUnit } from '../style/define';
-import { PageProps, ResizeStyle } from '../format';
+import { ResizeStyle } from '../format';
 import { d2r, r2d } from '../math/geom';
 import Page from '../node/Page';
 import { calMatrixByOrigin } from '../style/transform';
@@ -38,7 +38,7 @@ function moveTo(nodes: Node[], target: Node, position = POSITION.APPEND) {
   const parent = target.parent;
   const artBoard = target.artBoard;
   // 可能移动的parent就是本来的parent，只是children顺序变更，防止迁移后remove造成尺寸变化，计算失效
-  if (parent instanceof Group) {
+  if (parent instanceof AbstractGroup) {
     parent.fixedPosAndSize = true;
   }
   for (let i = 0, len = nodes.length; i < len; i++) {
@@ -75,7 +75,7 @@ function moveTo(nodes: Node[], target: Node, position = POSITION.APPEND) {
     }
     item.artBoard = artBoard;
   }
-  if (parent instanceof Group) {
+  if (parent instanceof AbstractGroup) {
     parent.fixedPosAndSize = false;
     // 手动检查尺寸变化
     parent.checkPosSizeSelf();
@@ -100,7 +100,7 @@ export function moveBefore(nodes: Node[], target: Node) {
 
 function getMatrixNoFlip(node: Node) {
   const { scaleX, scaleY, rotateZ, transformOrigin: tfo } = node.computedStyle;
-  if (scaleX >= 0 || scaleY >= 0) {
+  if (scaleX !== -1 || scaleY !== -1) {
     return node.matrix;
   }
   const m = identity();
@@ -118,7 +118,7 @@ export function getMatrixOnPage(node: Node, ignoreFlip = false) {
   if (!node.page) {
     throw new Error('Node not on a Page');
   }
-  if (node.isPage && node instanceof Page) {
+  if (node instanceof Page) {
     return identity();
   }
   // 从自己开始向上到page，累计matrix
@@ -143,7 +143,7 @@ export function getFlipOnPage(node: Node) {
   if (!node.page) {
     throw new Error('Node not on a Page');
   }
-  if (node.isPage && node instanceof Page) {
+  if (node instanceof Page) {
     return { x: 1, y: 1 };
   }
   let x = node.computedStyle.scaleX, y = node.computedStyle.scaleY;
@@ -158,94 +158,158 @@ export function getFlipOnPage(node: Node) {
   return { x, y };
 }
 
+export function getRotateOnPage(matrix: Float64Array, flip: { x: number, y: number }) {
+  // flipXY等同于无flip+180°
+  if (flip.x === -1 && flip.y === -1) {
+    if (matrix[1] < 0) {
+      return Math.PI - Math.acos(matrix[0]);
+    }
+    return Math.acos(matrix[0]) + Math.PI;
+  }
+  // flipX
+  if (flip.x === -1) {
+    if (matrix[1] < 0) {
+      return -Math.acos(-matrix[0]);
+    }
+    return Math.acos(-matrix[0]);
+  }
+  // flipY
+  if (flip.y === -1) {
+    if (matrix[1] > 0) {
+      return -Math.acos(matrix[0]);
+    }
+    return Math.acos(matrix[0]);
+  }
+  // 无flip，第3/4象限符号特殊判断
+  if (matrix[1] < 0) {
+    return -Math.acos(matrix[0]);
+  }
+  return Math.acos(matrix[0]);
+}
+
 /**
  * 将node迁移到parent下的尺寸和位置，并不是真正移动dom，移动权和最终位置交给外部控制
- * 记录下node和parent相对于page的坐标旋转镜像，然后转换style到以parent为新父元素下并保持单位不变
- * 1. parent需要保留旋转镜像，并记录下来相对于page的旋转rp，和自身的镜像scaleX/scaleY（非相对于page）
- * 2. node移动前需算出相对于page的旋转和镜像，记录为rn和flipN
- * 3. node要移动到parent下，旋转是相对于parent的旋转，因此本身旋转角度是r=rn-rp，先转至相对于parent无旋转即-r
- * 4. 如果parent自身有镜像scaleX/scaleY，node移动后等于跟随其镜像，移动前node需要反向下否则会计算显示错误
- * 5. 计算node原点相对于parent原点的left/top，用向量投影算，再用向量夹角算正负号
+ * 1. 先计算出node和parent的各自镜像情况flipN和flipP，还有各自旋转角度rotateN和rotateP
+ * 2. 将node的镜像情况假设为和parent一致，并且旋转也一致，这时候左上原点的位置距离就是布局的left/top
+ * 3. node最终是要append到parent下的，因此flip的真正设置要考虑flipP，需要保持和之前一致
+ * 4. 同样rotateZ也是，在parent下的旋转能计算出来，和之前的做对比进行差值矫正
  */
-export function migrate(parent: Node, node: Node) {
-  if (node.parent === parent) {
+export function migrate(parent: Container, node: Node) {
+  if (node.parent === parent || node === parent) {
     return;
   }
-  const width = parent.width;
-  const height = parent.height;
-  // 先求得parent的matrix，旋转和左上顶点的2条边的矢量，要特殊忽略掉parent的镜像，用模拟反向镜像做
-  const mp = getMatrixOnPage(parent);
-  const { scaleX, scaleY } = parent.computedStyle;
-  let rp = 0;
-  // parent自身有镜像的话，旋转角度计算还得排除掉
-  if (scaleX === -1) {
-    const i = identity();
-    multiplyScaleX(i, scaleX);
-    const tfo = parent.computedStyle.transformOrigin;
-    const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
-    const m = multiply(mp, t);
-    rp = Math.acos(m[0]);
+  // 合法校验，不能反过来parent是node的子节点
+  if (node instanceof Container) {
+    let p = parent.parent;
+    while (p) {
+      if (p === node) {
+        return;
+      }
+      p = p.parent;
+    }
+  }
+  const widthP = parent.width;
+  const heightP = parent.height;
+  // 获取两个节点基于page的flip和matrix，所有计算基于此
+  const flipP = getFlipOnPage(parent);
+  const flipN = getFlipOnPage(node);
+  // console.log('flipP', flipP, 'flipN', flipN);
+  const matrixP = getMatrixOnPage(parent);
+  const matrixNP = getMatrixOnPage(node.parent!);
+  const matrixN = getMatrixOnPage(node); // 节点实际本身的，末尾要用不能变
+  let matrixN2 = matrixN; // 下面为了计算虚拟的
+  // console.log('matrixP', matrixP.join(','), 'matrixN', matrixN.join(','));
+  const rotateP = getRotateOnPage(matrixP, flipP);
+  // 两个节点的旋转计算需要考虑flip，相同时不需考虑变换，不相同需以parent为基准，node需保持一致
+  if (flipP.x === flipN.x && flipP.y === flipN.y) {
   }
   else {
-    rp = Math.acos(mp[0]);
+    const i = identity();
+    const { left, top, translateX, translateY, scaleX, scaleY, rotateZ, transformOrigin } = node.computedStyle;
+    i[12] = left + translateX;
+    i[13] = top + translateY;
+    if (scaleX !== 1) {
+      multiplyScaleX(i, scaleX);
+    }
+    if (scaleY !== 1) {
+      multiplyScaleY(i, scaleY);
+    }
+    // 不同时假设进行一次镜像保持一致
+    if (flipP.x !== flipN.x) {
+      multiplyScaleX(i, -1);
+    }
+    if (flipP.y !== flipN.y) {
+      multiplyScaleY(i, -1);
+    }
+    if (rotateZ) {
+      multiplyRotateZ(i, d2r(rotateZ));
+    }
+    const tfo = transformOrigin;
+    const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
+    matrixN2 = multiply(matrixNP, t);
   }
-  const p0 = calPoint({ x: 0, y: 0 }, mp);
-  const p1 = calPoint({ x: parent.width, y: 0 }, mp);
-  const p2 = calPoint({ x: 0, y: parent.height }, mp);
-  const v1 = { x: p1.x - p0.x, y: p1.y - p0.y };
-  const v2 = { x: p2.x - p0.x, y: p2.y - p0.y };
-  // console.log('v1 v2', v1, v2);
-  // 再求得node的matrix，并相对于parent取消旋转和镜像
-  const i = identity();
-  const flipN = getFlipOnPage(node);
-  if (flipN.x !== 1) {
-    multiplyScaleX(i, flipN.x);
+  const rotateN = getRotateOnPage(matrixN2, flipP);
+  let rotateDiff = rotateP - rotateN;
+  // console.log('rotateP', r2d(rotateP), 'rotateN', r2d(rotateN), 'rotateDiff', r2d(rotateDiff));
+  // 知道rotate差异之后，需要旋转node到和parent一致后求布局坐标
+  if (rotateDiff) {
+    const i = identity();
+    multiplyRotateZ(i, rotateDiff);
+    const tfo = node.computedStyle.transformOrigin;
+    const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
+    matrixN2 = multiply(matrixN2, t);
   }
-  if (flipN.y !== 1) {
-    multiplyScaleX(i, flipN.y);
-  }
-  const mn = getMatrixOnPage(node, true);
-  const rn = Math.acos(mn[0]);
-  const r = rn - rp;
-  // console.log(r2d(rp), r2d(rn), r2d(r))
-  multiplyRotateZ(i, -r);
-  // 如果parent有镜像，node要先跟随它，否则迁移后会显示反了
-  if (scaleX === -1) {
-    multiplyScaleX(i, scaleX);
-  }
-  if (scaleY === -1) {
-    multiplyScaleY(i, scaleY);
-  }
-  const tfo = node.computedStyle.transformOrigin;
-  const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
-  const m = multiply(mn, t);
-  // node顶点和parent的顶点组成的向量，在2条矢量上的投影距离就是left和top，要考虑去除如Text自身的translate
-  const p = calPoint({ x: -node.computedStyle.translateX, y: -node.computedStyle.translateY }, m);
-  // console.log(p);
-  const v = { x: p.x - p0.x, y: p.y - p0.y };
-  // console.log('v', v);
-  const v3 = projection(v.x, v.y, v1.x, v1.y);
-  const v4 = projection(v.x, v.y, v2.x, v2.y);
-  // console.log('v3 v4', v3, v4);
-  // 看这个向量和那2条矢量之间的夹角，判断x/y的正负号
-  let x = length(v3.x, v3.y);
-  let y = length(v4.x, v4.y);
-  // console.log(x, y);
-  const angle1 = includedAngle(v.x, v.y, v1.x, v1.y);
-  const angle2 = includedAngle(v.x, v.y, v2.x, v2.y);
+  // console.log('matrixN2', matrixN2.join(','))
+  // console.log('rotateDiff2', r2d(rotateDiff));
+  // 求得parent的原点和两条相邻边坐标，组成2个矢量
+  const pointP0 = calPoint({ x: 0, y: 0 }, matrixP);
+  const pointP1 = calPoint({ x: widthP, y: 0 }, matrixP);
+  const pointP2 = calPoint({ x: 0, y: heightP }, matrixP);
+  // console.log('pointP0', pointP0, 'pointP1', pointP1, 'pointP2', pointP2)
+  const vectorP1 = { x: pointP1.x - pointP0.x, y: pointP1.y - pointP0.y };
+  const vectorP2 = { x: pointP2.x - pointP0.x, y: pointP2.y - pointP0.y };
+  // console.log('vectorP1', vectorP1, 'vectorP2', vectorP2);
+  // node和parent原点组成矢量
+  const pointN0 = calPoint({ x: 0, y: 0 }, matrixN2);
+  // console.log('pointN0', pointN0)
+  const vectorN0 = { x: pointN0.x - pointP0.x, y: pointN0.y - pointP0.y };
+  // console.log('vectorN0', vectorN0);
+  // 求vn0在vp1/vp2上的投影，即获得left/top距离
+  const prjX = projection(vectorN0.x, vectorN0.y, vectorP1.x, vectorP1.y);
+  const prjY = projection(vectorN0.x, vectorN0.y, vectorP2.x, vectorP2.y);
+  let left = length(prjX.x, prjX.y);
+  let top = length(prjY.x, prjY.y);
+  // 还要看向量间的夹角判断正负号，因为node原点可能在parent外，这时left/top要变成负
+  const angle1 = includedAngle(vectorN0.x, vectorN0.y, vectorP1.x, vectorP1.y);
+  const angle2 = includedAngle(vectorN0.x, vectorN0.y, vectorP2.x, vectorP2.y);
   const rt = Math.PI * 0.5;
   if (angle1 <= rt && angle2 <= rt) {}
   else if (angle1 <= rt) {
-    y = -y;
+    top = -top;
   }
   else if (angle2 <= rt) {
-    x = -x;
+    left = -left;
   }
   else {
-    x = -x;
-    y = -y;
+    left = -left;
+    top = -top;
   }
-  // console.log(x, y);
+  // console.log('left', left, 'top', top);
+  // 调试代码，渲染检查node假设调整后是否和parent的flip、rotateZ一致
+  // if (flipN.x !== flipP.x) {
+  //   node.updateStyle({
+  //     scaleX: flipN.x * -1,
+  //   });
+  // }
+  // if (flipN.y !== flipP.y) {
+  //   node.updateStyle({
+  //     scaleY: flipN.y * -1,
+  //   });
+  // }
+  // node.updateStyle({
+  //   rotateZ: node.computedStyle.rotateZ + r2d(rotateDiff),
+  // });
+  // return;
   const style = node.style;
   // 节点的尺寸约束模式保持不变，反向计算出当前的值应该是多少，根据first的父节点当前状态，和转化那里有点像
   const leftConstraint = style.left.u === StyleUnit.PX;
@@ -254,12 +318,11 @@ export function migrate(parent: Node, node: Node) {
   const bottomConstraint = style.bottom.u === StyleUnit.PX;
   const widthConstraint = style.width.u === StyleUnit.PX;
   const heightConstraint = style.height.u === StyleUnit.PX;
-  // left
   if (leftConstraint) {
-    style.left.v = x;
+    style.left.v = left;
     // left+right忽略width
     if (rightConstraint) {
-      style.right.v = width - x - node.width;
+      style.right.v = widthP - left - node.width;
     }
     // left+width
     else if (widthConstraint) {
@@ -267,19 +330,19 @@ export function migrate(parent: Node, node: Node) {
     }
     // 仅left，right是百分比忽略width
     else {
-      style.right.v = ((width - x - node.width) * 100) / width;
+      style.right.v = ((widthP - left - node.width) * 100) / widthP;
     }
   }
   // right
   else if (rightConstraint) {
-    style.right.v = width - x - node.width;
+    style.right.v = widthP - left - node.width;
     // right+width
     if (widthConstraint) {
       // 默认left就是auto啥也不做
     }
     // 仅right，left是百分比忽略width
     else {
-      style.left.v = ((width - style.right.v - node.width) * 100) / width;
+      style.left.v = ((widthP - style.right.v - node.width) * 100) / widthP;
     }
   }
   // 左右都不固定
@@ -289,20 +352,19 @@ export function migrate(parent: Node, node: Node) {
       widthConstraint ||
       (style.left.u === StyleUnit.PERCENT && style.right.u === StyleUnit.AUTO)
     ) {
-      style.left.v = x * 100 / width;
+      style.left.v = left * 100 / widthP;
     }
     // 左右皆为百分比
     else {
-      style.left.v = x * 100 / width;
-      style.right.v = ((width - x - node.width) * 100) / width;
+      style.left.v = left * 100 / widthP;
+      style.right.v = ((widthP - left - node.width) * 100) / widthP;
     }
   }
-  // top
   if (topConstraint) {
-    style.top.v = y;
+    style.top.v = top;
     // top+bottom忽略height
     if (bottomConstraint) {
-      style.bottom.v = height - y - node.height;
+      style.bottom.v = heightP - top - node.height;
     }
     // top+height
     else if (heightConstraint) {
@@ -310,19 +372,19 @@ export function migrate(parent: Node, node: Node) {
     }
     // 仅top，bottom是百分比忽略height
     else {
-      style.bottom.v = ((height - y - node.height) * 100) / height;
+      style.bottom.v = ((heightP - top - node.height) * 100) / heightP;
     }
   }
   // bottom
   else if (bottomConstraint) {
-    style.bottom.v = height - y - node.height;
+    style.bottom.v = heightP - top - node.height;
     // bottom+height
     if (heightConstraint) {
       // 默认top就是auto啥也不做
     }
     // 仅bottom，top是百分比忽略height
     else {
-      style.top.v = ((height - style.bottom.v - node.height) * 100) / height;
+      style.top.v = ((heightP - style.bottom.v - node.height) * 100) / heightP;
     }
   }
   // 上下都不固定
@@ -332,17 +394,87 @@ export function migrate(parent: Node, node: Node) {
       heightConstraint ||
       (style.top.u === StyleUnit.PERCENT && style.bottom.u === StyleUnit.AUTO)
     ) {
-      style.top.v = y * 100 / height;
+      style.top.v = top * 100 / heightP;
     }
     // 左右皆为百分比
     else {
-      style.top.v = y * 100 / height;
-      style.bottom.v = ((height - y - node.height) * 100) / height;
+      style.top.v = top * 100 / heightP;
+      style.bottom.v = ((heightP - top - node.height) * 100) / heightP;
     }
   }
-  style.rotateZ.v = r2d(r);
-  style.scaleX.v = flipN.x * (scaleX === -1 ? -1 : 1);
-  style.scaleY.v = flipN.y * (scaleY === -1 ? -1 : 1);
+  // 布局结束后，node会append到parent下，此时flip的计算和前面不同，需要保持最终值和原来一致
+  // 而flipN、node自身镜像、flipP有多种组合可能，需分开处理
+  if (flipP.x === -1) {
+    if (flipN.x === -1) {
+      if (style.scaleX.v === -1) {
+        style.scaleX.v *= -1;
+      }
+    }
+    else {
+      if (style.scaleX.v === 1) {
+        style.scaleX.v *= -1;
+      }
+    }
+  }
+  else {
+    if (flipN.x !== -1) {
+      if (style.scaleX.v === -1) {
+        style.scaleX.v *= -1;
+      }
+    }
+    else {
+      if (style.scaleX.v === 1) {
+        style.scaleX.v *= -1;
+      }
+    }
+  }
+  if (flipP.y === -1) {
+    if (flipN.y === -1) {
+      if (style.scaleY.v === -1) {
+        style.scaleY.v *= -1;
+      }
+    }
+    else {
+      if (style.scaleY.v === 1) {
+        style.scaleY.v *= -1;
+      }
+    }
+  }
+  else {
+    if (flipN.y !== -1) {
+      if (style.scaleY.v === -1) {
+        style.scaleY.v *= -1;
+      }
+    }
+    else {
+      if (style.scaleY.v === 1) {
+        style.scaleY.v *= -1;
+      }
+    }
+  }
+  {
+    // 依旧在parent下的旋转角度，和目前的做对比，差值矫正，translate等可以省略不计算
+    const i = identity();
+    const { rotateZ, transformOrigin } = node.computedStyle;
+    if (style.scaleX.v !== 1) {
+      multiplyScaleX(i, style.scaleX.v);
+    }
+    if (style.scaleY.v !== 1) {
+      multiplyScaleY(i, style.scaleY.v);
+    }
+    if (rotateZ) {
+      multiplyRotateZ(i, d2r(rotateZ));
+    }
+    const tfo = transformOrigin;
+    const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
+    const m = multiply(matrixP, t);
+    const r = getRotateOnPage(m, { x : flipP.x * style.scaleX.v, y : flipP.y * style.scaleY.v });
+    const r2 = getRotateOnPage(matrixN, flipN);
+    const diff = r2 - r;
+    // console.log('r', style.rotateZ.v, r2d(r2), r2d(r), r2d(diff));
+    style.rotateZ.v += r2d(diff);
+    style.rotateZ.v = style.rotateZ.v % 360;
+  }
 }
 
 export function sortTempIndex(nodes: Node[]) {
@@ -1372,4 +1504,6 @@ export default {
   getBasicMatrix,
   getBasicInfo,
   toBitmap,
+  getRotateOnPage,
+  getFlipOnPage,
 };

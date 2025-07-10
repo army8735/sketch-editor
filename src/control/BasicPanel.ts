@@ -598,6 +598,7 @@ class BasicPanel extends Panel {
       Listener.FLIP_V_NODE,
       Listener.CONSTRAIN_PROPORTION_NODE,
       Listener.OVERFLOW_NODE,
+      Listener.POSITION_NODE,
     ], (nodes: Node[]) => {
       // 输入的时候，防止重复触发；选择/undo/redo的时候则更新显示
       if (this.silence) {

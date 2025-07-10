@@ -717,7 +717,6 @@ class Node extends Event {
         return calSize(item, i ? this.height : this.width);
       });
       computedStyle.transformOrigin = tfo as [number, number];
-      const { left, top } = computedStyle;
       // 开个口子，直接提供matrix
       if (style.matrix) {
         computedStyle.matrix = style.matrix.v.slice(0);
@@ -728,9 +727,9 @@ class Node extends Event {
       // 一般走这里，特殊将left/top和translate合并一起加到matrix上，这样渲染视为[0, 0]开始
       // karas是不加上但渲染时以left/top为开始
       computedStyle.translateX = calSize(style.translateX, this.width);
-      transform[12] = left + computedStyle.translateX;
+      transform[12] = computedStyle.left + computedStyle.translateX;
       computedStyle.translateY = calSize(style.translateY, this.height);
-      transform[13] = top + computedStyle.translateY;
+      transform[13] = computedStyle.top + computedStyle.translateY;
       const rotateZ = style.rotateZ ? style.rotateZ.v : 0;
       const scaleX = style.scaleX ? style.scaleX.v : 1;
       const scaleY = style.scaleY ? style.scaleY.v : 1;
