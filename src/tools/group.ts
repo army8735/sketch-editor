@@ -67,10 +67,11 @@ export function unGroup(group: AbstractGroup) {
   for (let i = 0, len = children.length; i < len; i++) {
     const item = children[i];
     migrate(parent, item);
-    // 插入到group的后面
+    // 依次插入到group的后面
     target.insertAfter(item);
     target = item;
   }
+  // 尺寸无变化无需checkPosAndSize()
   if (parent instanceof AbstractGroup) {
     parent.fixedPosAndSize = false;
   }

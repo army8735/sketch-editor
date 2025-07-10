@@ -220,12 +220,13 @@ export function migrate(parent: Container, node: Node) {
   let matrixN2 = matrixN; // 下面为了计算虚拟的
   // console.log('matrixP', matrixP.join(','), 'matrixN', matrixN.join(','));
   const rotateP = getRotateOnPage(matrixP, flipP);
+  const computedStyle = node.computedStyle;
   // 两个节点的旋转计算需要考虑flip，相同时不需考虑变换，不相同需以parent为基准，node需保持一致
   if (flipP.x === flipN.x && flipP.y === flipN.y) {
   }
   else {
     const i = identity();
-    const { left, top, translateX, translateY, scaleX, scaleY, rotateZ, transformOrigin } = node.computedStyle;
+    const { left, top, translateX, translateY, scaleX, scaleY, rotateZ, transformOrigin } = computedStyle;
     i[12] = left + translateX;
     i[13] = top + translateY;
     if (scaleX !== 1) {
@@ -255,7 +256,7 @@ export function migrate(parent: Container, node: Node) {
   if (rotateDiff) {
     const i = identity();
     multiplyRotateZ(i, rotateDiff);
-    const tfo = node.computedStyle.transformOrigin;
+    const tfo = computedStyle.transformOrigin;
     const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
     matrixN2 = multiply(matrixN2, t);
   }
@@ -269,8 +270,8 @@ export function migrate(parent: Container, node: Node) {
   const vectorP1 = { x: pointP1.x - pointP0.x, y: pointP1.y - pointP0.y };
   const vectorP2 = { x: pointP2.x - pointP0.x, y: pointP2.y - pointP0.y };
   // console.log('vectorP1', vectorP1, 'vectorP2', vectorP2);
-  // node和parent原点组成矢量
-  const pointN0 = calPoint({ x: 0, y: 0 }, matrixN2);
+  // node和parent原点组成矢量，注意text原点比较特殊
+  const pointN0 = calPoint({ x: -computedStyle.translateX, y: -computedStyle.translateY }, matrixN2);
   // console.log('pointN0', pointN0)
   const vectorN0 = { x: pointN0.x - pointP0.x, y: pointN0.y - pointP0.y };
   // console.log('vectorN0', vectorN0);
@@ -307,7 +308,7 @@ export function migrate(parent: Container, node: Node) {
   //   });
   // }
   // node.updateStyle({
-  //   rotateZ: node.computedStyle.rotateZ + r2d(rotateDiff),
+  //   rotateZ: computedStyle.rotateZ + r2d(rotateDiff),
   // });
   // return;
   const style = node.style;
@@ -455,7 +456,7 @@ export function migrate(parent: Container, node: Node) {
   {
     // 依旧在parent下的旋转角度，和目前的做对比，差值矫正，translate等可以省略不计算
     const i = identity();
-    const { rotateZ, transformOrigin } = node.computedStyle;
+    const { rotateZ, transformOrigin } = computedStyle;
     if (style.scaleX.v !== 1) {
       multiplyScaleX(i, style.scaleX.v);
     }
