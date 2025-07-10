@@ -1120,7 +1120,9 @@ export default class Tree {
           positionCommand.execute();
           listener.history.addCommand(positionCommand);
           listener.emit(Listener.POSITION_NODE, data.map(item => item.node));
-          listener.active(data.map(item => item.node));
+          const nodes = data.map(item => item.node);
+          listener.active(nodes);
+          this.select(nodes);
         }
       }
       dragTarget.forEach(item => {

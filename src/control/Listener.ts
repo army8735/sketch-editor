@@ -2354,6 +2354,7 @@ export default class Listener extends Event {
           && !(c instanceof PointCommand)
           && !(c instanceof ClosedCommand)
           && !(c instanceof FlattenCommand)
+          && !(c instanceof PositionCommand)
         ) {
           this.selected.splice(0);
           this.selected.push(...nodes);
@@ -2522,6 +2523,10 @@ export default class Listener extends Event {
         }
         else if (c instanceof PositionCommand) {
           this.emit(Listener.POSITION_NODE, nodes.slice(0));
+          this.selected.splice(0);
+          this.selected.push(...nodes)
+          this.updateActive();
+          this.emit(Listener.SELECT_NODE, nodes.slice(0));
         }
         else if (c instanceof RichCommand) {
           if (c.type === RichCommand.TEXT_ALIGN) {
