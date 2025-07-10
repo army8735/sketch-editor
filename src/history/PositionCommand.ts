@@ -92,6 +92,9 @@ class PositionCommand extends AbstractCommand {
         const uuid = dl.getAttribute('uuid')!;
         const target = node.root!.refs[uuid] as Container;
         target.appendChild(node);
+        if (target instanceof AbstractGroup) {
+          target.checkPosSizeSelf();
+        }
       }
       else if (sps === 'after') {
         // sel.parentElement!.insertBefore(dd, sel);
@@ -99,6 +102,10 @@ class PositionCommand extends AbstractCommand {
         const uuid = dl.getAttribute('uuid')!;
         const target = node.root!.refs[uuid];
         target.insertAfter(node);
+        const p = target.parent;
+        if (p instanceof AbstractGroup) {
+          p.checkPosSizeSelf();
+        }
       }
       else if (sps === 'before') {
         // const next = sel.nextElementSibling;
@@ -112,6 +119,10 @@ class PositionCommand extends AbstractCommand {
         const uuid = dl.getAttribute('uuid')!;
         const target = node.root!.refs[uuid];
         target.insertAfter(node);
+        const p = target.parent;
+        if (p instanceof AbstractGroup) {
+          p.checkPosSizeSelf();
+        }
       }
     });
     this.update();

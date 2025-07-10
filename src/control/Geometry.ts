@@ -285,8 +285,8 @@ export default class Geometry {
           isControlT = true;
         }
         this.setClonePoints();
-        diff.td = Math.sqrt(Math.pow(p.dspX! - p.dspTx!, 2) + Math.pow(p.dspY! - p.dspTy!, 2));
-        diff.fd = Math.sqrt(Math.pow(p.dspX! - p.dspFx!, 2) + Math.pow(p.dspY! - p.dspFy!, 2));
+        diff.td = Math.sqrt(Math.pow(p.dspX - p.dspTx, 2) + Math.pow(p.dspY - p.dspTy, 2));
+        diff.fd = Math.sqrt(Math.pow(p.dspX - p.dspFx, 2) + Math.pow(p.dspY - p.dspFy, 2));
       }
       // 点panel自己清空顶点，保持编辑态
       else {
@@ -327,12 +327,12 @@ export default class Geometry {
           const pts = this.idxes[i].map(j => {
             const p = item.points[j];
             const c = this.clonePoints[i][j];
-            p.dspX = c.dspX! + dx2;
-            p.dspY = c.dspY! + dy2;
-            p.dspFx = c.dspFx! + dx2;
-            p.dspFy = c.dspFy! + dy2;
-            p.dspTx = c.dspTx! + dx2;
-            p.dspTy = c.dspTy! + dy2;
+            p.dspX = c.dspX + dx2;
+            p.dspY = c.dspY + dy2;
+            p.dspFx = c.dspFx + dx2;
+            p.dspFy = c.dspFy + dy2;
+            p.dspTx = c.dspTx + dx2;
+            p.dspTy = c.dspTy + dy2;
             return p;
           });
           if (pts.length) {
@@ -353,12 +353,12 @@ export default class Geometry {
       else if (isControlF || isControlT) {
         const p = node.points[idx];
         if (isControlF) {
-          p.dspFx = this.clonePoints[nodeIdx][idx].dspFx! + dx2;
-          p.dspFy = this.clonePoints[nodeIdx][idx].dspFy! + dy2;
+          p.dspFx = this.clonePoints[nodeIdx][idx].dspFx + dx2;
+          p.dspFy = this.clonePoints[nodeIdx][idx].dspFy + dy2;
         }
         else {
-          p.dspTx = this.clonePoints[nodeIdx][idx].dspTx! + dx2;
-          p.dspTy = this.clonePoints[nodeIdx][idx].dspTy! + dy2;
+          p.dspTx = this.clonePoints[nodeIdx][idx].dspTx + dx2;
+          p.dspTy = this.clonePoints[nodeIdx][idx].dspTy + dy2;
         }
         // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
         if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -367,19 +367,19 @@ export default class Geometry {
             if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
               ratio = diff.fd / diff.td;
             }
-            const dx = p.dspFx! - p.dspX!;
-            const dy = p.dspFy! - p.dspY!;
-            p.dspTx = p.dspX! - dx * ratio;
-            p.dspTy = p.dspY! - dy * ratio;
+            const dx = p.dspFx - p.dspX;
+            const dy = p.dspFy - p.dspY;
+            p.dspTx = p.dspX - dx * ratio;
+            p.dspTy = p.dspY - dy * ratio;
           }
           else {
             if (p.curveMode === CURVE_MODE.ASYMMETRIC) {
               ratio = diff.fd / diff.td;
             }
-            const dx = p.dspTx! - p.dspX!;
-            const dy = p.dspTy! - p.dspY!;
-            p.dspFx = p.dspX! - dx * ratio;
-            p.dspFy = p.dspY! - dy * ratio;
+            const dx = p.dspTx - p.dspX;
+            const dy = p.dspTy - p.dspY;
+            p.dspFx = p.dspX - dx * ratio;
+            p.dspFy = p.dspY - dy * ratio;
           }
         }
         getPointsAbsByDsp(node, p);
@@ -466,7 +466,7 @@ export default class Geometry {
       isVt = isControlF = isControlT = isMove = false;
     });
 
-    // 侦听在path上的移动，高亮当前path以及投影点
+    // 侦听在path上的移动，高亮当前path以及投影点，范围一定在panel内
     let pathIdx = -1;
     let pj: HTMLElement;
     panel.addEventListener('mouseover', (e) => {
