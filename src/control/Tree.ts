@@ -1122,7 +1122,6 @@ export default class Tree {
           listener.emit(Listener.POSITION_NODE, data.map(item => item.node));
           const nodes = data.map(item => item.node);
           listener.active(nodes);
-          this.select(nodes);
         }
       }
       dragTarget.forEach(item => {
