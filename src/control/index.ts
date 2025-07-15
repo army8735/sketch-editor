@@ -17,6 +17,7 @@ import ShadowPanel from './ShadowPanel';
 import BlurPanel from './BlurPanel';
 import ColorAdjustPanel from './ColorAdjustPanel';
 import TintPanel from './TintPanel';
+import ExportPanel from './ExportPanel';
 import Zoom from './Zoom';
 import picker from './picker';
 import contextMenu from './contextMenu';
@@ -79,6 +80,9 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener, opts
   const tintPanel = new TintPanel(root, dom, listener);
   tintPanel.show(listener.selected);
 
+  const exportPanel = new ExportPanel(root, dom, listener);
+  exportPanel.show(listener.selected);
+
   return {
     alignPanel,
     basicPanel,
@@ -90,6 +94,8 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener, opts
     shadowPanel,
     blurPanel,
     colorAdjustPanel,
+    tintPanel,
+    exportPanel,
   };
 }
 
@@ -126,6 +132,7 @@ export default {
   AlignPanel,
   ColorAdjustPanel,
   TintPanel,
+  ExportPanel,
   Zoom,
   picker,
   contextMenu,

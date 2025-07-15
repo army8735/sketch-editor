@@ -2,6 +2,7 @@ import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import JSZip from 'jszip';
 import { color2rgbaStr } from '../style/css';
 import {
+  ExportOptions,
   JArtBoard,
   JBitmap,
   JFile,
@@ -251,6 +252,15 @@ async function convertItem(
   const isExpanded =
     layer.layerListExpandedType === SketchFormat.LayerListExpanded.Expanded;
   const constrainProportions = layer.frame.constrainProportions;
+  // 导出配置
+  const exportOptions = {
+    exportFormats: layer.exportOptions?.exportFormats?.map(item => {
+      return {
+        fileFormat: item.fileFormat || 'png',
+        scale: item.scale || 1,
+      };
+    }) || [],
+  } as ExportOptions;
   // artBoard也是固定尺寸和page一样，但x/y用translate代替，symbolMaster类似但多了symbolID
   if (layer._class === SketchFormat.ClassValue.Artboard || layer._class === SketchFormat.ClassValue.SymbolMaster) {
     const children: JNode[] = [];
@@ -283,6 +293,7 @@ async function convertItem(
           resizesContent: layer.resizesContent,
           symbolId,
           includeBackgroundColorInInstance,
+          exportOptions,
           style: {
             width, // 画板始终相对于page的原点，没有百分比单位
             height,
@@ -310,6 +321,7 @@ async function convertItem(
         hasBackgroundColor,
         resizesContent: layer.resizesContent,
         includeBackgroundColorInExport,
+        exportOptions,
         style: {
           width, // 画板始终相对于page的原点，没有百分比单位
           height,
@@ -545,6 +557,7 @@ async function convertItem(
         constrainProportions,
         symbolId: layer.symbolID,
         overrideValues,
+        exportOptions,
         style: {
           left,
           top,
@@ -615,6 +628,7 @@ async function convertItem(
           index,
           constrainProportions,
           includeBackgroundColorInExport,
+          exportOptions,
           style: {
             left,
             top,
@@ -666,6 +680,7 @@ async function convertItem(
         nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
+        exportOptions,
         style: {
           left,
           top,
@@ -730,6 +745,7 @@ async function convertItem(
         nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
+        exportOptions,
         style: {
           left,
           top,
@@ -944,6 +960,7 @@ async function convertItem(
         constrainProportions,
         textBehaviour,
         styleId,
+        exportOptions,
         style: {
           left,
           top,
@@ -1064,6 +1081,7 @@ async function convertItem(
         isRectangle: layer._class === 'rectangle',
         isOval: layer._class === 'oval',
         styleId,
+        exportOptions,
         style: {
           left,
           top,
@@ -1143,6 +1161,7 @@ async function convertItem(
         index,
         constrainProportions,
         styleId,
+        exportOptions,
         style: {
           left,
           top,
@@ -1198,6 +1217,7 @@ async function convertItem(
         nameIsFixed: layer.nameIsFixed,
         index,
         constrainProportions,
+        exportOptions,
         style: {
           left,
           top,

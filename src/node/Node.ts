@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { getDefaultStyle, JNode, JStyle, Override, Props } from '../format';
+import { ExportOptions, getDefaultStyle, JNode, JStyle, Override, Props } from '../format';
 import { ResizingConstraint, toSketchColor } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
@@ -144,6 +144,7 @@ class Node extends Event {
   constrainProportions: boolean;
   isLocked: boolean;
   isExpanded: boolean;
+  exportOptions: ExportOptions;
   loaders: Loader[];
 
   constructor(props: Props) {
@@ -156,6 +157,11 @@ class Node extends Event {
     this.constrainProportions = this.props.constrainProportions || false;
     this.isLocked = this.props.isLocked || false;
     this.isExpanded = this.props.isExpanded || false;
+    this.exportOptions = {
+      exportFormats: props.exportOptions?.exportFormats?.map(item => {
+        return Object.assign({}, item);
+      }) || [],
+    };
     this.style = normalize(getDefaultStyle(props.style));
     // @ts-ignore
     this.computedStyle = {}; // 输出展示的值
@@ -2224,6 +2230,7 @@ class Node extends Event {
         constrainProportions: this.constrainProportions,
         isLocked: this.isLocked,
         isExpanded: this.isExpanded,
+        exportOptions: this.exportOptions,
       }),
     };
   }
@@ -2340,7 +2347,16 @@ class Node extends Event {
       clippingMaskMode: computedStyle.maskMode === MASK.ALPHA ? 1 : 0,
       do_objectID: this.uuid,
       exportOptions: {
-        exportFormats: [],
+        exportFormats: this.exportOptions.exportFormats?.map(item => {
+          return {
+            _class: 'exportFormat',
+            absoluteSize: 0,
+            fileFormat: item.fileFormat as SketchFormat.ExportFileFormat,
+            name: '',
+            scale: item.scale,
+            visibleScaleType: 0,
+          };
+        }) || [],
         includedLayerIds: [],
         layerOptions: 0,
         shouldTrim: false,

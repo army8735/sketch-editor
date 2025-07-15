@@ -114,11 +114,11 @@ class BlurPanel extends Panel {
       const isAdd = btn.classList.contains('add');
       if (isAdd) {
         btn.classList.remove('add');
-        btn.classList.add('del');
+        btn.classList.add('remove');
       }
       else {
         btn.classList.add('add');
-        btn.classList.remove('del');
+        btn.classList.remove('remove');
       }
       nodes = [];
       prevs = [];
@@ -407,12 +407,12 @@ class BlurPanel extends Panel {
       (item as HTMLElement).style.display = 'none';
     });
     if (!typeList.length) {
-      this.btn.classList.remove('del');
+      this.btn.classList.remove('remove');
       this.btn.classList.add('add');
       return;
     }
     this.btn.classList.remove('add');
-    this.btn.classList.add('del');
+    this.btn.classList.add('remove');
     this.select.style.display = 'block';
     (panel.querySelector('div.radius') as HTMLDivElement).style.display = 'block';
     if (typeList.length > 1) {

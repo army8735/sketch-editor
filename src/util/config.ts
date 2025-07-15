@@ -6,12 +6,12 @@ export default {
   offscreenCanvas: false,
   tile: false, // 是否开启tile优化
   deltaTime: 8, // 跨帧渲染，单帧渲染过程超过值时停止在下一帧继续
-  maxTextureSize: max, // 纹理块尺寸限制
+  maxTextureSize: max, // 系统纹理块尺寸限制记录，root用下面的大写
   get MAX_TEXTURE_SIZE() {
-    return this.maxTextureSize;
+    return max;
   },
   set MAX_TEXTURE_SIZE(v: number) {
-    this.maxTextureSize = v;
+    max = v;
     manual = true;
   },
   MAX_TEXTURE_UNITS: 8,
@@ -19,13 +19,13 @@ export default {
   // 初始化root的时候才会调用
   init(maxSize: number, maxUnits: number, maxVectors: number) {
     if (!manual) {
-      this.maxTextureSize = Math.min(max, maxSize);
+      max = Math.min(max, maxSize);
     }
     // 手动事先设置了超限的尺寸需缩小
-    else if (maxSize < this.maxTextureSize) {
-      this.maxTextureSize = maxSize;
+    else if (maxSize < max) {
+      max = maxSize;
     }
-    max = maxSize;
+    this.maxTextureSize = maxSize;
     this.MAX_TEXTURE_UNITS = maxUnits;
     this.MAX_VARYING_VECTORS = maxVectors;
   },

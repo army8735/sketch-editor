@@ -10,7 +10,7 @@ import { ComputedGradient, ComputedPattern, ComputedShadow } from '../style/defi
 import state from './state';
 
 const html = `
-  <div class="panel-title">阴影<b class="btn del"></b><b class="btn add"></b></div>
+  <div class="panel-title">阴影<b class="btn remove"></b><b class="btn add"></b></div>
 `;
 
 function renderItem(
@@ -186,7 +186,7 @@ class ShadowPanel extends Panel {
         })));
         this.silence = false;
       }
-      else if (classList.contains('del')) {
+      else if (classList.contains('remove')) {
         this.silence = true;
         const nodes = this.nodes.slice(0);
         const prevs: ShadowStyle[] = [];
@@ -280,7 +280,7 @@ class ShadowPanel extends Panel {
           });
         }
         const un = panel.querySelector('.un-checked');
-        (panel.querySelector('.del') as HTMLElement).style.display = un ? 'block' : 'none';
+        (panel.querySelector('.remove') as HTMLElement).style.display = un ? 'block' : 'none';
         listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
@@ -494,7 +494,7 @@ class ShadowPanel extends Panel {
         showDel = true;
       }
     }
-    const btn = this.panel.querySelector('.del') as HTMLElement;
+    const btn = this.panel.querySelector('.remove') as HTMLElement;
     btn.style.display = showDel ? 'block' : 'none';
   }
 }

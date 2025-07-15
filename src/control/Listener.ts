@@ -82,6 +82,7 @@ import NextCommand from '../history/NextCommand';
 import PositionCommand from '../history/PositionCommand';
 import TintCommand, { TintData } from '../history/TintCommand';
 import ClosedCommand from '../history/ClosedCommand';
+import ExportCommand from '../history/ExportCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -2642,6 +2643,9 @@ export default class Listener extends Event {
             this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
         }
+        else if (c instanceof ExportCommand) {
+          this.emit(Listener.EXPORT_NODE, nodes.slice(0));
+        }
         // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
         // 定义无论是人工导致还是命令导致，选择节点一旦发生变更，统一触发SELECT事件
         // SELECT事件最后触发，主要是需要在ADD、GROUP之后
@@ -2876,6 +2880,7 @@ export default class Listener extends Event {
   static CLOSED_NODE = 'CLOSED_NODE';
   static SELECT_POINT = 'SELECT_POINT'; // 选择矢量点
   static TINT_NODE = 'TINT_NODE';
+  static EXPORT_NODE = 'EXPORT_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
   static STATE_CHANGE = 'STATE_CHANGE';

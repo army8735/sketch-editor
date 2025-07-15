@@ -28,6 +28,7 @@ import PrevCommand from './PrevCommand';
 import NextCommand from './NextCommand';
 import TintCommand from './TintCommand';
 import PositionCommand from './PositionCommand';
+import ExportCommand from './ExportCommand';
 
 export default {
   History,
@@ -60,4 +61,5 @@ export default {
   NextCommand,
   TintCommand,
   PositionCommand,
+  ExportCommand,
 };

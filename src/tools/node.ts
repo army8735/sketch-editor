@@ -19,6 +19,7 @@ import { calMatrixByOrigin } from '../style/transform';
 import { includedAngle, length, projection } from '../math/vector';
 import inject from '../util/inject';
 import { Rect } from '../control/Select';
+import config from '../util/config';
 
 enum POSITION {
   APPEND = 0,
@@ -195,7 +196,7 @@ export function getRotateOnPage(matrix: Float64Array, flip: { x: number, y: numb
  * 4. 同样rotateZ也是，在parent下的旋转能计算出来，和之前的做对比进行差值矫正
  */
 export function migrate(parent: Container, node: Node) {
-  if (node.parent === parent || node === parent) {
+  if (node.parent === parent || node === parent || node.isDestroyed) {
     return;
   }
   // 合法校验，不能反过来parent是node的子节点
@@ -1393,6 +1394,7 @@ export async function toBitmap(node: Node, opts?: {
   blob?: boolean,
   type?: string,
   quality?: number,
+  scale?: number,
 }) {
   if (node.isDestroyed) {
     return;
@@ -1418,9 +1420,16 @@ export async function toBitmap(node: Node, opts?: {
       }
     });
   }
+  let { scale = 1 } = opts || {};
+  if (scale <= 0) {
+    scale = 1;
+  }
   const bbox = node._filterBbox2 || node.filterBbox2;
-  const width = bbox[2] - bbox[0];
-  const height = bbox[3] - bbox[1];
+  const width = (bbox[2] - bbox[0]) * scale;
+  const height = (bbox[3] - bbox[1]) * scale;
+  if (width > config.maxTextureSize || height > config.maxTextureSize) {
+    throw new Error('Out of range: ' + width + '/' + height + ', max is ' + config.maxTextureSize);
+  }
   const canvas2 = document.createElement('canvas');
   canvas2.width = width;
   canvas2.height = height;
@@ -1450,6 +1459,13 @@ export async function toBitmap(node: Node, opts?: {
     translateY: 0,
   });
   root2.getCurPageWithCreate().appendChild(clone);
+  if (scale !== 1) {
+    const p = root2.getCurPage();
+    p!.updateStyle({
+      scaleX: scale,
+      scaleY: scale,
+    });
+  }
   return new Promise((resolve, reject) => {
     root2.on('REFRESH_COMPLETE', () => {
       if (opts?.blob) {

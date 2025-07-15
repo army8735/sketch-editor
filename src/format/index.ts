@@ -184,6 +184,15 @@ export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
   return Object.assign({}, DEFAULT_STYLE, v);
 }
 
+export type ExportFormats = {
+  fileFormat: 'png' | 'jpg' | 'webp';
+  scale: number;
+};
+
+export type ExportOptions = {
+  exportFormats: ExportFormats[];
+};
+
 export type Props = {
   name?: string;
   nameIsFixed?: boolean;
@@ -195,6 +204,7 @@ export type Props = {
   isLocked?: boolean;
   isExpanded?: boolean;
   styleId?: string;
+  exportOptions?: ExportOptions;
 };
 
 export type GeomProps = Props & {
