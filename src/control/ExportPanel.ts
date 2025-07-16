@@ -11,6 +11,7 @@ import { toBitmap } from '../tools/node';
 const html = `
   <h4 class="panel-title">导出<b class="btn add"></b></h4>
   <div class="exp"></div>
+  <div class="preview"></div>
   <div class="bar">
     <div class="export-btn">导出<span></span></div>
   </div>
@@ -40,6 +41,7 @@ function renderItem(fileFormat: 'png' | 'jpg' | 'webp', scale: number, idx: numb
 class ExportPanel extends Panel {
   panel: HTMLElement;
   exportFormats: ExportFormats[];
+  previewRoot?: Root;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     super(root, dom, listener);
@@ -217,6 +219,59 @@ class ExportPanel extends Panel {
     });
     const exp = panel.querySelector('.exp') as HTMLElement;
     exp.innerHTML = s;
+
+    if (this.previewRoot) {
+      this.previewRoot.destroy();
+      this.previewRoot = undefined;
+    }
+    const preview = panel.querySelector('.preview') as HTMLElement;
+    preview.querySelector('canvas')?.remove();
+    if (nodes.length === 1 && this.exportFormats.length) {
+      preview.style.display = 'block';
+      const clientWidth = preview.clientWidth;
+      const { width, height } = nodes[0];
+      preview.style.height = clientWidth * Math.min(1, height / width) + 'px';
+      const scale = clientWidth / Math.max(width, height);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(width * scale);
+      canvas.height = Math.ceil(height * scale);
+      canvas.style.width = Math.ceil(width * scale) + 'px';
+      canvas.style.height = Math.ceil(height * scale) + 'px';
+      preview.appendChild(canvas);
+      const root = this.previewRoot = new Root({
+        dpi: 1,
+        uuid: '',
+        index: 0,
+        style: {
+          width: Math.ceil(width * scale),
+          height: Math.ceil(height * scale),
+        },
+      });
+      root.appendTo(canvas);
+      const clone = nodes[0].clone();
+      const bbox = nodes[0]._filterBbox2 || nodes[0].filterBbox2;
+      clone.updateStyle({
+        left: -bbox[0],
+        top: -bbox[1],
+        right: 'auto',
+        bottom: 'auto',
+        width: nodes[0].width,
+        height: nodes[0].height,
+        translateX: 0,
+        translateY: 0,
+      });
+      root.getCurPageWithCreate().appendChild(clone);
+      if (scale !== 1) {
+        const p = root.getCurPage();
+        p!.updateStyle({
+          scaleX: scale,
+          scaleY: scale,
+        });
+      }
+    }
+    else {
+      preview.style.display = 'none';
+    }
 
     const span = panel.querySelector('.export-btn span') as HTMLElement;
     if (nodes.length > 1) {

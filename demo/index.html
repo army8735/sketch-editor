@@ -30,7 +30,6 @@
     <div>
       <button id="json">json</button>
       <button id="sketch">sketch</button>
-      <button id="image">image</button>
     </div>
   </div>
   <div class="container">
@@ -170,21 +169,6 @@
       zip.generateAsync({ type: 'blob' }).then(blob => {
         download(blob, '.sketch');
       });
-    });
-  });
-  const $image = document.querySelector('#image');
-  $image.addEventListener('click', () => {
-    if (!root) {
-      return;
-    }
-    const selected = listener.selected[0] || root.getCurPage()?.children[0];
-    if (!selected) {
-      return;
-    }
-    sketchEditor.tools.node.toBitmap(selected, {
-      blob: true,
-    }).then(blob => {
-      download(blob, '.png');
     });
   });
 </script>

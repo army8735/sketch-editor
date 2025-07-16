@@ -1470,6 +1470,8 @@ export async function toBitmap(node: Node, opts?: {
     root2.on('REFRESH_COMPLETE', () => {
       if (opts?.blob) {
         canvas2.toBlob(blob => {
+          root2.destroy();
+          canvas2.remove();
           if (blob) {
             resolve(blob);
           }
@@ -1479,7 +1481,10 @@ export async function toBitmap(node: Node, opts?: {
         }, opts?.type, opts?.quality);
       }
       else {
-        resolve(canvas2.toDataURL(opts?.type, opts?.quality));
+        const b = canvas2.toDataURL(opts?.type, opts?.quality);
+        root2.destroy();
+        canvas2.remove();
+        resolve(b);
       }
     });
   });
