@@ -12,13 +12,13 @@ module.exports = {
       .mouseButtonUp(0)
       .assert.elementPresent('#side .export-panel .add')
       .assert.not.elementPresent('#side .export-panel .item')
-      .assert.not.elementPresent('#side .export-panel .preview')
+      .assert.cssProperty('#side .export-panel .preview', 'display', 'none')
 
       .click('#side .export-panel .add')
       .pause(20)
       .assert.elementPresent('#side .export-panel .add')
       .assert.elementPresent('#side .export-panel .item')
-      .assert.elementPresent('#side .export-panel .preview')
+      .assert.cssProperty('#side .export-panel .preview', 'display', 'block')
 
       .click('#side .export-panel .add')
       .assert.elementPresent('#side .export-panel .item[title="0"]')
@@ -32,7 +32,7 @@ module.exports = {
 
       .click('#side .export-panel .del')
       .assert.not.elementPresent('#side .export-panel .item')
-      .assert.not.elementPresent('#side .export-panel .preview')
+      .assert.cssProperty('#side .export-panel .preview', 'display', 'none')
 
       .keys(browser.Keys.ESCAPE)
       .keys(browser.Keys.NULL)
@@ -47,7 +47,7 @@ module.exports = {
       .keys(browser.Keys.NULL)
       .click('#side .export-panel .add')
       .assert.elementPresent('#side .export-panel .item')
-      .assert.not.elementPresent('#side .export-panel .preview')
+      .assert.cssProperty('#side .export-panel .preview', 'display', 'none')
 
       .end();
   }
