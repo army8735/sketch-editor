@@ -83,6 +83,7 @@ class ExportPanel extends Panel {
         scale: 1,
       });
       callback();
+      this.preview();
     });
 
     const download = (blob: Blob, name: string) => {
@@ -148,6 +149,7 @@ class ExportPanel extends Panel {
           bar.style.display = 'none';
         }
         callback();
+        this.preview();
       }
     });
 
@@ -176,50 +178,8 @@ class ExportPanel extends Panel {
     });
   }
 
-  override show(nodes: Node[]) {
-    super.show(nodes);
-    const panel = this.panel;
-    if (!nodes.length || this.listener.state !== state.NORMAL) {
-      panel.style.display = 'none';
-      return;
-    }
-    panel.style.display = 'block';
-
-    const maxHash: Record<string, number> = {};
-    nodes.forEach(node => {
-      // 统计下当前节点导出配置项有几个，每个出现几次
-      const hash: Record<string, number> = {};
-      node.exportOptions.exportFormats?.forEach(item => {
-        const { fileFormat, scale } = item;
-        // 格式化+缩放作为key统计配置项
-        const key = fileFormat + '.' + scale;
-        if (!hash[key]) {
-          hash[key] = 0;
-        }
-        hash[key]++;
-        // 和max做对比，每个配置项取最大值
-        if (!maxHash[key]) {
-          maxHash[key] = 0;
-        }
-        maxHash[key] = Math.max(maxHash[key], hash[key]);
-      });
-    });
-    let s = '';
-    let count = 0;
-    this.exportFormats.splice(0);
-    Object.keys(maxHash).forEach(k => {
-      const arr = k.split('.');
-      const fileFormat = arr[0] as ExportFormats['fileFormat'];
-      const scale = +arr[1];
-      let i = maxHash[k];
-      while (i--) {
-        this.exportFormats.push({ fileFormat, scale });
-        s += renderItem(fileFormat, scale, count++);
-      }
-    });
-    const exp = panel.querySelector('.exp') as HTMLElement;
-    exp.innerHTML = s;
-
+  preview() {
+    const { panel, nodes } = this;
     if (this.previewRoot) {
       this.previewRoot.destroy();
       this.previewRoot = undefined;
@@ -272,6 +232,53 @@ class ExportPanel extends Panel {
     else {
       preview.style.display = 'none';
     }
+  }
+
+  override show(nodes: Node[]) {
+    super.show(nodes);
+    const panel = this.panel;
+    if (!nodes.length || this.listener.state !== state.NORMAL) {
+      panel.style.display = 'none';
+      return;
+    }
+    panel.style.display = 'block';
+
+    const maxHash: Record<string, number> = {};
+    nodes.forEach(node => {
+      // 统计下当前节点导出配置项有几个，每个出现几次
+      const hash: Record<string, number> = {};
+      node.exportOptions.exportFormats?.forEach(item => {
+        const { fileFormat, scale } = item;
+        // 格式化+缩放作为key统计配置项
+        const key = fileFormat + '.' + scale;
+        if (!hash[key]) {
+          hash[key] = 0;
+        }
+        hash[key]++;
+        // 和max做对比，每个配置项取最大值
+        if (!maxHash[key]) {
+          maxHash[key] = 0;
+        }
+        maxHash[key] = Math.max(maxHash[key], hash[key]);
+      });
+    });
+    let s = '';
+    let count = 0;
+    this.exportFormats.splice(0);
+    Object.keys(maxHash).forEach(k => {
+      const arr = k.split('.');
+      const fileFormat = arr[0] as ExportFormats['fileFormat'];
+      const scale = +arr[1];
+      let i = maxHash[k];
+      while (i--) {
+        this.exportFormats.push({ fileFormat, scale });
+        s += renderItem(fileFormat, scale, count++);
+      }
+    });
+    const exp = panel.querySelector('.exp') as HTMLElement;
+    exp.innerHTML = s;
+
+    this.preview();
 
     const span = panel.querySelector('.export-btn span') as HTMLElement;
     if (nodes.length > 1) {

@@ -268,7 +268,7 @@ fetch('./sketch.sketch')
 
         const page = document.querySelector('#page');
         const tree = document.querySelector('#tree');
-        const side = document.querySelector('#side');
+        const side = document.querySelector('#side .panel');
         const toolbar = document.querySelector('#toolbar');
         if (page) {
           sketchEditor.control.initPageList(root, page, listener);
