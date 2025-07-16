@@ -4,6 +4,7 @@ import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix
 import Polyline from '../node/geom/Polyline';
 import { r2d } from '../math/geom';
 import { VISIBILITY } from '../style/define';
+import { getFlipOnPage } from '../tools/node';
 
 export type Rect = {
   x: number;
@@ -100,7 +101,6 @@ export default class Select {
   calRect(node: Node) {
     const root = this.root;
     const dpi = root.dpi;
-    const computedStyle = node.computedStyle;
     let rect = node._rect || node.rect;
     // console.log(node.width, node.height, rect.join(','))
     let matrix = node.matrixWorld;
@@ -114,21 +114,14 @@ export default class Select {
       // rect = node.rectLine;
     }
     let { x1, y1, x2, y2, x3, y3, x4, y4 } = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrix);
-    let scaleX = computedStyle.scaleX;
-    let scaleY = computedStyle.scaleY;
-    let p = node.parent;
-    while (p && p !== node.page) {
-      scaleX *= p.computedStyle.scaleX;
-      scaleY *= p.computedStyle.scaleY;
-      p = p.parent;
-    }
-    if (scaleX === -1) {
+    const flip = getFlipOnPage(node);
+    if (flip.x === -1) {
       [x1, x2] = [x2, x1];
       [y1, y2] = [y2, y1];
       [x3, x4] = [x4, x3];
       [y3, y4] = [y4, y3];
     }
-    if (scaleY === -1) {
+    if (flip.y === -1) {
       [x1, x4] = [x4, x1];
       [y1, y4] = [y4, y1];
       [x2, x3] = [x3, x2];

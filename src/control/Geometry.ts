@@ -9,6 +9,8 @@ import { Point } from '../format';
 import { clone, equal } from '../util/type';
 import PointCommand, { PointData } from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
+import { getFlipOnPage, getRotateOnPage } from '../tools/node';
+import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix';
 
 export default class Geometry {
   root: Root;
@@ -605,12 +607,37 @@ export default class Geometry {
       div.setAttribute('idx', nodeIdx.toString());
       panel.appendChild(div);
     }
-    const res = this.listener.select.calRect(node);
+    const res = this.calRect(node);
     div.style.left = res.left + 'px';
     div.style.top = res.top + 'px';
     div.style.width = res.width + 'px';
     div.style.height = res.height + 'px';
     div.style.transform = res.transform;
+  }
+
+  calRect(node: Polyline) {
+    const root = this.root;
+    const dpi = root.dpi;
+    let rect = node._rect || node.rect;
+    let matrix = node.matrixWorld;
+    if (dpi !== 1) {
+      const t = identity();
+      multiplyScale(t, 1 / dpi);
+      matrix = multiply(t, matrix);
+    }
+    let { x1, y1, x2, y2, x3, y3 } = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrix);
+    const flip = getFlipOnPage(node);
+    const r = getRotateOnPage(matrix, flip);
+    const width = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    const height = Math.sqrt(Math.pow(x2 - x3, 2) + Math.pow(y2 - y3, 2));
+    const res = {
+      left: x1,
+      top: y1,
+      width,
+      height,
+      transform: `scale(${flip.x}, ${flip.y}) rotateZ(${r2d(r)}deg)`,
+    };
+    return res;
   }
 
   genVertex(node: Polyline) {
