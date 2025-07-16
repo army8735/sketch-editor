@@ -1455,7 +1455,7 @@ class Node extends Event {
   }
 
   destroy() {
-    this.willUnmount();
+    this.willUnmount(); // 可能直接调用了Root.destroy()这种，没有unMount()清空
     if (this.isDestroyed) {
       return;
     }
