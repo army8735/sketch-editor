@@ -108,13 +108,13 @@ class ExportPanel extends Panel {
         return;
       }
       if (nodes.length === 1) {
-        exportFormats.forEach(item => {
+        exportFormats.forEach((item, i) => {
           toBitmap(nodes[0], {
             type: item.fileFormat,
             scale: item.scale,
             blob: true,
           }).then(res => {
-            download(res as Blob, nodes[0].name + '.' + item.fileFormat);
+            download(res as Blob, i + '-' + nodes[0].name + '.' + item.fileFormat);
           });
         });
       }
@@ -129,7 +129,7 @@ class ExportPanel extends Panel {
               scale: item.scale,
               blob: true,
             });
-            zip.file(node.name + '.' + item.fileFormat, res as Blob);
+            zip.file(i + '-' + j + '-' + node.name + '.' + item.fileFormat, res as Blob);
           }
         }
         const res = await zip.generateAsync({ type: 'blob' });
