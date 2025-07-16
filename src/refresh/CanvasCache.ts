@@ -26,7 +26,7 @@ class CanvasCache {
     this.dx = dx;
     this.dy = dy;
     this.list = [];
-    const UNIT = config.maxTextureSize;
+    const UNIT = config.MAX_TEXTURE_SIZE;
     for (let i = 0, len = Math.ceil(h / UNIT); i < len; i++) {
       for (let j = 0, len2 = Math.ceil(w / UNIT); j < len2; j++) {
         const width = j === len2 - 1 ? (w - j * UNIT) : UNIT;
