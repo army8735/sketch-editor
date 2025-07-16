@@ -835,9 +835,11 @@ class Bitmap extends Node {
   override clearCache(includeSelf = false) {
     if (this.onlyImg) {
       if (includeSelf) {
-        this.textureCache.forEach((item) =>
-          item?.releaseImg(this.root!.uuid, this._src),
-        );
+        this.textureCache.forEach((item) => {
+          if (item?.available && this.root) {
+            item.releaseImg(this.root.uuid, this._src);
+          }
+        });
       }
       this.textureTarget.splice(0);
       // total是本身无需

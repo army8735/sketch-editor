@@ -238,6 +238,7 @@ class Node extends Event {
 
   willUnmount() {
     // 无论是否真实dom，都清空
+    this.clearCache(true);
     this.prev = this.next = undefined;
     this.page = undefined;
     this.artBoard = undefined;
@@ -1454,12 +1455,12 @@ class Node extends Event {
   }
 
   destroy() {
+    this.willUnmount();
     if (this.isDestroyed) {
       return;
     }
     this.isDestroyed = true;
     this.isMounted = false;
-    this.clearCache(true);
   }
 
   structure(lv: number): Array<Struct> {

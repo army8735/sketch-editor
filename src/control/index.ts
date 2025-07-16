@@ -88,6 +88,7 @@ export function initPanel(root: Root, dom: HTMLElement, listener: Listener, opts
     basicPanel,
     opacityPanel,
     roundPanel,
+    pointPanel,
     fillPanel,
     strokePanel,
     textPanel,
