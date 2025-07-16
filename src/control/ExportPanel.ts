@@ -7,6 +7,7 @@ import Panel from './Panel';
 import Listener from './Listener';
 import state from './state';
 import { toBitmap } from '../tools/node';
+import { clone } from '../util/type';
 
 const html = `
   <h4 class="panel-title">导出<b class="btn add"></b></h4>
@@ -18,24 +19,26 @@ const html = `
 `;
 
 function renderItem(fileFormat: 'png' | 'jpg' | 'webp', scale: number, idx: number) {
-  return `<div class="item" title="${idx}">
-    <div class="size">
-      <div class="input-unit">
-        <input type="number" step="1" min="0" max="1000" value="${scale}"/>
-        <span class="unit">x</span>
-      </div>
-      <span class="intro">尺寸</span>
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.title = idx.toString();
+  div.innerHTML = `<div class="size">
+    <div class="input-unit">
+      <input type="number" step="1" min="0" max="1000" value="${scale}"/>
+      <span class="unit">x</span>
     </div>
-    <div class="format">
-      <select>
-        <option ${fileFormat === 'png' ? 'selected="selected"' : ''}>png</option>
-        <option ${fileFormat === 'jpg' ? 'selected="selected"' : ''}>jpg</option>
-        <option ${fileFormat === 'webp' ? 'selected="selected"' : ''}>webp</option>
-      </select>
-      <span class="intro">格式</span>
-    </div>
-    <b class="btn del"></b>
-  </div>`;
+    <span class="intro">尺寸</span>
+  </div>
+  <div class="format">
+    <select>
+      <option ${fileFormat === 'png' ? 'selected="selected"' : ''}>png</option>
+      <option ${fileFormat === 'jpg' ? 'selected="selected"' : ''}>jpg</option>
+      <option ${fileFormat === 'webp' ? 'selected="selected"' : ''}>webp</option>
+    </select>
+    <span class="intro">格式</span>
+  </div>
+  <b class="btn del"></b>`;
+  return div;
 }
 
 class ExportPanel extends Panel {
@@ -55,12 +58,12 @@ class ExportPanel extends Panel {
     const callback = (prev?: ExportFormats[][]) => {
       this.silence = true;
       prev = prev ||  this.nodes.map(item => {
-        return item.exportOptions.exportFormats;
+        return clone(item.exportOptions.exportFormats);
       });
       const c = new ExportCommand(this.nodes.slice(0), prev.map((item) => {
         return {
           prev: item,
-          next: this.exportFormats.slice(0),
+          next: clone(this.exportFormats),
         };
       }));
       c.execute();
@@ -74,9 +77,9 @@ class ExportPanel extends Panel {
     const exportBtn = bar.querySelector('.export-btn') as HTMLElement;
 
     add.addEventListener('click', (e) => {
-      const s = renderItem('png', 1, this.exportFormats.length);
+      const div = renderItem('png', 1, this.exportFormats.length);
       const exp = panel.querySelector('.exp') as HTMLElement;
-      exp.innerHTML += s;
+      exp.appendChild(div);
       bar.style.display = 'block';
       this.exportFormats.push({
         fileFormat: 'png',
@@ -160,6 +163,7 @@ class ExportPanel extends Panel {
       if (tagName === 'INPUT') {
         idx = +target.parentElement!.parentElement!.parentElement!.title;
         this.exportFormats[idx].scale = +(target as HTMLInputElement).value;
+        this.preview();
       }
       else if (tagName === 'SELECT') {
         idx = +target.parentElement!.parentElement!.title;
@@ -170,7 +174,7 @@ class ExportPanel extends Panel {
       }
     });
 
-    listener.on(Listener.EXPORT_NODE, (nodes) => {
+    listener.on([Listener.EXPORT_NODE, Listener.STATE_CHANGE], (nodes) => {
       if (this.silence) {
         return;
       }
@@ -188,31 +192,41 @@ class ExportPanel extends Panel {
     preview.querySelector('canvas')?.remove();
     if (nodes.length === 1 && this.exportFormats.length) {
       preview.style.display = 'block';
+      // 导出有高清的才预览高清dpi
+      let dpi = 1;
+      for (let i = 0, len = this.exportFormats.length; i < len; i++) {
+        if (this.exportFormats[i].scale >= 2) {
+          dpi = 2;
+          break;
+        }
+      }
+      // 简单渲染
       const clientWidth = preview.clientWidth;
-      const { width, height } = nodes[0];
+      const { filterBbox2 } = nodes[0];
+      const width = filterBbox2[2] - filterBbox2[0];
+      const height = filterBbox2[3] - filterBbox2[1];
       preview.style.height = clientWidth * Math.min(1, height / width) + 'px';
       const scale = clientWidth / Math.max(width, height);
       const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(width * scale);
-      canvas.height = Math.ceil(height * scale);
+      canvas.width = Math.ceil(width * scale * dpi);
+      canvas.height = Math.ceil(height * scale * dpi);
       canvas.style.width = Math.ceil(width * scale) + 'px';
       canvas.style.height = Math.ceil(height * scale) + 'px';
       preview.appendChild(canvas);
       const root = this.previewRoot = new Root({
-        dpi: 1,
+        dpi: dpi,
         uuid: '',
         index: 0,
         style: {
-          width: Math.ceil(width * scale),
-          height: Math.ceil(height * scale),
+          width: Math.ceil(width * scale * dpi),
+          height: Math.ceil(height * scale * dpi),
         },
       });
       root.appendTo(canvas);
       const clone = nodes[0].clone();
-      const bbox = nodes[0]._filterBbox2 || nodes[0].filterBbox2;
       clone.updateStyle({
-        left: -bbox[0],
-        top: -bbox[1],
+        left: -filterBbox2[0],
+        top: -filterBbox2[1],
         right: 'auto',
         bottom: 'auto',
         width: nodes[0].width,
@@ -262,7 +276,7 @@ class ExportPanel extends Panel {
         maxHash[key] = Math.max(maxHash[key], hash[key]);
       });
     });
-    let s = '';
+    const fragment = document.createDocumentFragment();
     let count = 0;
     this.exportFormats.splice(0);
     Object.keys(maxHash).forEach(k => {
@@ -272,11 +286,13 @@ class ExportPanel extends Panel {
       let i = maxHash[k];
       while (i--) {
         this.exportFormats.push({ fileFormat, scale });
-        s += renderItem(fileFormat, scale, count++);
+        const div = renderItem(fileFormat, scale, count++);
+        fragment.appendChild(div);
       }
     });
     const exp = panel.querySelector('.exp') as HTMLElement;
-    exp.innerHTML = s;
+    exp.innerHTML = '';
+    exp.appendChild(fragment);
 
     this.preview();
 
