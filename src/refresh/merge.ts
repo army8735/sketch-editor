@@ -197,6 +197,9 @@ export function genMerge(
     if (textureMask[scaleIndex]?.available) {
       i += next;
     }
+    if (tintIndex[i]) {
+      tint = undefined;
+    }
   }
   if (mergeList.length) {
     // 后根顺序，即叶子节点在前，兄弟的后节点在前
@@ -272,6 +275,7 @@ export function genMerge(
     let res: TextureCache | undefined;
     // tint优先级最高，仅单个限定节点（矢量/文字）会有，对自身内容的色调改变
     if (tint) {
+      // console.log(node.name, tint);
       const t = genTint(
         gl,
         root,
