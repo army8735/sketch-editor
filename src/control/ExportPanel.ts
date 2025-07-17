@@ -253,6 +253,10 @@ class ExportPanel extends Panel {
     const panel = this.panel;
     if (!nodes.length || this.listener.state !== state.NORMAL) {
       panel.style.display = 'none';
+      if (this.previewRoot) {
+        this.previewRoot.destroy();
+        this.previewRoot = undefined;
+      }
       return;
     }
     panel.style.display = 'block';

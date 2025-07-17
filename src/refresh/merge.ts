@@ -177,6 +177,7 @@ export function genMerge(
     const needOverflow = overflow === OVERFLOW.HIDDEN && total > 0;
     // 记录汇总的同时以下标为k记录个类hash
     if (needTotal || needShadow || needBlur || needMask || needColor || needTint || needOverflow) {
+      // console.log(i, node.name, needTotal, needShadow, needBlur, needMask, needColor, needTint, needOverflow)
       const t: Merge = {
         i,
         lv,
@@ -279,7 +280,6 @@ export function genMerge(
     let res: TextureCache | undefined;
     // tint优先级最高，仅单个限定节点（矢量/文字）会有，对自身内容的色调改变
     if (tint) {
-      // console.log(node.name, tint);
       const t = genTint(
         gl,
         root,
@@ -404,13 +404,20 @@ function genBboxTotal(
     }
     // 没缓存的shapeGroup仅可跳过孩子
     else if (node2 instanceof ShapeGroup) {
+      const mg = mergeHash[i];
+      if (mg) {
+        mg.isTop = false;
+        merge.subList.push(mg);
+      }
       i += total2;
     }
     // 收集子节点中的嵌套关系，子的不是顶层isTop
-    const mg = mergeHash[i];
-    if (mg) {
-      mg.isTop = false;
-      merge.subList.push(mg);
+    else {
+      const mg = mergeHash[i];
+      if (mg) {
+        mg.isTop = false;
+        merge.subList.push(mg);
+      }
     }
   }
   // 如frame类型设置了裁剪，需要判断汇总后上下左右不能超过自己的bbox
