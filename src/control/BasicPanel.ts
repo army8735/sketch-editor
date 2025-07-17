@@ -47,7 +47,7 @@ const html = `
     <span class="fh" title="水平翻转"></span>
     <span class="fv" title="垂直翻转"></span>
   </div>
-  <div class="line">
+  <div class="line clip">
     <span class="ov"></span>
     <span>裁剪内容</span>
   </div>

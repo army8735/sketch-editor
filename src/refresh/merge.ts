@@ -395,6 +395,12 @@ function genBboxTotal(
         mergeBbox(res, b, m);
       }
     }
+    // 收集子节点中的嵌套关系，子的不是顶层isTop
+    const mg = mergeHash[i];
+    if (mg) {
+      mg.isTop = false;
+      merge.subList.push(mg);
+    }
     // 有局部缓存跳过，注意可用
     if (
       target?.available && target !== node2.textureCache[scaleIndex]
@@ -404,20 +410,7 @@ function genBboxTotal(
     }
     // 没缓存的shapeGroup仅可跳过孩子
     else if (node2 instanceof ShapeGroup) {
-      const mg = mergeHash[i];
-      if (mg) {
-        mg.isTop = false;
-        merge.subList.push(mg);
-      }
       i += total2;
-    }
-    // 收集子节点中的嵌套关系，子的不是顶层isTop
-    else {
-      const mg = mergeHash[i];
-      if (mg) {
-        mg.isTop = false;
-        merge.subList.push(mg);
-      }
     }
   }
   // 如frame类型设置了裁剪，需要判断汇总后上下左右不能超过自己的bbox
