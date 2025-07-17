@@ -468,10 +468,12 @@ async function convertItem(
     }
   }
   const breakMask = layer.shouldBreakMaskChain;
-  // 模糊
+  // 模糊，新版sketch从style.blur变成style.blurs数组
   let blur = 'none';
-  if (layer.style?.blur?.isEnabled) {
-    const b = layer.style.blur;
+  // @ts-ignore
+  if (layer.style && (layer.style.blur?.isEnabled || layer.style.blurs && layer.style.blurs.length && layer.style.blurs[0].isEnabled)) {
+    // @ts-ignore
+    const b = layer.style.blur?.isEnabled ? layer.style.blur : layer.style.blurs[0];
     const type = b.type;
     if (type === SketchFormat.BlurType.Gaussian) {
       blur = `gauss(${b.radius}px)`;
@@ -481,7 +483,7 @@ async function convertItem(
     }
     else if (type === SketchFormat.BlurType.Zoom) {
       const center = b.center.match(reg.number) || ['0.5', '0.5'];
-      const p = center.map(item => {
+      const p = center.map((item: string) => {
         return parseFloat(item) * 100 + '%';
       });
       blur = `radial(${b.radius}px) center(${p[0]}, ${p[1]})`;
@@ -489,6 +491,10 @@ async function convertItem(
     else if (type === SketchFormat.BlurType.Motion) {
       blur = `motion(${b.radius}px) angle(${(b.motionAngle || 0) * -1})`;
     }
+  }
+  // 新版是style.blurs数组
+  // @ts-ignore
+  else if (layer.style?.blurs && layer.style.blurs.length) {
   }
   // 颜色调整
   let hueRotate = 0;
