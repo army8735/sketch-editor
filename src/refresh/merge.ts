@@ -168,6 +168,10 @@ export function genMerge(
           node.resetTextureTarget();
         }
       }
+      // 后面的mask相当于breakMaskMode
+      else if (node.next && (node.next.computedStyle.breakMask || node.next.computedStyle.maskMode > 0)) {
+        needMask = false;
+      }
     }
     const needColor = hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
     const needOverflow = overflow === OVERFLOW.HIDDEN && total > 0;
