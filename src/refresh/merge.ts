@@ -174,7 +174,7 @@ export function genMerge(
       }
     }
     const needColor = hueRotate || saturate !== 1 || brightness !== 1 || contrast !== 1;
-    const needOverflow = overflow === OVERFLOW.HIDDEN && total > 0;
+    const needOverflow = overflow === OVERFLOW.HIDDEN && total > 0 && (!textureTotal[scaleIndex] || !textureTotal[scaleIndex]?.available);
     // 记录汇总的同时以下标为k记录个类hash
     if (needTotal || needShadow || needBlur || needMask || needColor || needTint || needOverflow) {
       // console.log(i, node.name, needTotal, needShadow, needBlur, needMask, needColor, needTint, needOverflow)
