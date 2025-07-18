@@ -799,7 +799,7 @@ async function convertItem(
     } as JBitmap;
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
-    const tb = layer.textBehaviour;
+    const tb = layer.textBehaviour || SketchFormat.TextBehaviour.Flexible;
     let textBehaviour: TextProps['textBehaviour'];
     /**
      * sketch独有，优先级高于ResizingConstraint，指明文本框的对齐方式。

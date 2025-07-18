@@ -1,5 +1,5 @@
 import * as uuid from 'uuid';
-import { JNode, Override, SymbolMasterProps, TAG_NAME } from '../format';
+import { Override, SymbolMasterProps, TAG_NAME } from '../format';
 import ArtBoard from './ArtBoard';
 import Node from './Node';
 import SymbolInstance from './SymbolInstance';
