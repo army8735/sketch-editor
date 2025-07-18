@@ -51,6 +51,11 @@ export default {
 
     // symbolMaster优先初始化，其存在于控件页面的直接子节点，以及外部json，先收集起来
     const smList: JSymbolMaster[] = [];
+    // 外部symbolMaster，sketch中是不展示出来的，masterGo专门有个外部控件页面
+    (json.symbolMasters || []).forEach((child) => {
+      smList.push(child as JSymbolMaster);
+    });
+    // 内部页面上的
     (json.pages || []).forEach((item) => {
       const children = item.children;
       children.forEach((child) => {
@@ -58,10 +63,6 @@ export default {
           smList.push(child as JSymbolMaster);
         }
       });
-    });
-    // 外部symbolMaster，sketch中是不展示出来的，masterGo专门有个外部控件页面
-    (json.symbolMasters || []).forEach((child) => {
-      smList.push(child as JSymbolMaster);
     });
     // 收集完所有的之后，进行排序，因为可能出现互相递归依赖，无依赖的在前面先初始化，避免被引用时没初始化不存在
     const list = sortSymbolMasters(smList);
