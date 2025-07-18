@@ -2712,7 +2712,7 @@ export function genBgBlurRoot(
   // 应用mask，将模糊的背景用扩展好的outline作为mask保留重合
   const maskProgram = programs.maskProgram;
   gl.useProgram(maskProgram);
-  const m = createTexture(gl, 0, undefined, W, H);
+  let m = createTexture(gl, 0, undefined, W, H);
   gl.framebufferTexture2D(
     gl.FRAMEBUFFER,
     gl.COLOR_ATTACHMENT0,
@@ -2723,6 +2723,35 @@ export function genBgBlurRoot(
   gl.viewport(0, 0, W, H);
   drawMask(gl, maskProgram, o, bg);
   // texture2Blob(gl, W, H, 'm');
+  // 可能存在的饱和度
+  if (blur.saturation !== undefined && blur.saturation !== 1) {
+    console.log(blur);
+    const temp = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, W, H]));
+    temp.list.push({
+      bbox: new Float64Array([0, 0, W, H]),
+      w: W,
+      h: H,
+      t: m,
+    });
+    const t = genColorMatrix(
+      gl,
+      root,
+      temp,
+      0,
+      blur.saturation,
+      1,
+      1,
+      W,
+      H,
+    );
+    if (t) {
+      gl.deleteTexture(m);
+      m = t.list[0].t!;
+      if (frameBuffer) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+      }
+    }
+  }
   // 原本背景则用outline作为clip裁剪掉重合
   const clipProgram = programs.clipProgram;
   gl.useProgram(clipProgram);
