@@ -1206,26 +1206,7 @@ function genGaussBlur(
   // 由于存在扩展，原本的位置全部偏移，需要重算
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
   const sigma2 = sigma * scale;
-  // const d2 = kernelSize(sigma2);
-  /**
-   * 7*7高斯核则缩放0.5进行，即用dual先缩小一次，再一半的模糊，再dual放大
-   * https://www.intel.com/content/www/us/en/developer/articles/technical/an-investigation-of-fast-real-time-gpu-based-image-blur-algorithms.html
-   * 由于这里使用的是均值box模糊模拟，核大小和高斯模糊核不一样，最终算出挡4px（无高清缩放）以上核才会需要
-   * 17*17内核则缩放0.25，对应16px，规律是4^n，最大4次缩放
-  */
-  let dualTimes = 0;
-  if (sigma2 >= 256) {
-    dualTimes = 4;
-  }
-  else if (sigma2 >= 64) {
-    dualTimes = 3;
-  }
-  else if (sigma2 >= 16) {
-    dualTimes = 2;
-  }
-  else if (sigma2 >= 4) {
-    dualTimes = 1;
-  }
+  const dualTimes = getDualTimesFromSigma(sigma2);
   const boxes = boxesForGauss(sigma2 * Math.pow(0.5, dualTimes));
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const res = TextureCache.getEmptyInstance(gl, bboxR);
@@ -1305,6 +1286,29 @@ function genGaussBlur(
   return res;
 }
 
+/**
+ * 7*7高斯核则缩放0.5进行，即用dual先缩小一次，再一半的模糊，再dual放大
+ * https://www.intel.com/content/www/us/en/developer/articles/technical/an-investigation-of-fast-real-time-gpu-based-image-blur-algorithms.html
+ * 由于这里使用的是均值box模糊模拟，核大小和高斯模糊核不一样，最终算出挡4px（无高清缩放）以上核才会需要
+ * 17*17内核则缩放0.25，对应16px，规律是4^n，最大4次缩放
+ */
+function getDualTimesFromSigma(sigma: number) {
+  let dualTimes = 0;
+  if (sigma >= 256) {
+    dualTimes = 4;
+  }
+  else if (sigma >= 64) {
+    dualTimes = 3;
+  }
+  else if (sigma >= 16) {
+    dualTimes = 2;
+  }
+  else if (sigma >= 4) {
+    dualTimes = 1;
+  }
+  return dualTimes;
+}
+
 function genScaleGaussBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
@@ -1358,6 +1362,8 @@ function genScaleGaussBlur(
     tex = t2;
   }
   gl.viewport(0, 0, w, h);
+  // gl.deleteTexture(t);
+  gl.useProgram(programs.program);
   // const pixels = new Uint8Array(w * h);
   // gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   // console.log(performance.now() - p1);
@@ -2638,6 +2644,135 @@ export function genMbm(
   return res;
 }
 
+export function genBgBlurRoot(
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+  root: Root,
+  texture: WebGLTexture, // 画布
+  matrix: Float64Array | undefined, // outline相对于target的
+  outline: TextureCache,
+  blur: ComputedBlur,
+  programs: Record<string, WebGLProgram>,
+  scale: number,
+  W: number,
+  H: number,
+) {
+  const program = programs.program;
+  // 先背景blur
+  const sigma2 = blur.radius * scale;
+  const dualTimes = getDualTimesFromSigma(sigma2);
+  const boxes = boxesForGauss(sigma2 * Math.pow(0.5, dualTimes));
+  const bg = genScaleGaussBlur(gl, root, boxes, dualTimes, texture, W, H);
+  let frameBuffer: WebGLFramebuffer | undefined;
+  // {
+  //   frameBuffer = genFrameBufferWithTexture(gl, bg, W, H);
+  //   texture2Blob(gl, W, H, 'bg');
+  // }
+  // outline扩展和背景blur一样大，方便后续mask
+  const o = createTexture(gl, 0, undefined, W, H);
+  if (frameBuffer) {
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      o,
+      0,
+    );
+    gl.viewport(0, 0, W, H);
+  }
+  else {
+    frameBuffer = genFrameBufferWithTexture(gl, o, W, H);
+  }
+  const listO = outline.list;
+  const cx = W * 0.5;
+  const cy = H * 0.5;
+  for (let j = 0, len = listO.length; j < len; j++) {
+    const { bbox: bbox2, t: t2 } = listO[j];
+    if (t2 && checkInRect(bbox2, matrix, 0, 0, W, H)) {
+      drawTextureCache(
+        gl,
+        cx,
+        cy,
+        program,
+        [
+          {
+            opacity: 1,
+            matrix,
+            bbox: bbox2,
+            texture: t2,
+          },
+        ],
+        0,
+        0,
+        false,
+        -1, -1, 1, 1,
+      );
+    }
+  }
+  // texture2Blob(gl, W, H, 'o');
+  // 应用mask，将模糊的背景用扩展好的outline作为mask保留重合
+  const maskProgram = programs.maskProgram;
+  gl.useProgram(maskProgram);
+  const m = createTexture(gl, 0, undefined, W, H);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    m,
+    0,
+  );
+  gl.viewport(0, 0, W, H);
+  drawMask(gl, maskProgram, o, bg);
+  // texture2Blob(gl, W, H, 'm');
+  // 原本背景则用outline作为clip裁剪掉重合
+  const clipProgram = programs.clipProgram;
+  gl.useProgram(clipProgram);
+  const c = createTexture(gl, 0, undefined, W, H);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    c,
+    0,
+  );
+  gl.viewport(0, 0, W, H);
+  drawMask(gl, clipProgram, o, texture);
+  // texture2Blob(gl, W, H, 'c');
+  // clip上绘入mask返回
+  gl.useProgram(program);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  drawTextureCache(
+    gl,
+    cx,
+    cy,
+    program,
+    [
+      {
+        opacity: 1,
+        bbox: new Float64Array([0, 0, W, H]),
+        texture: m,
+      },
+    ],
+    0,
+    0,
+    false,
+    -1, -1, 1, 1,
+  );
+  // 回收
+  gl.deleteTexture(bg);
+  gl.deleteTexture(o);
+  gl.deleteTexture(m);
+  gl.deleteTexture(texture);
+  // 还原
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  if (frameBuffer) {
+    releaseFrameBuffer(gl, frameBuffer, W, H);
+  }
+  else {
+    gl.viewport(0, 0, W, H);
+  }
+  return c;
+}
+
 // 创建一个和背景一样大的纹理，先将背景按mask逆矩阵绘制，再进行blur，再和节点进行mask保留重合的部分
 export function genBgBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
@@ -2661,21 +2796,7 @@ export function genBgBlur(
   //   listB.forEach((item, i) => {
   //     const { w, h, t } = item;
   //     frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
-  //     const pixels = new Uint8Array(w * h * 4);
-  //     gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-  //     const os = inject.getOffscreenCanvas(w, h);
-  //     const id = os.ctx.getImageData(0, 0, w, h);
-  //     for (let i = 0, len = w * h * 4; i < len ;i++) {
-  //       id.data[i] = pixels[i];
-  //     }
-  //     os.ctx.putImageData(id, 0, 0);
-  //     const img = document.createElement('img');
-  //     img.setAttribute('name', 'b' + i);
-  //     os.canvas.toBlob(blob => {
-  //       img.src = URL.createObjectURL(blob!);
-  //       document.body.appendChild(img);
-  //       os.release();
-  //     });
+  //     texture2Blob(gl, w, h, 'b' + i);
   //   });
   // }
   // outline扩展和背景blur一样大，方便后续mask
@@ -2724,21 +2845,7 @@ export function genBgBlur(
         );
       }
     }
-    // const pixels = new Uint8Array(w * h * 4);
-    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    // const os = inject.getOffscreenCanvas(w, h);
-    // const id = os.ctx.getImageData(0, 0, w, h);
-    // for (let i = 0, len = w * h * 4; i < len ;i++) {
-    //   id.data[i] = pixels[i];
-    // }
-    // os.ctx.putImageData(id, 0, 0);
-    // const img = document.createElement('img');
-    // img.setAttribute('name', 'o' + i);
-    // os.canvas.toBlob(blob => {
-    //   img.src = URL.createObjectURL(blob!);
-    //   document.body.appendChild(img);
-    //   os.release();
-    // });
+    // texture2Blob(gl, w, h, 'o' + i);
   }
   // 应用mask，将模糊的背景用扩展好的outline作为mask保留重合
   const maskProgram = programs.maskProgram;
@@ -2766,21 +2873,7 @@ export function genBgBlur(
   //   listB.forEach((item, i) => {
   //     const { w, h, t } = item;
   //     frameBuffer = genFrameBufferWithTexture(gl, t, w, h);
-  //     const pixels = new Uint8Array(w * h * 4);
-  //     gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-  //     const os = inject.getOffscreenCanvas(w, h);
-  //     const id = os.ctx.getImageData(0, 0, w, h);
-  //     for (let i = 0, len = w * h * 4; i < len ;i++) {
-  //       id.data[i] = pixels[i];
-  //     }
-  //     os.ctx.putImageData(id, 0, 0);
-  //     const img = document.createElement('img');
-  //     img.setAttribute('name', 'm' + i);
-  //     os.canvas.toBlob(blob => {
-  //       img.src = URL.createObjectURL(blob!);
-  //       document.body.appendChild(img);
-  //       os.release();
-  //     });
+  //     texture2Blob(gl, w, h, 'm' + i);
   //   });
   // }
   // 可能存在的饱和度
@@ -2808,7 +2901,7 @@ export function genBgBlur(
   }
   // 原本背景则用outline作为clip裁剪掉重合，同样需要先扩展outline和bg一样大
   gl.useProgram(program);
-  const listO3: WebGLTexture[] = [];
+  const listO3: WebGLTexture[] = []; // TODO: 复用listO2
   const listT = target.list;
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h } = listT[i];
@@ -2849,20 +2942,7 @@ export function genBgBlur(
         );
       }
     }
-    // const pixels = new Uint8Array(w * h * 4);
-    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    // const os = inject.getOffscreenCanvas(w, h);
-    // const id = os.ctx.getImageData(0, 0, w, h);
-    // for (let i = 0, len = w * h * 4; i < len ;i++) {
-    //   id.data[i] = pixels[i];
-    // }
-    // os.ctx.putImageData(id, 0, 0);
-    // const img = document.createElement('img');
-    // img.setAttribute('name', 'o2' + i);
-    // os.canvas.toBlob(blob => {
-    //   img.src = URL.createObjectURL(blob!);
-    //   document.body.appendChild(img);
-    // });
+    // texture2Blob(gl, w, h, 'o2' + i);
   }
   // 开始clip过程，去掉outline重合
   const clipProgram = programs.clipProgram;
@@ -2885,21 +2965,7 @@ export function genBgBlur(
     }
     gl.deleteTexture(listO3[i]);
     item.t = tex;
-    // const pixels = new Uint8Array(w * h * 4);
-    // gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    // const os = inject.getOffscreenCanvas(w, h);
-    // const id = os.ctx.getImageData(0, 0, w, h);
-    // for (let i = 0, len = w * h * 4; i < len ;i++) {
-    //   id.data[i] = pixels[i];
-    // }
-    // os.ctx.putImageData(id, 0, 0);
-    // const img = document.createElement('img');
-    // img.setAttribute('name', 'c' + i);
-    // os.canvas.toBlob(blob => {
-    //   img.src = URL.createObjectURL(blob!);
-    //   document.body.appendChild(img);
-    //   os.release();
-    // });
+    // texture2Blob(gl, w, h, 'c' + i);
   }
   // 原始纹理上绘入结果，即root或者局部根节点
   gl.useProgram(program);

@@ -12,7 +12,7 @@ import config from '../util/config';
 import {
   checkInRect,
   checkInScreen,
-  genBgBlur,
+  genBgBlurRoot,
   genFrameBufferWithTexture,
   genMbm,
   genMerge,
@@ -23,7 +23,6 @@ import {
 import Tile from './Tile';
 import { isConvexPolygonOverlapRect } from '../math/geom';
 import { RefreshLevel } from './level';
-import TextureCache from '../refresh/TextureCache';
 
 export type Struct = {
   node: Node;
@@ -38,7 +37,8 @@ export function renderWebgl(
   root: Root,
 ) {
   // 由于没有scale变换，所有节点都是通用的，最小为1，然后2的幂次方递增，这里已经考虑了dpi在内
-  let scale = root.getCurPageZoom();
+  const sourceScale = root.getCurPageZoom();
+  let scale = sourceScale;
   let scaleIndex = 0;
   if (scale <= 1) {
     if (scale === 1) {
@@ -69,11 +69,11 @@ export function renderWebgl(
     }
     // 可能手动写的特殊场景没有page
     else {
-      renderWebglNoTile(gl, root, scale, scaleIndex);
+      renderWebglNoTile(gl, root, scale, scaleIndex, sourceScale);
     }
   }
   else {
-    renderWebglNoTile(gl, root, scale, scaleIndex);
+    renderWebglNoTile(gl, root, scale, scaleIndex, sourceScale);
   }
   // 收集的需要加载的图片在刷新结束后同一进行，防止过程中触发update进而计算影响bbox
   for (let i = 0, len = imgLoadList.length; i < len; i++) {
@@ -823,6 +823,7 @@ function renderWebglNoTile(
   root: Root,
   scale: number,
   scaleIndex: number,
+  sourceScale: number,
 ) {
   const { structs, width: W, height: H, imgLoadList } = root;
   // 先生成需要汇总的临时根节点上的纹理
@@ -975,23 +976,7 @@ function renderWebglNoTile(
           target.bbox,
           scale,
         );
-        const w = W / root.dpi;
-        const h = H / root.dpi;
-        // 包装画布bg为TextureCache，默认画布不会超过尺寸限制，即便超过手动设置的，也不会超过系统
-        const wrap = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, w, h]));
-        wrap.list.push({
-          bbox: new Float64Array([0, 0, w, h]),
-          w: W,
-          h: H,
-          t: resTexture,
-        });
-        // const isPageTex = resTexture === pageTexture;
-        genBgBlur(gl, root, wrap, matrix, outline, blur, programs, scale, W, H);
-        // blur过程会销毁掉原本的bg纹理，赋值要特别注意原本的page纹理
-        resTexture = wrap.list[0].t!;
-        // if (isPageTex) {
-        //   pageTexture = resTexture;
-        // }
+        resTexture = genBgBlurRoot(gl, root, resTexture, matrix, outline, blur, programs, sourceScale, W, H);
         gl.bindFramebuffer(gl.FRAMEBUFFER, resFrameBuffer);
         gl.viewport(0, 0, W, H);
         gl.framebufferTexture2D(
