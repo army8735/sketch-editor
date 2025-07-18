@@ -1548,8 +1548,13 @@ export default class Listener extends Event {
           this.state = state.EDIT_GEOM;
           this.emit(Listener.STATE_CHANGE, old, this.state);
         }
+        else {
+          this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+        }
       }
-      // this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+      else {
+        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+      }
     }
   }
 
