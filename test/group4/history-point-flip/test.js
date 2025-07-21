@@ -11,7 +11,7 @@ module.exports = {
       .doubleClick()
       .assert.cssProperty('#main .geometry', 'display', 'block')
       .assert.cssProperty('#main .geometry .item', 'left', '158.713px')
-      .assert.cssProperty('#main .geometry .item', 'top', '14.2385')
+      .assert.cssProperty('#main .geometry .item', 'top', '14.2385px')
       .assert.cssProperty('#main .geometry .item', 'transform', 'matrix(-0.866025, 0.5, 0.5, 0.866025, 0, 0)')
       .assert.cssProperty('#main .geometry .item .vt[title="1"]', 'transform', 'matrix(1, 0, 0, 1, 149.713, 0)')
 
