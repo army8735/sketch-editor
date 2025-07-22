@@ -725,8 +725,8 @@ export default class Listener extends Event {
     }
     this.isMouseDown = true;
     this.isMouseMove = false;
-    this.startX = e.clientX;
-    this.startY = e.clientY;
+    this.startX = (e.clientX - this.originX);
+    this.startY = (e.clientY - this.originY);
     if (e.button === 1) {
       this.middleKey = true;
     }
@@ -759,8 +759,8 @@ export default class Listener extends Event {
       return;
     }
     const dpi = root.dpi;
-    let dx = e.clientX - this.startX; // 外部页面单位
-    let dy = e.clientY - this.startY;
+    let dx = e.clientX - this.originX - this.startX; // 外部页面单位
+    let dy = e.clientY - this.originY - this.startY;
     const zoom = page.getZoom();
     let dx2 = this.dx = Math.round(dx * dpi / zoom); // 画布内sketch单位
     let dy2 = this.dy = Math.round(dy * dpi / zoom);
@@ -1049,8 +1049,8 @@ export default class Listener extends Event {
     const selected = this.selected;
     if (this.state === state.ADD_IMG) {
       if (this.isMouseDown) {
-        let dx = e.clientX - this.startX;
-        let dy = e.clientY - this.startY;
+        let dx = e.clientX - this.originX - this.startX;
+        let dy = e.clientY - this.originY - this.startY;
         // 防抖添加后设置尺寸frame
         if (this.select.frame.style.display === 'block') {
           this.select.updateFrame(dx, dy);
@@ -1088,8 +1088,8 @@ export default class Listener extends Event {
         this.isMouseMove = true;
         const page = root.getCurPage();
         if (page) {
-          const dx = e.clientX - this.startX;
-          const dy = e.clientY - this.startY;
+          const dx = e.clientX - this.originX - this.startX;
+          const dy = e.clientY - this.originY - this.startY;
           page.updateStyle({
             translateX: this.pageTx + dx,
             translateY: this.pageTy + dy,
@@ -1478,8 +1478,8 @@ export default class Listener extends Event {
     const touch = e.touches[0];
     this.isMouseDown = true;
     this.isMouseMove = false;
-    this.startX = touch.clientX;
-    this.startY = touch.clientY;
+    this.startX = touch.clientX - this.originX;
+    this.startY = touch.clientY - this.originY;
     const target = e.target as HTMLElement;
     this.onDown(target, touch);
   }
