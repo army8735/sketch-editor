@@ -13,6 +13,7 @@ import Slice from './Slice';
 import SymbolInstance from './SymbolInstance';
 import SymbolMaster from './SymbolMaster';
 import Text from './Text';
+import AbstractFrame from './AbstractFrame';
 import Frame from './Frame';
 import Graphic from './Graphic';
 import parser from './parser';
@@ -34,6 +35,7 @@ export default {
   Geom,
   Polyline,
   ShapeGroup,
+  AbstractFrame,
   Frame,
   Graphic,
   reflow,
