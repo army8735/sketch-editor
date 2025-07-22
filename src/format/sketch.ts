@@ -1000,9 +1000,6 @@ async function convertItem(
       strokeMiterlimit,
       styleId,
     } = await geomStyle(layer, opt);
-    if (string === '深度解读') {
-      console.log(fontFamily)
-    }
     return {
       tagName: TAG_NAME.TEXT,
       props: {

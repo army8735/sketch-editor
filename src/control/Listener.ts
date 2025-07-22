@@ -1702,13 +1702,12 @@ export default class Listener extends Event {
     }
   }
 
-  selectAll() {
+  selectAll(meta = false) {
     const root = this.root;
     const page = root.getCurPage();
     if (!page) {
       return;
     }
-    let meta = this.metaKey || isWin && this.ctrlKey;
     if (this.options.enabled?.selectWithMeta) {
       meta = !meta;
     }
