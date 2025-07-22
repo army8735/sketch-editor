@@ -353,6 +353,9 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           if (item instanceof ArtBoard) {
             return false;
           }
+          if (item instanceof AbstractFrame) {
+            return false;
+          }
           return true;
         });
       }

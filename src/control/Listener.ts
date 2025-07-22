@@ -112,6 +112,7 @@ export default class Listener extends Event {
   state: state;
   root: Root;
   dom: HTMLElement;
+  eventListenerList: { type: string, cb: any }[];
   history: History;
   metaKey: boolean;
   shiftKey: boolean;
@@ -165,6 +166,7 @@ export default class Listener extends Event {
     this.state = state.NORMAL;
     this.root = root;
     this.dom = dom;
+    this.eventListenerList = [];
     this.history = new History();
 
     this.metaKey = false;
@@ -214,21 +216,31 @@ export default class Listener extends Event {
     this.clones = [];
     this.customGeom = new CustomGeom(this);
 
-    dom.addEventListener('mousedown', this.onMouseDown.bind(this));
-    dom.addEventListener('mousemove', this.onMouseMove.bind(this));
-    dom.addEventListener('mouseup', this.onMouseUp.bind(this));
-    dom.addEventListener('mouseleave', this.onMouseLeave.bind(this));
-    dom.addEventListener('touchstart', this.onTouchStart.bind(this));
-    dom.addEventListener('touchmove', this.onTouchMove.bind(this));
-    dom.addEventListener('touchend', this.onTouchEnd.bind(this));
-    dom.addEventListener('click', this.onClick.bind(this));
-    dom.addEventListener('dblclick', this.onDblClick.bind(this));
-    dom.addEventListener('wheel', this.onWheel.bind(this));
-    dom.addEventListener('contextmenu', this.onContextMenu.bind(this));
-    dom.addEventListener('dragover', this.onDragOver.bind(this));
-    dom.addEventListener('drop', this.onDrop.bind(this));
-    document.addEventListener('keydown', this.onKeyDown.bind(this));
-    document.addEventListener('keyup', this.onKeyUp.bind(this));
+    this.eventListenerList = [
+      { type: 'mousedown',    cb: this.onMouseDown.bind(this) },
+      { type: 'mousemove',    cb: this.onMouseMove.bind(this) },
+      { type: 'mouseup',      cb: this.onMouseUp.bind(this) },
+      { type: 'mouseleave',   cb: this.onMouseLeave.bind(this) },
+      { type: 'touchstart',   cb: this.onTouchStart.bind(this) },
+      { type: 'touchmove',    cb: this.onTouchMove.bind(this) },
+      { type: 'touchend',     cb: this.onTouchEnd.bind(this) },
+      { type: 'click',        cb: this.onClick.bind(this) },
+      { type: 'dblclick',     cb: this.onDblClick.bind(this) },
+      { type: 'wheel',        cb: this.onWheel.bind(this) },
+      { type: 'contextmenu',  cb: this.onContextMenu.bind(this) },
+      { type: 'dragover',     cb: this.onDragOver.bind(this) },
+      { type: 'drop',         cb: this.onDrop.bind(this) },
+      { type: 'keydown',      cb: this.onKeyDown.bind(this) },
+      { type: 'keyup',        cb: this.onKeyUp.bind(this) },
+    ];
+    this.eventListenerList.forEach(item => {
+      if (item.type === 'keydown' || item.type === 'keyup') {
+        document.addEventListener(item.type, item.cb);
+      }
+      else {
+        dom.addEventListener(item.type, item.cb);
+      }
+    });
   }
 
   // 更新dom的位置做原点坐标，鼠标按下或touch按下时
@@ -2815,18 +2827,14 @@ export default class Listener extends Event {
   }
 
   destroy() {
-    this.dom.removeEventListener('mousedown', this.onMouseDown);
-    this.dom.removeEventListener('mousemove', this.onMouseMove);
-    this.dom.removeEventListener('mouseup', this.onMouseUp);
-    this.dom.removeEventListener('mouseleave', this.onMouseLeave);
-    this.dom.removeEventListener('click', this.onClick);
-    this.dom.removeEventListener('dblclick', this.onDblClick);
-    this.dom.removeEventListener('wheel', this.onWheel);
-    this.dom.removeEventListener('contextmenu', this.onContextMenu);
-    this.dom.removeEventListener('dragover', this.onDragOver);
-    this.dom.removeEventListener('drop', this.onDrop);
-    document.removeEventListener('keydown', this.onKeyDown);
-    document.removeEventListener('keyup', this.onKeyUp);
+    this.eventListenerList.splice(0).forEach(item => {
+      if (item.type === 'keydown' || item.type === 'keyup') {
+        document.removeEventListener(item.type, item.cb);
+      }
+      else {
+        this.dom.removeEventListener(item.type, item.cb);
+      }
+    });
 
     this.selected.splice(0);
     this.abcStyle.splice(0);
