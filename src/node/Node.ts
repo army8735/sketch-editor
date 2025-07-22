@@ -2232,6 +2232,7 @@ class Node extends Event {
         isLocked: this.isLocked,
         isExpanded: this.isExpanded,
         exportOptions: this.exportOptions,
+        style: clone(this.style),
       }),
     };
   }

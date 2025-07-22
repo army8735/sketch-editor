@@ -339,12 +339,47 @@ async function convertItem(
     } as JArtBoard;
   }
   // 其它子元素都有布局规则约束，需模拟计算出类似css的absolute定位
-  const resizingConstraint =
-    layer.resizingConstraint ^ ResizingConstraint.UNSET;
-  let left: number | string = 0,
-    top: number | string = 0,
-    right: number | string = 'auto',
-    bottom: number | string = 'auto';
+  let left: number | string = 0;
+  let top: number | string = 0;
+  let right: number | string = 'auto';
+  let bottom: number | string = 'auto';
+  let resizingConstraint = layer.resizingConstraint ^ ResizingConstraint.UNSET;
+  // 2025新版sketch的宽高位置，采用独立的4个变量来代替老的resizingConstraint
+  // @ts-ignore
+  const { horizontalPins, verticalPins, horizontalSizing, verticalSizing } = layer;
+  let isVer2025 = false;
+  if (horizontalPins !== undefined || verticalPins !== undefined || horizontalSizing !== undefined || verticalSizing !== undefined) {
+    isVer2025 = true;
+    resizingConstraint = 0;
+    // 水平固定left+right是5，left是1，right是4，空是0
+    if (horizontalPins === 5) {
+      resizingConstraint |= ResizingConstraint.LEFT;
+      resizingConstraint |= ResizingConstraint.RIGHT;
+    }
+    else if (horizontalPins === 4) {
+      resizingConstraint |= ResizingConstraint.RIGHT;
+    }
+    else if (horizontalPins === 1) {
+      resizingConstraint |= ResizingConstraint.LEFT;
+    }
+    if (verticalPins === 5) {
+      resizingConstraint |= ResizingConstraint.TOP;
+      resizingConstraint |= ResizingConstraint.BOTTOM;
+    }
+    else if (verticalPins === 4) {
+      resizingConstraint |= ResizingConstraint.BOTTOM;
+    }
+    else if (horizontalPins === 1) {
+      resizingConstraint |= ResizingConstraint.TOP;
+    }
+    // 尺寸0是固定，1是自适应（仅文字有），3是相对
+    if (horizontalSizing === 0) {
+      resizingConstraint |= ResizingConstraint.WIDTH;
+    }
+    if (verticalSizing === 0) {
+      resizingConstraint |= ResizingConstraint.HEIGHT;
+    }
+  }
   // left
   if (resizingConstraint & ResizingConstraint.LEFT) {
     left = translateX;
@@ -799,7 +834,16 @@ async function convertItem(
     } as JBitmap;
   }
   if (layer._class === SketchFormat.ClassValue.Text) {
-    const tb = layer.textBehaviour || SketchFormat.TextBehaviour.Flexible;
+    let tb = layer.textBehaviour || SketchFormat.TextBehaviour.Flexible;
+    // 2025新版sketch没有textBehaviour，模拟之
+    if (isVer2025) {
+      if (verticalSizing === 0) {
+        tb = SketchFormat.TextBehaviour.FixedWidthAndHeight;
+      }
+      else if (horizontalSizing === 0) {
+        tb = SketchFormat.TextBehaviour.Fixed;
+      }
+    }
     let textBehaviour: TextProps['textBehaviour'];
     /**
      * sketch独有，优先级高于ResizingConstraint，指明文本框的对齐方式。
@@ -854,7 +898,7 @@ async function convertItem(
       height = layer.frame.height;
     }
     // FixedWidthAndHeight啥也不干，等同普通节点的固定宽高，脏数据不太可能，也认为是固定尺寸
-    else {
+    else if (tb === SketchFormat.TextBehaviour.FixedWidthAndHeight) {
       textBehaviour = 'fixed';
     }
     const { string, attributes } = layer.attributedString;
@@ -956,6 +1000,9 @@ async function convertItem(
       strokeMiterlimit,
       styleId,
     } = await geomStyle(layer, opt);
+    if (string === '深度解读') {
+      console.log(fontFamily)
+    }
     return {
       tagName: TAG_NAME.TEXT,
       props: {
