@@ -837,10 +837,10 @@ async function convertItem(
     let tb = layer.textBehaviour || SketchFormat.TextBehaviour.Flexible;
     // 2025新版sketch没有textBehaviour，模拟之
     if (isVer2025) {
-      if (verticalSizing === 0) {
+      if (verticalSizing === 0 || verticalSizing === 3) {
         tb = SketchFormat.TextBehaviour.FixedWidthAndHeight;
       }
-      else if (horizontalSizing === 0) {
+      else if (horizontalSizing === 0 || horizontalSizing === 3) {
         tb = SketchFormat.TextBehaviour.Fixed;
       }
     }
