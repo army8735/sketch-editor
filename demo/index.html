@@ -72,12 +72,25 @@
 
   sketchEditor.style.font.registerLocalFonts();
 
+  function destroy() {
+    if (listener) {
+      listener.destroy();
+      listener = null;
+    }
+    if (root) {
+      root.destroy();
+      root = null;
+      $canvasC.innerHTML = '';
+    }
+  }
+
   const $canvasC = document.querySelector('#canvasC');
   const dpi = 2;
   const $input = document.querySelector('#file');
   let root;
   let listener;
   $input.onchange = function(e) {
+    destroy();
     const file = $input.files[0];
     $input.value = null;
     $input.blur();
@@ -88,6 +101,7 @@
         ? sketchEditor.openAndConvertPsdBuffer
         : sketchEditor.openAndConvertSketchBuffer;
       loadBuffer(reader.result).then(function(json) {
+        console.log(json)
         const canvas = document.createElement('canvas');
 
         function resize() {
@@ -108,11 +122,6 @@
           clearTimeout(timeout);
           timeout = setTimeout(resize, 20);
         };
-        if(root) {
-          root.destroy();
-          root = null;
-          $canvasC.innerHTML = '';
-        }
         $canvasC.appendChild(canvas);
         root = sketchEditor.parse(json, {
           dpi,
