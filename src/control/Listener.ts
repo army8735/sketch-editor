@@ -771,8 +771,8 @@ export default class Listener extends Event {
       if (this.isRotate) {
         const cx = this.centerX - this.originX;
         const cy = this.centerY - this.originY;
-        const ax = this.startX - this.originX;
-        const ay = this.startY - this.originY;
+        const ax = this.startX;
+        const ay = this.startY;
         const bx = e.clientX - this.originX;
         const by = e.clientY - this.originY;
         const r = angleBySides(
@@ -897,14 +897,14 @@ export default class Listener extends Event {
         // 矢量编辑也特殊，框选发生在没按下矢量点并移动
         if (this.isFrame) {
           if (!this.isMouseMove) {
-            this.select.showFrame(this.startX - this.originX, this.startY - this.originY, dx, dy);
+            this.select.showFrame(this.startX, this.startY, dx, dy);
           }
           else {
             this.select.updateFrame(dx, dy);
           }
           this.isMouseMove = true;
-          const x = (this.startX - this.originX) * dpi;
-          const y = (this.startY - this.originY) * dpi;
+          const x = (this.startX) * dpi;
+          const y = (this.startY) * dpi;
           let meta = this.metaKey || isWin && this.ctrlKey;
           if (this.options.enabled?.selectWithMeta) {
             meta = !meta;
@@ -1058,13 +1058,13 @@ export default class Listener extends Event {
         // 防止轻微抖动添加frame
         else if (dx && dy) {
           this.isMouseMove = true;
-          this.select.showFrame(this.startX - this.originX, this.startY - this.originY, dx, dy);
+          this.select.showFrame(this.startX, this.startY, dx, dy);
         }
         if (this.select.frame.style.display === 'block' && this.img) {
           this.img.style.maxWidth = 'none';
           this.img.style.maxHeight = 'none';
-          this.img.style.left = this.startX - this.originX + 'px';
-          this.img.style.top = this.startY - this.originY + 'px';
+          this.img.style.left = this.startX + 'px';
+          this.img.style.top = this.startY + 'px';
           this.img.style.width = Math.max(Math.abs(dx), 1) + 'px';
           this.img.style.height = Math.max(Math.abs(dy), 1) + 'px';
           this.img.style.transform = this.select.frame.style.transform;
