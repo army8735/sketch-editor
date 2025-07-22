@@ -13,24 +13,24 @@ module.exports = {
       .keys('a')
       .keys(browser.Keys.NULL)
       .click('#button4')
-      .assert.value('input', '[[0,"f"],[0,"f2"]]')
+      .assert.value('#base64', '[[0,"f"],[0,"f2"]]')
 
       .moveToElement('canvas', 20, 20)
       .mouseButtonClick(0)
       .click('#button4')
-      .assert.value('input', '[1]')
+      .assert.value('#base64', '[1]')
 
       .moveToElement('canvas', 50, 50)
       .mouseButtonClick(0)
       .click('#button4')
-      .assert.value('input', '[2,"f"]')
+      .assert.value('#base64', '[2,"f"]')
 
       .moveToElement('canvas', 20, 20)
       .mouseButtonClick(0)
       .moveToElement('canvas', 190, 50)
       .mouseButtonClick(0)
       .click('#button4')
-      .assert.value('input', '[3]')
+      .assert.value('#base64', '[3]')
 
       .end();
   }
