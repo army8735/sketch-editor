@@ -31,7 +31,7 @@ function getTopShapeGroup(node: Geom | ShapeGroup) {
   return res;
 }
 
-function isArtBoardInFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
+function isAllInFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
   const rect = n.getBoundingClientRect();
   if (x1 > x2) {
     [x1, x2] = [x2, x1];
@@ -361,14 +361,25 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
       outer:
       for (let i = 0, len = res.length; i < len; i++) {
         const item = res[i];
+        // 选到group空白处忽略，如果非空白则会选到子节点上，最后向上查找回归group本身
         if (item instanceof Group) {
           continue;
         }
         if (item instanceof ArtBoard) {
-          if (isArtBoardInFrame(x1, y1, x2, y2, item)) {
+          if (isAllInFrame(x1, y1, x2, y2, item)) {
             if (res2.indexOf(item) === -1) {
               res2.push(item);
             }
+          }
+          continue;
+        }
+        // 新版sketch中的Frame特殊逻辑，根Frame非空忽略（选到Frame的空白部分），空则直接选取
+        if (item instanceof AbstractFrame && item.struct.lv === 3) {
+          if (item.children.length) {
+            // continue;
+          }
+          else if (res2.indexOf(item) === -1) {
+            res2.push(item);
           }
           continue;
         }
@@ -376,13 +387,19 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
         while (n && n.struct.lv > 3) {
           const p = n.parent!;
           if (p instanceof ArtBoard) {
-            if (isArtBoardInFrame(x1, y1, x2, y2, p)) {
+            if (isAllInFrame(x1, y1, x2, y2, p)) {
               if (res2.indexOf(p) === -1) {
                 res2.push(p);
               }
               continue outer;
             }
             else {
+              break;
+            }
+          }
+          // 需要查看新版根Frame是否完全包含，完全才选择否则选子节点，空的Frame不会进来因为前面过滤了
+          else if (p instanceof AbstractFrame && p.struct.lv === 3) {
+            if (!isAllInFrame(x1, y1, x2, y2, p)) {
               break;
             }
           }
