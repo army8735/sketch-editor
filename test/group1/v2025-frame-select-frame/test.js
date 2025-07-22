@@ -35,7 +35,7 @@ module.exports = {
       .click('#button4')
       .assert.value('#base64', '[3,"r"]')
 
-      .moveToElement('canvas', 20, 20)
+      .moveToElement('canvas', 170, 20)
       .mouseButtonDown(0)
       .moveToElement('canvas', 300, 140)
       .mouseButtonUp(0)
