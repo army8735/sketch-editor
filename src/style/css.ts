@@ -48,7 +48,10 @@ function compatibleTransform(k: string, v: StyleNumValue) {
 
 export function normalize(style: any): Style {
   const res: any = {};
-  ['left', 'top', 'right', 'bottom', 'width', 'height'].forEach((k) => {
+  [
+    'left', 'top', 'right', 'bottom', 'width', 'height',
+    'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius',
+  ].forEach((k) => {
     if (!style.hasOwnProperty(k)) {
       return;
     }

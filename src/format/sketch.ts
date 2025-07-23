@@ -660,6 +660,23 @@ async function convertItem(
       const includeBackgroundColorInExport = layer.includeBackgroundColorInExport;
       // @ts-ignore
       const clippingBehavior = layer.clippingBehavior;
+      // @ts-ignore
+      const corners = layer.style?.corners;
+      let borderTopLeftRadius = 0;
+      let borderTopRightRadius = 0;
+      let borderBottomLeftRadius = 0;
+      let borderBottomRightRadius = 0;
+      if (corners && (corners.style === 0 || corners.style === 1) && Array.isArray(corners.radii)) {
+        borderTopLeftRadius = corners.radii[0] || 0;
+        if (corners.radii.length > 1) {
+          borderTopRightRadius = corners.radii[1] || 0;
+          borderBottomRightRadius = corners.radii[2] || 0;
+          borderBottomLeftRadius = corners.radii[3] || 0;
+        }
+        else {
+          borderBottomRightRadius = borderBottomLeftRadius = borderTopRightRadius = borderTopLeftRadius;
+        }
+      }
       return {
         tagName: groupBehavior === 1 ? TAG_NAME.FRAME : TAG_NAME.GRAPHIC,
         props: {
@@ -706,6 +723,10 @@ async function convertItem(
             innerShadow,
             innerShadowEnable,
             overflow: clippingBehavior === 2 ? 'visible' : 'hidden',
+            borderTopLeftRadius,
+            borderTopRightRadius,
+            borderBottomLeftRadius,
+            borderBottomRightRadius,
           },
           isLocked,
           isExpanded,

@@ -57,4 +57,8 @@ export const DEFAULT_STYLE = {
   brightness: 1,
   contrast: 1,
   overflow: 'visible',
+  borderTopLeftRadius: 0,
+  borderTopRightRadius: 0,
+  borderBottomLeftRadius: 0,
+  borderBottomRightRadius: 0,
 };

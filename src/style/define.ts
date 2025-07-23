@@ -281,6 +281,10 @@ export type Style = {
   contrast: StyleNumValue;
   matrix?: StyleMatrixValue;
   overflow: StyleOverflowValue;
+  borderTopLeftRadius: StyleNumValue;
+  borderTopRightRadius: StyleNumValue;
+  borderBottomLeftRadius: StyleNumValue;
+  borderBottomRightRadius: StyleNumValue;
 };
 
 export type ComputedStyle = {
@@ -342,6 +346,10 @@ export type ComputedStyle = {
   contrast: number;
   matrix?: ComputedMatrix;
   overflow: OVERFLOW;
+  borderTopLeftRadius: number;
+  borderTopRightRadius: number;
+  borderBottomLeftRadius: number;
+  borderBottomRightRadius: number;
 };
 
 export enum TEXT_ALIGN {

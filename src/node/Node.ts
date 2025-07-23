@@ -533,6 +533,10 @@ class Node extends Event {
     );
     computedStyle.textDecoration = style.textDecoration.map(item => item.v);
     computedStyle.overflow = style.overflow.v;
+    computedStyle.borderTopLeftRadius = style.borderTopLeftRadius.v;
+    computedStyle.borderTopRightRadius = style.borderTopRightRadius.v;
+    computedStyle.borderBottomLeftRadius = style.borderBottomLeftRadius.v;
+    computedStyle.borderBottomRightRadius = style.borderBottomRightRadius.v;
     // 只有重布局或者改transform才影响，普通repaint不变
     if (lv & RefreshLevel.REFLOW_TRANSFORM) {
       this.calMatrix(lv);
@@ -1725,7 +1729,11 @@ class Node extends Event {
     const { style, computedStyle } = this;
     Object.assign(res, computedStyle);
     // %单位转换
-    ['top', 'right', 'bottom', 'left', 'width', 'height', 'translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ'].forEach((k) => {
+    [
+      'top', 'right', 'bottom', 'left', 'width', 'height',
+      'translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ',
+      'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius',
+    ].forEach((k) => {
       const o: any = style[k as keyof JStyle];
       if (o.u === StyleUnit.AUTO) {
         res[k] = 'auto';
