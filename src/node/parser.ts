@@ -2,6 +2,8 @@ import {
   ArtBoardProps,
   BitmapProps,
   JContainer,
+  JFrame,
+  JGraphic,
   JGroup,
   JLayer,
   JNode,
@@ -117,37 +119,86 @@ export function parse(json: JLayer, root?: Root): Node | undefined {
 
 export function sortSymbolMasters(list: JSymbolMaster[]) {
   // 递归遍历分析依赖
-  const hash: Record<string, string> = {};
+  const depHash: Record<string, string[]> = {};
+  const symbolHash: Record<string, JSymbolMaster> = {};
+  list.forEach((item, i) => {
+    const id = item.props.symbolId;
+    scan(id, item.children || [], depHash);
+    symbolHash[id] = item;
+  });
+  const recordHash: Record<string, boolean> = {};
+  // 将被依赖放在list前面，不能使用自带的sort，因为可能会产生优化遗漏掉比较，需要手动遍历一遍
+  const res: JSymbolMaster[] = [];
   list.forEach(item => {
     const id = item.props.symbolId;
-    scan(id, item.children || [], hash);
-  });
-  list.sort((a, b) => {
-    const id1 = a.props.symbolId;
-    const id2 = b.props.symbolId;
-    if (hash[id1] === id2) {
-      return -1;
+    if (recordHash[id]) {
+      return;
     }
-    else if (hash[id2] === id1) {
-      return 1;
+    let depList = depHash[id];
+    const temp: JSymbolMaster[] = [];
+    // 深度遍历
+    while (depList && depList.length) {
+      const o = symbolHash[depList.shift()!];
+      // 一般不可能，除非脏数据，兜底
+      if (!o) {
+        continue;
+      }
+      const id = o.props.symbolId;
+      if (recordHash[id]) {
+        continue;
+      }
+      recordHash[id] = true;
+      // 被依赖的放在temp前面，最终按顺序存入res结果
+      temp.unshift(o);
+      if (depHash[id]) {
+        depList.unshift(...depHash[id]);
+      }
     }
-    return 0;
+    if (temp.length) {
+      res.push(...temp);
+    }
+    // 不可能，除非脏数据循环依赖，兜底
+    if (recordHash[id]) {
+      return;
+    }
+    recordHash[id] = true;
+    res.push(item);
   });
-  return list;
+  return res;
 }
 
-function scan(id: string, children: JNode[], hash: Record<string, string>) {
+/**
+ * 所有的symbolMaster递归分析，找到symbolInstance的时候，记录个依赖关系到hash中，
+ * 形成k->v：symbolMaster->symbolInstance[]，即sm包含的si子节点们。
+ */
+function scan(id: string, children: JNode[], hash: Record<string, string[]>) {
   children.forEach(item => {
+    // symbolMaster包含symbolMaster，一般不会出现，兜底
     if (item.tagName === TAG_NAME.SYMBOL_MASTER) {
       const id2 = (item as JSymbolMaster).props.symbolId;
-      hash[id2] = id;
+      if (id2) {
+        hash[id] = hash[id] || [];
+        hash[id].push(id2);
+      }
       scan(id2, (item as JSymbolMaster).children || [], hash);
     }
     else if (item.tagName === TAG_NAME.SYMBOL_INSTANCE) {
-      hash[(item as JSymbolInstance).props.symbolId] = id;
+      const id2 = (item as JSymbolInstance).props.symbolId;
+      if (id2) {
+        hash[id] = hash[id] || [];
+        hash[id].push(id2);
+      }
     }
     else if (item.tagName === TAG_NAME.GROUP) {
       const cd = (item as JGroup).children || [];
+      scan(id, cd, hash);
+    }
+    else if (item.tagName === TAG_NAME.FRAME) {
+      const cd = (item as JFrame).children || [];
+      scan(id, cd, hash);
+    }
+    else if (item.tagName === TAG_NAME.GRAPHIC) {
+      const cd = (item as JGraphic).children || [];
       scan(id, cd, hash);
     }
   });
