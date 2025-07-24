@@ -208,6 +208,7 @@ async function convertItem(
   h: number,
   dx = 0,
   dy = 0,
+  inGraphic = false,
 ): Promise<JNode | undefined> {
   let width: number | string = layer.frame.width || 0.5;
   let height: number | string = layer.frame.height || 0.5;
@@ -378,6 +379,10 @@ async function convertItem(
     }
     if (verticalSizing === 0) {
       resizingConstraint |= ResizingConstraint.HEIGHT;
+    }
+    // 新版Graphic的子节点强制left+right百分比，但Text特殊有固定尺寸，会在后面自己判断
+    if (inGraphic) {
+      resizingConstraint = 0;
     }
   }
   // left
@@ -631,9 +636,11 @@ async function convertItem(
     } as JSymbolInstance;
   }
   if (layer._class === SketchFormat.ClassValue.Group) {
+    // @ts-ignore
+    const groupBehavior = layer.groupBehavior;
     const children: JNode[] = [];
     for (let i = 0, len = layer.layers?.length; i < len; i++) {
-      const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, layer.frame.width, layer.frame.height);
+      const res = await convertItem(layer.layers[i], (i + 1) / (len + 1), opt, layer.frame.width, layer.frame.height, 0, 0, groupBehavior === 2);
       if (res) {
         children.push(res);
       }
@@ -653,8 +660,6 @@ async function convertItem(
       strokeLinejoin,
       strokeMiterlimit,
     } = await geomStyle(layer, opt);
-    // @ts-ignore
-    const groupBehavior = layer.groupBehavior;
     if (groupBehavior === 1 || groupBehavior === 2) {
       // @ts-ignore
       const includeBackgroundColorInExport = layer.includeBackgroundColorInExport;
