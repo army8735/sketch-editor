@@ -405,9 +405,9 @@ class Root extends Container implements FrameCallback {
       return false;
     }
     // tile开启，发生变化的先向上遍历parent，清空所在的tile，不用向上，如果父级有merge在渲染时会重置
-    const isTile = config.tile && !this.firstDraw && !node.isPage;
+    const isTile = config.tile && !this.firstDraw && !(node instanceof Page);
     if (isTile && lv > RefreshLevel.CACHE) {
-      Tile.clean(node.cleanTile());
+      node.cleanTile();
     }
     // reflow/repaint/<repaint分级
     const isRf = isReflow(lv);
@@ -469,7 +469,7 @@ class Root extends Container implements FrameCallback {
             let next = node.next;
             while (next && !next.computedStyle.breakMask && next.computedStyle.maskMode === MASK.NONE) {
               if (computedStyle.maskMode !== MASK.NONE) {
-                Tile.clean(next.cleanTile());
+                next.cleanTile();
               }
               else {
                 this.tileRecord[next.uuid] = next;
@@ -501,10 +501,10 @@ class Root extends Container implements FrameCallback {
           // 取消的话如果前面有mask才会有效即有newMask节点
           else if (!computedStyle.breakMask && newMask) {
             if (isTile && !computedStyle.maskMode) {
-              Tile.clean(node.cleanTile());
+              node.cleanTile();
               let next = node.next;
               while (next && !next.computedStyle.breakMask && next.computedStyle.maskMode === MASK.NONE) {
-                Tile.clean(next.cleanTile());
+                next.cleanTile();
                 next = next.next;
               }
             }

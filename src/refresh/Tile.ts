@@ -61,7 +61,6 @@ class Tile {
     this.complete = false;
     const list = this.nodes.splice(0);
     list.forEach(item => item.removeTile(this));
-    return list;
   }
 
   add(node: Node) {
@@ -83,6 +82,9 @@ class Tile {
       node.removeTile(this);
       this.count--;
       this.complete = false;
+      // 删除后这个tile需要清空重绘
+      this.needClear = true;
+      this.clean();
     }
   }
 
@@ -130,10 +132,6 @@ class Tile {
       throw new Error('The UNIT of Tile muse be a power of 2 and the minimum is 32');
     }
     UNIT = n;
-  }
-
-  static clean(list: Tile[]) {
-    list.forEach(item => item.clean());
   }
 }
 

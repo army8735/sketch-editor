@@ -2619,6 +2619,7 @@ class Node extends Event {
     return res;
   }
 
+  // 在tile中一帧绘制完后才加入这个tile
   addTile(tile: Tile) {
     if (this.tileList.indexOf(tile) === -1) {
       this.tileList.push(tile);

@@ -488,7 +488,6 @@ function renderWebglTile(
           }
           // 记录节点和tile的关系，发生变化清空所在tile
           node.addTile(tile);
-          tile.add(node);
           if (!shouldRender && !isArtBoard) {
             continue;
           }
