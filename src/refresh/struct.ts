@@ -460,7 +460,7 @@ function renderWebglTile(
           abRect[2] = ab2.x3;
           abRect[3] = ab2.y3;
         }
-        // console.warn(i, node.props.name, shouldRender, coords, bbox.join(','), sb);
+        console.warn(i, node.name, shouldRender, coords, bbox.join(','), sb);
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bboxT = tile.bbox;
@@ -472,7 +472,7 @@ function renderWebglTile(
             tile.y2 = (ab!.y3 - tile.y * factor - cx2) / cx2;
           }
           // 不在此tile中跳过，tile也可能是老的已有完备的，或存在于上帧没绘完的
-          if ((!node.hasContent && !isArtBoard) || tile.complete || tile.has(node) || !isConvexPolygonOverlapRect(
+          if ((!target?.available && !isArtBoard) || tile.complete || tile.has(node) || !isConvexPolygonOverlapRect(
             bboxT[0], bboxT[1], bboxT[2], bboxT[3],
             [{
               x: sb.x1, y: sb.y1,
@@ -486,7 +486,6 @@ function renderWebglTile(
           )) {
             continue;
           }
-          // console.log(j, shouldRender);
           // 记录节点和tile的关系，发生变化清空所在tile
           node.addTile(tile);
           tile.add(node);
