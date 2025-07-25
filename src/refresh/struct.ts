@@ -460,7 +460,7 @@ function renderWebglTile(
           abRect[2] = ab2.x3;
           abRect[3] = ab2.y3;
         }
-        console.warn(i, node.name, shouldRender, coords, bbox.join(','), sb);
+        // console.warn(i, node.name, shouldRender, coords, bbox.join(','), sb);
         for (let j = 0, len = tileList.length; j < len; j++) {
           const tile = tileList[j];
           const bboxT = tile.bbox;
