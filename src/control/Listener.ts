@@ -774,8 +774,8 @@ export default class Listener extends Event {
     let dx = e.clientX - this.originX - this.startX; // 外部页面单位
     let dy = e.clientY - this.originY - this.startY;
     const zoom = page.getZoom();
-    let dx2 = this.dx = Math.round(dx * dpi / zoom); // 画布内sketch单位
-    let dy2 = this.dy = Math.round(dy * dpi / zoom);
+    let dx2 = this.dx = dx * dpi / zoom; // 画布内sketch单位
+    let dy2 = this.dy = dy * dpi / zoom;
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
@@ -906,7 +906,15 @@ export default class Listener extends Event {
         if (this.options.disabled?.move) {
           return;
         }
-        // 矢量编辑也特殊，框选发生在没按下矢量点并移动
+        let meta = this.metaKey || isWin && this.ctrlKey;
+        if (this.options.enabled?.selectWithMeta) {
+          meta = !meta;
+        }
+        // 如果NORMAL时（避免矢量编辑态歧义）按下meta且第一次移动，认为是框选
+        if (!this.isMouseMove && this.state === state.NORMAL && meta) {
+          this.isFrame = true;
+        }
+        // 矢量编辑也特殊，框选发生在没按下矢量点按在空白处，onDown里判断
         if (this.isFrame) {
           if (!this.isMouseMove) {
             this.select.showFrame(this.startX, this.startY, dx, dy);
@@ -915,12 +923,8 @@ export default class Listener extends Event {
             this.select.updateFrame(dx, dy);
           }
           this.isMouseMove = true;
-          const x = (this.startX) * dpi;
-          const y = (this.startY) * dpi;
-          let meta = this.metaKey || isWin && this.ctrlKey;
-          if (this.options.enabled?.selectWithMeta) {
-            meta = !meta;
-          }
+          const x = this.startX * dpi;
+          const y = this.startY * dpi;
           // 矢量顶点框选，不关闭矢量面板，注意刚按下时人手可能会轻微移动，x/y某个为0忽略，产生位移后keep就为true了
           if (this.state === state.EDIT_GEOM) {
             const geometry = this.geometry;
@@ -964,26 +968,7 @@ export default class Listener extends Event {
             return;
           }
           const res = getFrameNodes(root, x, y, x + dx * dpi, y + dy * dpi, meta);
-          const old = selected.splice(0);
-          selected.push(...res);
-          // 已选择的没变优化
-          let change = old.length !== selected.length;
-          if (!change) {
-            for (let i = 0, len = old.length; i < len; i++) {
-              if (old[i] !== selected[i]) {
-                change = true;
-              }
-            }
-          }
-          if (change) {
-            if (res.length) {
-              this.select.showSelect(selected);
-            }
-            else {
-              this.select.hideSelect();
-            }
-            this.emit(Listener.SELECT_NODE, selected.slice(0));
-          }
+          this.setSelected(res);
         }
         else {
           if (this.state === state.EDIT_GEOM) {
@@ -2009,6 +1994,29 @@ export default class Listener extends Event {
     }
   }
 
+  setSelected(nodes: Node[]) {
+    const selected = this.selected;
+    const old = selected.splice(0);
+    selected.push(...nodes);
+    let change = old.length !== selected.length;
+    if (!change) {
+      for (let i = 0, len = old.length; i < len; i++) {
+        if (old[i] !== selected[i]) {
+          change = true;
+        }
+      }
+    }
+    if (change) {
+      if (nodes.length) {
+        this.select.showSelect(selected);
+      }
+      else {
+        this.select.hideSelect();
+      }
+      this.emit(Listener.SELECT_NODE, selected.slice(0));
+    }
+  }
+
   onKeyDown(e: KeyboardEvent) {
     const meta = this.metaKey;
     const ctrl = this.ctrlKey;
@@ -2021,15 +2029,24 @@ export default class Listener extends Event {
       return;
     }
     const metaKey = (this.metaKey || isWin && this.ctrlKey);
-    if (metaKey && this.selected.length === 1
-      && !this.selected[0].isSlice && !(this.selected[0] instanceof Slice)) {
+    // 实时切换已选择的控制点是否为rotate状态
+    if (metaKey && this.selected.length === 1 && !(this.selected[0] instanceof Slice)) {
       this.select.metaKey(true);
     }
-    if ((meta !== this.metaKey || isWin && ctrl !== this.ctrlKey) && !this.isMouseDown) {
-      const dpi = this.root.dpi;
+    // 实时切换hover
+    if ((meta !== this.metaKey || isWin && ctrl !== this.ctrlKey)) {
+      const root = this.root;
+      const dpi = root.dpi;
       const x = this.startX * dpi;
       const y = this.startY * dpi;
-      this.hover(x, y);
+      if (!this.isMouseDown) {
+        this.hover(x, y);
+      }
+      else if (this.isFrame && this.state === state.NORMAL) {
+        const zoom = page.getZoom();
+        const res = getFrameNodes(root, x, y, x + this.dx * zoom, y + this.dy * zoom, metaKey);
+        this.setSelected(res);
+      }
     }
     const { keyCode, code } = e;
     const target = e.target as HTMLElement; // 忽略输入时
@@ -2702,14 +2719,28 @@ export default class Listener extends Event {
     this.altKey = e.altKey;
     this.ctrlKey = e.ctrlKey;
     this.shiftKey = e.shiftKey;
-    if (!(this.metaKey || isWin && this.ctrlKey) && !this.isRotate) {
+    const page = this.root.getCurPage();
+    if (!page) {
+      return;
+    }
+    const metaKey = (this.metaKey || isWin && this.ctrlKey);
+    // 实时切换rotate状态
+    if (!metaKey && !this.isRotate) {
       this.select.metaKey(false);
     }
-    if ((meta !== this.metaKey || isWin && ctrl !== this.ctrlKey) && !this.isMouseDown) {
-      const dpi = this.root.dpi;
+    if ((meta !== this.metaKey || isWin && ctrl !== this.ctrlKey)) {
+      const root = this.root;
+      const dpi = root.dpi;
       const x = this.startX * dpi;
       const y = this.startY * dpi;
-      this.hover(x, y);
+      if (!this.isMouseDown) {
+        this.hover(x, y);
+      }
+      else if (this.isFrame && this.state === state.NORMAL) {
+        const zoom = page.getZoom();
+        const res = getFrameNodes(root, x, y, x + this.dx * zoom, y + this.dy * zoom, metaKey);
+        this.setSelected(res);
+      }
     }
     // space
     if (e.keyCode === 32) {
