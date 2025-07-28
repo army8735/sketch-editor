@@ -1,7 +1,7 @@
 import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import Container from '../node/Container';
-import { appendWithPosAndSize } from '../tools/container';
+import { appendWithPosAndSize } from '../tool/container';
 
 // 和remove很相似，但没有selected
 export type AddData = {

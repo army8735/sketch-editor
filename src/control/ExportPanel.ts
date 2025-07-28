@@ -6,7 +6,7 @@ import ExportCommand from '../history/ExportCommand';
 import Panel from './Panel';
 import Listener from './Listener';
 import state from './state';
-import { toBitmap } from '../tools/node';
+import { toBitmap } from '../tool/node';
 import { clone } from '../util/type';
 
 const html = `

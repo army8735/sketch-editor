@@ -3,7 +3,7 @@ import Polyline from '../node/geom/Polyline';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import { Point } from '../format';
 import { clone } from '../util/type';
-import { getPointsAbsByDsp } from '../tools/polyline';
+import { getPointsAbsByDsp } from '../tool/polyline';
 
 export type PointData = {
   prev: Point[],

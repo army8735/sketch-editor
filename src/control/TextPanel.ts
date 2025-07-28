@@ -3,7 +3,7 @@ import Root from '../node/Root';
 import Text from '../node/Text';
 import { toPrecision } from '../math';
 import style from '../style';
-import { getEditTextInfo, getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tools/text';
+import { getEditTextInfo, getFontWeightList, getTextBehaviour, getTextInfo, setTextBehaviour } from '../tool/text';
 import { ComputedGradient, ComputedPattern, TEXT_ALIGN, TEXT_VERTICAL_ALIGN } from '../style/define';
 import ResizeCommand, { CONTROL_TYPE, ResizeData } from '../history/ResizeCommand';
 import RichCommand, { RichData } from '../history/RichCommand';

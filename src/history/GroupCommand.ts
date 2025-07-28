@@ -2,9 +2,9 @@ import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import Group from '../node/Group';
-import { group } from '../tools/group';
-import { migrate } from '../tools/node';
-import { appendWithIndex } from '../tools/container';
+import { group } from '../tool/group';
+import { migrate } from '../tool/node';
+import { appendWithIndex } from '../tool/container';
 
 export type GroupData = {
   parent: Container;

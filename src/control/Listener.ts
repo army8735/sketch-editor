@@ -31,8 +31,8 @@ import {
   getFrameNodes,
   getNodeByPoint,
   getOverlayArtBoardByPoint,
-} from '../tools/root';
-import { appendWithPosAndSize } from '../tools/container';
+} from '../tool/root';
+import { appendWithPosAndSize } from '../tool/container';
 import {
   createLine,
   createOval,
@@ -41,8 +41,8 @@ import {
   createTriangle,
   getFrameVertexes,
   getPointsAbsByDsp,
-} from '../tools/polyline';
-import { createText } from '../tools/text';
+} from '../tool/polyline';
+import { createText } from '../tool/text';
 import { intersectLineLine } from '../math/isec';
 import { angleBySides, r2d } from '../math/geom';
 import { crossProduct } from '../math/vector';

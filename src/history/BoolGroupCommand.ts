@@ -2,11 +2,11 @@ import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import ShapeGroup from '../node/geom/ShapeGroup';
-import { boolGroup } from '../tools/shapeGroup';
+import { boolGroup } from '../tool/shapeGroup';
 import { JStyle } from '../format';
 import Group from '../node/Group';
-import { migrate } from '../tools/node';
-import { appendWithIndex } from '../tools/container';
+import { migrate } from '../tool/node';
+import { appendWithIndex } from '../tool/container';
 
 export type BoolGroupData = {
   parent: Container;

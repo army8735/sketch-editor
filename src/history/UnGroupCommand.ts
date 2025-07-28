@@ -2,9 +2,9 @@ import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import AbstractGroup from '../node/AbstractGroup';
-import { unGroup } from '../tools/group';
-import { migrate } from '../tools/node';
-import { appendWithIndex } from '../tools/container';
+import { unGroup } from '../tool/group';
+import { migrate } from '../tool/node';
+import { appendWithIndex } from '../tool/container';
 import ShapeGroup from '../node/geom/ShapeGroup';
 
 export type UnGroupData = {

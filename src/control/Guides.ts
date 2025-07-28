@@ -1,6 +1,6 @@
 import Node from '../node/Node';
 import Root from '../node/Root';
-import { getGuidesNodes, GuideRect, NodeGuide, search2 } from '../tools/root';
+import { getGuidesNodes, GuideRect, NodeGuide, search2 } from '../tool/root';
 import config from '../util/config';
 import Listener from './Listener';
 import { toPrecision } from '../math';

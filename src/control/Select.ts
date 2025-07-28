@@ -4,7 +4,7 @@ import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix
 import Polyline from '../node/geom/Polyline';
 import { r2d } from '../math/geom';
 import { VISIBILITY } from '../style/define';
-import { getFlipOnPage } from '../tools/node';
+import { getFlipOnPage } from '../tool/node';
 
 export type Rect = {
   x: number;

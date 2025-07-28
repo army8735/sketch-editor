@@ -1,7 +1,7 @@
 import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import AbstractGroup from '../node/AbstractGroup';
-import { moveAfter, moveAppend, moveBefore } from '../tools/node';
+import { moveAfter, moveAppend, moveBefore } from '../tool/node';
 import config from '../util/config';
 import Container from '../node/Container';
 

@@ -23,7 +23,7 @@ import {
   resizeTopOperate,
   resizeTopRightAspectRatioOperate,
   resizeTopRightMultiArOperate,
-} from '../tools/node';
+} from '../tool/node';
 import { JStyle, ResizeStyle } from '../format';
 import { Rect } from '../control/Select';
 

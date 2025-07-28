@@ -6,7 +6,7 @@ import AbstractFrame from '../node/AbstractFrame';
 import ArtBoard from '../node/ArtBoard';
 import { toPrecision } from '../math';
 import Listener from './Listener';
-import { getBasicInfo } from '../tools/node';
+import { getBasicInfo } from '../tool/node';
 import MoveCommand, { MoveData } from '../history/MoveCommand';
 import RotateCommand from '../history/RotateCommand';
 import ConstrainProportionCommand, { ConstrainProportionData } from '../history/ConstrainProportionCommand';

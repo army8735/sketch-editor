@@ -1,7 +1,7 @@
 import AbstractCommand from './AbstractCommand';
 // import Container from '../node/Container';
 import ShapeGroup from '../node/geom/ShapeGroup';
-import { flatten } from '../tools/shapeGroup';
+import { flatten } from '../tool/shapeGroup';
 import Polyline from '../node/geom/Polyline';
 
 export type FlattenData = {

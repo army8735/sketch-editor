@@ -9,7 +9,7 @@ import { Point } from '../format';
 import { clone } from '../util/type';
 import ClosedCommand from '../history/ClosedCommand';
 import PointCommand from '../history/PointCommand';
-import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
+import { getPointsAbsByDsp, getPointsDspByAbs } from '../tool/polyline';
 import { toPrecision } from '../math';
 import ShapeGroup from '../node/geom/ShapeGroup';
 

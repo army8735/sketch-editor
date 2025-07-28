@@ -11,7 +11,7 @@ import animation from './animation';
 import node from './node';
 import { parse, sortSymbolMasters } from './node/parser';
 import SymbolMaster from './node/SymbolMaster';
-import tools from './tools';
+import tool from './tool';
 import control from './control';
 import history from './history';
 import { version } from '../package.json';
@@ -84,7 +84,11 @@ export default {
   math,
   util,
   animation,
-  tools,
+  tool,
+  get tools() {
+    util.inject.warn('Deprecated, tools -> tool');
+    return tool;
+  },
   config,
   control,
   history,

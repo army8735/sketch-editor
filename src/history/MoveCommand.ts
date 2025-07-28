@@ -3,7 +3,7 @@ import Node from '../node/Node';
 import { ComputedStyle } from '../style/define';
 import ArtBoard from '../node/ArtBoard';
 import { isConvexPolygonOverlapRect } from '../math/geom';
-import { moveAppend, moveAfter } from '../tools/node';
+import { moveAppend, moveAfter } from '../tool/node';
 
 export type MoveData = { dx: number, dy: number };
 

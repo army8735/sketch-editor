@@ -8,8 +8,8 @@ import { r2d } from '../math/geom';
 import { Point } from '../format';
 import { clone, equal } from '../util/type';
 import PointCommand, { PointData } from '../history/PointCommand';
-import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
-import { getFlipOnPage, getMatrixOnPage, getRotateOnPageByMF } from '../tools/node';
+import { getPointsAbsByDsp, getPointsDspByAbs } from '../tool/polyline';
+import { getFlipOnPage, getMatrixOnPage, getRotateOnPageByMF } from '../tool/node';
 import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix';
 
 export default class Geometry {
