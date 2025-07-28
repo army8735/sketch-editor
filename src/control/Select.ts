@@ -229,9 +229,9 @@ export default class Select {
       style.transform = '';
       // 多选更新每个节点的小框
       let s = '';
-      selected.forEach(item => {
+      selected.forEach((item, i) => {
         const r = this.calRect(item);
-        s += `<div style="left:${(r.left-left/dpi)}px;top:${(r.top-top/dpi)}px;width:${r.width}px;height:${r.height}px;transform:${r.transform}"></div>`;
+        s += `<div style="left:${(r.left-left/dpi)}px;top:${(r.top-top/dpi)}px;width:${r.width}px;height:${r.height}px;transform:${r.transform}" title="${i}"></div>`;
       });
       const sub = this.select.querySelector('.sub') as HTMLElement;
       if (sub.innerHTML !== s) {
