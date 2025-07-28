@@ -114,8 +114,8 @@ function getMatrixNoFlip(node: Node) {
   return calMatrixByOrigin(m, tfo[0], tfo[1]);
 }
 
-// 获取节点相对于其所在Page的matrix，Page本身返回E，注意忽略镜像
-export function getMatrixOnPage(node: Node, ignoreFlip = false) {
+// 获取节点相对于其所在Page的matrix，Page本身返回E
+export function getMatrixOnPage(node: Node) {
   if (!node.page) {
     throw new Error('Node not on a Page');
   }
@@ -133,9 +133,9 @@ export function getMatrixOnPage(node: Node, ignoreFlip = false) {
   let m = identity();
   while (list.length) {
     const n = list.pop()!;
-    m = multiply(m, ignoreFlip ? getMatrixNoFlip(n) : n.matrix);
+    m = multiply(m, n.matrix);
   }
-  m = multiply(m, ignoreFlip ? getMatrixNoFlip(node) : node.matrix);
+  m = multiply(m, node.matrix);
   return m;
 }
 
@@ -159,8 +159,12 @@ export function getFlipOnPage(node: Node) {
   return { x, y };
 }
 
-export function getRotateOnPage(matrix: Float64Array, flip: { x: number, y: number }) {
-  // flipXY等同于无flip+180°
+export function getRotateOnPage(node: Node, flip?: { x: number, y: number }) {
+  const m = getMatrixOnPage(node);
+  return getRotateOnPageByMF(m, flip || getFlipOnPage(node));
+}
+
+export function getRotateOnPageByMF(matrix: Float64Array, flip: { x: number, y: number }) {// flipXY等同于无flip+180°
   if (flip.x === -1 && flip.y === -1) {
     if (matrix[1] < 0) {
       return Math.PI - Math.acos(matrix[0]);
@@ -220,7 +224,7 @@ export function migrate(parent: Container, node: Node) {
   const matrixN = getMatrixOnPage(node); // 节点实际本身的，末尾要用不能变
   let matrixN2 = matrixN; // 下面为了计算虚拟的
   // console.log('matrixP', matrixP.join(','), 'matrixN', matrixN.join(','));
-  const rotateP = getRotateOnPage(matrixP, flipP);
+  const rotateP = getRotateOnPageByMF(matrixP, flipP);
   const computedStyle = node.computedStyle;
   // 两个节点的旋转计算需要考虑flip，相同时不需考虑变换，不相同需以parent为基准，node需保持一致
   if (flipP.x === flipN.x && flipP.y === flipN.y) {
@@ -250,7 +254,7 @@ export function migrate(parent: Container, node: Node) {
     const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
     matrixN2 = multiply(matrixNP, t);
   }
-  const rotateN = getRotateOnPage(matrixN2, flipP);
+  const rotateN = getRotateOnPageByMF(matrixN2, flipP);
   let rotateDiff = rotateP - rotateN;
   // console.log('rotateP', r2d(rotateP), 'rotateN', r2d(rotateN), 'rotateDiff', r2d(rotateDiff));
   // 知道rotate差异之后，需要旋转node到和parent一致后求布局坐标
@@ -470,8 +474,8 @@ export function migrate(parent: Container, node: Node) {
     const tfo = transformOrigin;
     const t = calMatrixByOrigin(i, tfo[0], tfo[1]);
     const m = multiply(matrixP, t);
-    const r = getRotateOnPage(m, { x : flipP.x * style.scaleX.v, y : flipP.y * style.scaleY.v });
-    const r2 = getRotateOnPage(matrixN, flipN);
+    const r = getRotateOnPageByMF(m, { x : flipP.x * style.scaleX.v, y : flipP.y * style.scaleY.v });
+    const r2 = getRotateOnPageByMF(matrixN, flipN);
     const diff = r2 - r;
     // console.log('r', style.rotateZ.v, r2d(r2), r2d(r), r2d(diff));
     style.rotateZ.v += r2d(diff);
@@ -1527,5 +1531,7 @@ export default {
   getBasicInfo,
   toBitmap,
   getRotateOnPage,
+  getMatrixOnPage,
+  getRotateOnPageByMF,
   getFlipOnPage,
 };
