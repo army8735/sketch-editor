@@ -9,7 +9,7 @@ import { Point } from '../format';
 import { clone, equal } from '../util/type';
 import PointCommand, { PointData } from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tools/polyline';
-import { getFlipOnPage, getMatrixOnPage, getRotateOnPage } from '../tools/node';
+import { getFlipOnPage, getMatrixOnPage, getRotateOnPageByMF } from '../tools/node';
 import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix';
 
 export default class Geometry {
@@ -627,7 +627,7 @@ export default class Geometry {
     }
     let { x1, y1, x2, y2, x3, y3 } = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrix);
     const flip = getFlipOnPage(node);
-    const r = getRotateOnPage(getMatrixOnPage(node), flip);
+    const r = getRotateOnPageByMF(getMatrixOnPage(node), flip);
     const width = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
     const height = Math.sqrt(Math.pow(x2 - x3, 2) + Math.pow(y2 - y3, 2));
     const res = {
