@@ -2640,7 +2640,6 @@ class Node extends Event {
     list.forEach(item => {
       item.remove(this);
     });
-    return list;
   }
 
   isParent(target: Node) {

@@ -3,6 +3,7 @@ import { JContainer, JNode, Override, Props } from '../format';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
+import Tile from '../refresh/Tile';
 import inject from '../util/inject';
 import { clone, isNil } from '../util/type';
 import { LayoutData } from './layout';
@@ -248,6 +249,28 @@ class Container<T extends Node = Node> extends Node {
       }
       root!.addUpdate(this, [], RefreshLevel.REFLOW, false, false, cb);
     }
+  }
+
+  // 这个无需覆盖，渲染时只有在tile内的有内容节点/merge节点会被加入
+  // override addTile(tile: Tile) {
+  //   super.addTile(tile);
+  //   this.children.forEach(item => {
+  //     item.addTile(tile);
+  //   });
+  // }
+
+  override removeTile(tile: Tile) {
+    super.removeTile(tile);
+    this.children.forEach(item => {
+      item.removeTile(tile);
+    });
+  }
+
+  override cleanTile() {
+    super.cleanTile();
+    this.children.forEach(item => {
+      item.cleanTile();
+    });
   }
 
   override destroy() {
