@@ -1,11 +1,11 @@
 import * as uuid from 'uuid';
 import { Override, SymbolMasterProps, TAG_NAME } from '../format';
-import ArtBoard from './ArtBoard';
+import Frame from './Frame';
 import Node from './Node';
 import SymbolInstance from './SymbolInstance';
 import { clone } from '../util/type';
 
-class SymbolMaster extends ArtBoard {
+class SymbolMaster extends Frame {
   symbolInstances: SymbolInstance[];
 
   constructor(props: SymbolMasterProps, children: Array<Node>) {

@@ -237,16 +237,17 @@ async function convertItem(
   let scaleX = layer.isFlippedHorizontal ? -1 : 1;
   let scaleY = layer.isFlippedVertical ? -1 : 1;
   if (layer._class === SketchFormat.ClassValue.SymbolInstance && layer.scale && layer.scale !== 1) {
-    scaleX *= layer.scale;
-    scaleY *= layer.scale;
-    const w = width / layer.scale;
-    const h = height / layer.scale;
-    const dw = w - width;
-    const dh = h - height;
-    translateX -= dw * 0.5;
-    translateY -= dh * 0.5;
-    width /= layer.scale;
-    height /= layer.scale;
+    // console.log(layer)
+    // scaleX *= layer.scale;
+    // scaleY *= layer.scale;
+    // const w = width / layer.scale;
+    // const h = height / layer.scale;
+    // const dw = w - width;
+    // const dh = h - height;
+    // translateX -= dw * 0.5;
+    // translateY -= dh * 0.5;
+    // width = w;
+    // height = h;
   }
   // 渲染无关的锁定/展开/固定宽高比
   const isLocked = layer.isLocked;
@@ -602,6 +603,7 @@ async function convertItem(
         index,
         constrainProportions,
         symbolId: layer.symbolID,
+        scale: layer.scale,
         overrideValues,
         exportOptions,
         style: {

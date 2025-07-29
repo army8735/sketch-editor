@@ -1,17 +1,20 @@
 import * as uuid from 'uuid';
-import { JNode, Override, SymbolInstanceProps, TAG_NAME } from '../format';
+import { Override, SymbolInstanceProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
 import Group from './Group';
 import { clone } from '../util/type';
 
 class SymbolInstance extends Group {
   symbolMaster: SymbolMaster;
+  scale: number;
 
   constructor(props: SymbolInstanceProps, symbolMaster: SymbolMaster) {
     const overrideValues = props.overrideValues || {};
-    super(props, symbolMaster.children.map(item => item.clone(overrideValues)));
+    const children = symbolMaster.children.map(item => item.clone(overrideValues));
+    super(props, children);
     this.isSymbolInstance = true;
     this.symbolMaster = symbolMaster;
+    this.scale = props.scale || 1;
     symbolMaster.addSymbolInstance(this);
   }
 

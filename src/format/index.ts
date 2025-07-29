@@ -248,6 +248,7 @@ export type SymbolMasterProps = ArtBoardProps & {
 export type SymbolInstanceProps = Props & {
   symbolId: string;
   overrideValues?: Record<string, Override[]>;
+  scale?: number;
 };
 
 export type TextProps = Props & {
