@@ -1,18 +1,33 @@
+import inject from './inject';
+
 let max = 2048;
 let manual = false;
+let MAX_TEXTURE_SIZE = max;
+let hasInit = false;
 
 export default {
   debug: false,
   offscreenCanvas: false,
   tile: false, // 是否开启tile优化
   deltaTime: 8, // 跨帧渲染，单帧渲染过程超过值时停止在下一帧继续
-  maxTextureSize: max, // 系统纹理块尺寸限制记录，root用下面的大写
-  get MAX_TEXTURE_SIZE() {
+  get maxTextureSize() { // 系统纹理块尺寸限制记录，手动优先级>自动，默认2048自动不能超过
     return max;
   },
-  set MAX_TEXTURE_SIZE(v: number) {
-    max = v;
+  set maxTextureSize(v: number) {
+    if (hasInit) {
+      max = Math.min(v, MAX_TEXTURE_SIZE);
+    }
+    else {
+      max = v;
+    }
     manual = true;
+  },
+  get MAX_TEXTURE_SIZE() {
+    return MAX_TEXTURE_SIZE;
+  },
+  set MAX_TEXTURE_SIZE(v: number) {
+    inject.warn('Deprecated, MAX_TEXTURE_SIZE -> maxTextureSize');
+    this.maxTextureSize = v;
   },
   MAX_TEXTURE_UNITS: 8,
   MAX_VARYING_VECTORS: 15,
@@ -25,7 +40,8 @@ export default {
     else if (maxSize < max) {
       max = maxSize;
     }
-    this.maxTextureSize = maxSize;
+    hasInit = true;
+    MAX_TEXTURE_SIZE = maxSize;
     this.MAX_TEXTURE_UNITS = maxUnits;
     this.MAX_VARYING_VECTORS = maxVectors;
   },

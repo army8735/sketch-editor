@@ -23,7 +23,7 @@ import 'sketch-editor/style';
 
 // 一些建议的手动配置
 sketchEditor.config.tile = true; // 开启tile优化大尺寸大文件（持续改进中）
-sketchEditor.config.MAX_TEXTURE_SIZE = 4096; // 大尺寸纹理切割设置
+sketchEditor.config.maxTextureSize = 4096; // 大尺寸纹理切割设置
 
 // 一些有用的前置方法
 sketchEditor.style.font.registerLocalFonts(); // 异步注册本地字体
