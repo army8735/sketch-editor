@@ -206,7 +206,8 @@ function renderWebglTile(
   // console.log('record', keys, mergeRecord);
   for (let i = 0, len = keys.length; i < len; i++) {
     const node = tileRecord[keys[i]];
-    if (node && node.hasContent && node.computedStyle.maskMode !== MASK.ALPHA) {
+    // 可能是无内容的组，这里粗粒度全部移除
+    if (node && node.computedStyle.maskMode !== MASK.ALPHA) {
       const m = node.matrixWorld;
       const bbox = node.filterBbox;
       if (checkInRect(bbox, m, x1, y1, x2 - x1, y2 - y1)) {

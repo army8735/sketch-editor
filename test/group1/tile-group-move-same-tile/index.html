@@ -18,14 +18,13 @@
 <script src="../../../dist/index.js"></script>
 <script>
   sketchEditor.config.tile = true;
-  sketchEditor.config.debug = true;
 </script>
 <script src="../../render.js"></script>
 <script>
   setTimeout(function() {
     const p = root.getCurPage();
     const n = p.children[0];
-    sketchEditor.tool.node.move(n, 150, 50);
+    sketchEditor.tool.node.move(n, 50, 50);
   }, 150);
 </script>
 </body>
