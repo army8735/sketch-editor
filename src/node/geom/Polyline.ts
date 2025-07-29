@@ -71,12 +71,29 @@ class Polyline extends Geom {
   // 改变点后，归一化处理和影响位置尺寸计算（本身和向上）
   checkPointsChange(noUpwards = false) {
     const rect = this._rect || this.rect;
-    const dx1 = rect[0],
+    let dx1 = rect[0],
       dy1 = rect[1],
       dx2 = rect[2] - this.width,
       dy2 = rect[3] - this.height;
     if (this.isLine()) {
       return;
+    }
+    // 特殊情况如3个点形成的近似水平线或垂线，rect水平/垂直方向特别小，修正不要变为0，宽高为0会导致point数据NaN
+    const w = rect[2] - rect[0];
+    if (w < 0.5) {
+      const mid = rect[0] + w * 0.5;
+      const r0 = mid - 0.25;
+      const r1 = mid + 0.25;
+      dx1 = r0;
+      dx2 = r1 - this.width;
+    }
+    const h = rect[3] - rect[1];
+    if (h < 0.5) {
+      const mid = rect[1] + h * 0.5;
+      const r0 = mid - 0.25;
+      const r1 = mid + 0.25;
+      dy1 = r0;
+      dy2 = r1 - this.height;
     }
     // 检查真正有变化才继续，位置相对于自己原本位置为原点
     if (Math.abs(dx1) > EPS
