@@ -325,7 +325,7 @@ class Polyline extends Geom {
       }
     }
     // 将圆角的2个点替换掉原本的1个点
-    const temp = clone(points);
+    const temp = points.slice(0);
     for (let i = 0, len = temp.length; i < len; i++) {
       const c = cache[i];
       if (c) {

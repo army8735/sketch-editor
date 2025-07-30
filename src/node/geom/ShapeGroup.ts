@@ -1,35 +1,24 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, Override, ShapeGroupProps, TAG_NAME } from '../../format';
+import { Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bo from '../../math/bo';
 import { calPoint, isE } from '../../math/matrix';
-import CanvasCache from '../../refresh/CanvasCache';
-import { canvasPolygon, svgPolygon } from '../../refresh/paint';
-import { color2rgbaInt, color2rgbaStr } from '../../style/css';
+import { svgPolygon } from '../../refresh/paint';
+import { color2rgbaInt } from '../../style/css';
 import {
   BOOLEAN_OPERATION,
-  ComputedGradient,
-  ComputedPattern,
   FILL_RULE,
-  GRADIENT,
-  MIX_BLEND_MODE,
-  PATTERN_FILL_TYPE,
-  STROKE_LINE_CAP,
-  STROKE_LINE_JOIN,
   STROKE_POSITION,
   StyleUnit,
   VISIBILITY,
 } from '../../style/define';
-import { getConic, getLinear, getRadial } from '../../style/gradient';
-import inject, { OffScreen } from '../../util/inject';
 import { clone } from '../../util/type';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
 import AbstractGroup from '../AbstractGroup';
 import { RefreshLevel } from '../../refresh/level';
-import { getCanvasGCO } from '../../style/mbm';
 import { lineJoin } from './border';
 import { getShapeGroupRect } from '../../math/bbox';
 
