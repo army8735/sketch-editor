@@ -377,10 +377,28 @@ class ShapeGroup extends AbstractGroup {
   }
 
   // @ts-ignore
-  override async toSketchJson(zip: JSZip) {
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     // @ts-ignore
     const json = await super.toSketchJson(zip) as SketchFormat.ShapeGroup;
     json._class = SketchFormat.ClassValue.ShapeGroup;
+    const list = await Promise.all(this.children.map(item => {
+      return item.toSketchJson(zip, blobHash);
+    }));
+    json.layers = list.map(item => {
+      return item as SketchFormat.Group |
+        SketchFormat.Oval |
+        SketchFormat.Polygon |
+        SketchFormat.Rectangle |
+        SketchFormat.ShapePath |
+        SketchFormat.Star |
+        SketchFormat.Triangle |
+        SketchFormat.ShapeGroup |
+        SketchFormat.Text |
+        SketchFormat.SymbolInstance |
+        SketchFormat.Slice |
+        SketchFormat.Hotspot |
+        SketchFormat.Bitmap;
+    });
     return json;
   }
 
