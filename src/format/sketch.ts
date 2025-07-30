@@ -529,10 +529,6 @@ async function convertItem(
       blur = `motion(${b.radius}px) angle(${(b.motionAngle || 0) * -1})`;
     }
   }
-  // 新版是style.blurs数组
-  // @ts-ignore
-  else if (layer.style?.blurs && layer.style.blurs.length) {
-  }
   // 颜色调整
   let hueRotate = 0;
   let saturate = 1;
