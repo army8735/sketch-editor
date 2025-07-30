@@ -2725,7 +2725,6 @@ export function genBgBlurRoot(
   // texture2Blob(gl, W, H, 'm');
   // 可能存在的饱和度
   if (blur.saturation !== undefined && blur.saturation !== 1) {
-    console.log(blur);
     const temp = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, W, H]));
     temp.list.push({
       bbox: new Float64Array([0, 0, W, H]),

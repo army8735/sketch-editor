@@ -88,10 +88,6 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
     if (!item.fontData || !item.fontData._ref) {
       return false;
     }
-    // const fontFamilyName = item.fontFamilyName;
-    // if (font.hasRegister(fontFamilyName)) {
-    //   return false;
-    // }
     const postscriptName = item.postscriptNames[0];
     if (postscriptName && font.hasRegister(postscriptName)) {
       return false;
