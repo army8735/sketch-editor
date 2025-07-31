@@ -1009,15 +1009,15 @@ export function color2rgbaInt(color: string | number[]): number[] {
 export function color2rgbaStr(color: string | number[]): string {
   const c = color2rgbaInt(color);
   if (Array.isArray(c)) {
-    c[0] = Math.floor(Math.max(c[0], 0));
-    c[1] = Math.floor(Math.max(c[1], 0));
-    c[2] = Math.floor(Math.max(c[2], 0));
+    const r = Math.floor(Math.max(c[0], 0));
+    const g = Math.floor(Math.max(c[1], 0));
+    const b = Math.floor(Math.max(c[2], 0));
     if (c.length === 3 || c.length === 4) {
       if (c.length === 4) {
-        c[3] = Math.max(c[3], 0);
-        return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
+        const a = Math.max(c[3], 0);
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
       }
-      return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',1)';
+      return 'rgba(' + r + ',' + g + ',' + b + ',1)';
     }
   }
   return (color as string) || 'rgba(0,0,0,0)';
