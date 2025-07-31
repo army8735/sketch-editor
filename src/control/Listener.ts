@@ -2050,7 +2050,7 @@ export default class Listener extends Event {
     }
     const { keyCode, code } = e;
     const target = e.target as HTMLElement; // 忽略输入时
-    const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName.toUpperCase());
+    const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName.toUpperCase());
     // backspace/delete
     if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
       if (isInput) {
@@ -2707,7 +2707,7 @@ export default class Listener extends Event {
       || keyCode === 84 || code === 'KeyT'
       // || keyCode === 80 || code === 'KeyP'
     )
-      && this.state !== state.EDIT_TEXT && !this.metaKey) {
+      && this.state !== state.EDIT_TEXT && !this.metaKey && !isInput) {
       this.emit(Listener.SHORTCUT_KEY, keyCode, code);
     }
   }
