@@ -93,21 +93,25 @@ export default class Input {
         }
         else if (keyCode === 8 || keyCode === 46 || code === 'Backspace' || code === 'Delete') {
           e.stopPropagation();
-          onCallback(() => {
-            this.node?.delete(keyCode === 46 || code === 'Delete');
-          });
+          if (!isIme) {
+            onCallback(() => {
+              this.node?.delete(keyCode === 46 || code === 'Delete');
+            });
+          }
         }
         else if (keyCode >= 37 && keyCode <= 40 || ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(code)) {
           e.stopPropagation();
-          const p = this.node.moveCursor(keyCode, e.shiftKey);
-          if (e.shiftKey) {
-            this.hideCursor();
+          if (!isIme) {
+            const p = this.node.moveCursor(keyCode, e.shiftKey);
+            if (e.shiftKey) {
+              this.hideCursor();
+            }
+            else {
+              this.showCursor();
+              this.updateCursor(p);
+            }
+            listener.emit(Listener.CURSOR_NODE, [this.node]);
           }
-          else {
-            this.showCursor();
-            this.updateCursor(p);
-          }
-          listener.emit(Listener.CURSOR_NODE, [this.node]);
         }
       }
     });
