@@ -1236,9 +1236,7 @@ function renderOverlay(
       const bbox = node._rect || node.rect;
       const isInScreen = checkInScreen(bbox, matrix, W, H);
       if (isInScreen) {
-        const r = node.getBoundingClientRect({
-          excludeRotate: true
-        });
+        const r = node.getBoundingClientRect();
         const u_x1 = gl.getUniformLocation(sliceProgram, 'u_x1');
         gl.uniform1f(u_x1, (r.left - cx) / cx);
         const u_x2 = gl.getUniformLocation(sliceProgram, 'u_x2');

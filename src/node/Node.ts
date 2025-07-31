@@ -1806,26 +1806,12 @@ class Node extends Event {
 
   getBoundingClientRect(opt?: {
     includeBbox?: boolean,
-    excludeRotate?: boolean,
     excludeDpi?: boolean,
   }) {
     const bbox = opt?.includeBbox
       ? this._bbox || this.bbox
       : this._rect || this.rect;
-    let t;
-    // 由于没有scale（仅-1翻转），不考虑自身旋转时需parent的matrixWorld点乘自身无旋转的matrix
-    if (opt?.excludeRotate && this.computedStyle.rotateZ) {
-      const parent = this.parent!;
-      const i = identity();
-      const matrix = this.matrix;
-      i[12] = matrix[12];
-      i[13] = matrix[13];
-      const m = multiply(parent.matrixWorld, i);
-      t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], m);
-    }
-    else {
-      t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
-    }
+    const t = calRectPoints(bbox[0], bbox[1], bbox[2], bbox[3], this.matrixWorld);
     const dpi = this.root?.dpi || 1;
     const x1 = opt?.excludeDpi ? t.x1 / dpi : t.x1;
     const y1 = opt?.excludeDpi ? t.y1 / dpi : t.y1;
