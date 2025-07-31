@@ -44,7 +44,6 @@ import tileFrag from '../gl/tile.frag';
 import sliceFrag from '../gl/slice.frag';
 import { initShaders } from '../gl/webgl';
 import config from '../util/config';
-import Tile from '../refresh/Tile';
 import TileManager from '../refresh/TileManager';
 import { getLevel, isReflow, RefreshLevel } from '../refresh/level';
 import { calWorldMatrixAndOpacity, renderWebgl, Struct } from '../refresh/struct';
@@ -84,9 +83,10 @@ class Root extends Container implements FrameCallback {
   imgLoadList: Bitmap[]; // 每次刷新过程中产生的图片需要加载，但不能中途加载触发update影响bbox计算，收集在刷新完后统一调用
   firstDraw: boolean;
   tileManager?: TileManager;
-  tileRecord: Record<string, Node>; // 节点更新影响老的tile清除记录，每次渲染时计算影响哪些tile
-                                    // 原则是更新时计算之前在哪些tile并刷新tile，之后影响的先记录在渲染前再计算
-  tileLastIndex: number; // 上次tile绘制到哪个节点，再一帧内没绘完下次再续时节省遍历性能
+  // 节点更新时影响老的tile容易清除，因为有记录节点和所在tile的记录；但对新的tile影响（会出现在哪些tile）在渲染时才知道，
+  // 因此先记录下来，渲染开始前统一计算会出现在哪些tile中，然后将那些tile清空重绘
+  tileRecord: Record<string, Node>;
+  tileLastIndex: number; // 上次tile绘制到哪个节点，在一帧内没绘完下次再续时节省遍历性能
   tileRemain: boolean; // tile模式是否有因跨帧导致的没绘制完的
   breakMerge: boolean; // 因跨帧渲染导致的没有渲染完成的标识
   scale: number; // 当前渲染的scale，2的幂次方，render时计算并赋值
@@ -430,7 +430,13 @@ class Root extends Container implements FrameCallback {
     else {
       const isRp = lv >= RefreshLevel.REPAINT;
       if (isRp) {
+        const old = node.computedStyle.visibility;
         node.calRepaintStyle(lv);
+        // 如果有tile，之前所在的老tile已经清除了，后面会重绘；在的新tile因为没有尺寸变化还是和老tile一样，所以无需记录
+        // 但有个例外，visible从hidden变为visible的时候，hidden不渲染所以没有老tile
+        if (isTile && old === VISIBILITY.HIDDEN && node.computedStyle.visibility === VISIBILITY.VISIBLE) {
+          this.tileRecord[node.uuid] = node;
+        }
       }
       else {
         const { style, computedStyle } = node;
@@ -440,12 +446,18 @@ class Root extends Container implements FrameCallback {
         // 区域变化渲染前计算影响tile
         if (lv & (RefreshLevel.TRANSLATE | RefreshLevel.ROTATE_Z)) {
           node.checkPosSizeUpward();
+          // Page是平移画布需忽略tile影响，前面isTile已经去除
           if (isTile) {
             this.tileRecord[node.uuid] = node;
           }
         }
         if (lv & RefreshLevel.OPACITY) {
+          const old = node.computedStyle.opacity;
           node.calOpacity();
+          // opacity变化也不影响节点所在tile变化，但有个例外，从0变为其它的时候，0不渲染所以没有老tile
+          if (isTile && !old) {
+            this.tileRecord[node.uuid] = node;
+          }
         }
         if (lv & RefreshLevel.FILTER) {
           node.calFilter(lv);

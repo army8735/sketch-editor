@@ -8,7 +8,7 @@ class Tile {
   uuid: number;
   available: boolean; // 延迟初始化创建纹理，可能tile为空不需要创建
   nodes: Node[];
-  complete: boolean; // 是否绘制完备所有节点
+  complete: boolean; // 是否绘制完备所有节点，一旦发生修改就变false，渲染完变true
   needClear: boolean; // 是否需要清除重绘
   x: number;
   y: number;

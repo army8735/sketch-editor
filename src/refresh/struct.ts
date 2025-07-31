@@ -7,7 +7,7 @@ import Root from '../node/Root';
 import Bitmap from '../node/Bitmap';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Slice from '../node/Slice';
-import { MASK, MIX_BLEND_MODE } from '../style/define';
+import { MASK, MIX_BLEND_MODE, VISIBILITY } from '../style/define';
 import config from '../util/config';
 import {
   checkInRect,
@@ -169,7 +169,7 @@ function renderWebglTile(
   // artboard的裁剪，以及记录artboard的画布rect来判断节点是否超出范围外
   const artBoardIndex: ArtBoard[] = [];
   const abRect = new Float64Array([0, 0, W, H]);
-  // 先检查所有tile是否完备，如果是直接渲染跳过遍历节点
+  // 先检查所有tile是否完备，如果是直接渲染跳过遍历节点，一般是为了平移画布的场景优化，所有tile都渲染好了无需遍历节点
   let complete = true;
   for (let i = 0, len = tileList.length; i < len; i++) {
     const tile = tileList[i];
@@ -201,13 +201,18 @@ function renderWebglTile(
   // merge提前算，因为有hasContent计算
   const startTime = Date.now();
   const { mergeRecord, breakMerge } = genMerge(gl, root, scale, scaleIndex, x1, y1, x2, y2, startTime);
-  // 新增或者移动的元素，检查其对tile的影响，一般数量极少，需要提前计算matrixWorld/filterBbox不能用老的
-  const keys = Object.keys(tileRecord);
   // console.log('record', keys, mergeRecord);
+  // 新增或者移动等有位置尺寸变化的元素，检查其对tile的影响，一般数量较少，需要提前计算matrixWorld/filterBbox不能用老的
+  const keys = Object.keys(tileRecord);
+  // console.log(tileRecord)
   for (let i = 0, len = keys.length; i < len; i++) {
     const node = tileRecord[keys[i]];
     // 可能是无内容的组，这里粗粒度全部移除
-    if (node && node.computedStyle.maskMode !== MASK.ALPHA) {
+    if (node
+      && node.computedStyle.maskMode !== MASK.ALPHA
+      && node.computedStyle.opacity
+      && node.computedStyle.visibility === VISIBILITY.VISIBLE
+    ) {
       const m = node.matrixWorld;
       const bbox = node.filterBbox;
       if (checkInRect(bbox, m, x1, y1, x2 - x1, y2 - y1)) {
@@ -217,7 +222,8 @@ function renderWebglTile(
           const tile = tileList[j];
           const bbox = tile.bbox;
           // console.log(j, bbox.join(','), tile.count)
-          if (isConvexPolygonOverlapRect(
+          // 已经标明需清除重绘的tile无需重复判断
+          if (!tile.needClear && isConvexPolygonOverlapRect(
             bbox[0], bbox[1], bbox[2], bbox[3],
             [{
               x: sb.x1, y: sb.y1,
