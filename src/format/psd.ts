@@ -579,11 +579,13 @@ async function convertItem(layer: Layer, w: number, h: number) {
             const prev = stops[stops.length - 2];
             const p = (1 - prev.offset) / (last.offset - prev.offset);
             const color = last.color.slice(0);
+            const pa = prev.color[3] ?? 1;
+            const la = last.color[3] ?? 1;
             last.color = normalizeColor([
               prev.color[0] + (last.color[0] - prev.color[0]) * p,
               prev.color[1] + (last.color[1] - prev.color[1]) * p,
               prev.color[2] + (last.color[2] - prev.color[2]) * p,
-              prev.color[3] ?? 1 + (last.color[3] ?? 1 - prev.color[3] ?? 1) * p,
+              pa + (la - pa) * p,
             ]);
             last.offset = 1;
             stops.unshift({
@@ -595,11 +597,13 @@ async function convertItem(layer: Layer, w: number, h: number) {
             const next = stops[1];
             const p = -first.offset / (next.offset - first.offset);
             const color = first.color.slice(0);
+            const fa = first.color[3] ?? 1;
+            const na = next.color[3] ?? 1;
             first.color = normalizeColor([
               first.color[0] + (next.color[0] - first.color[0]) * p,
               first.color[1] + (next.color[1] - first.color[1]) * p,
               first.color[2] + (next.color[2] - first.color[2]) * p,
-              first.color[3] ?? 1 + (next.color[3] ?? 1 - first.color[3] ?? 1) * p,
+              fa + (na - fa) * p,
             ]);
             first.offset = 1;
             stops.push({

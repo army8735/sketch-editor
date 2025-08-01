@@ -747,11 +747,13 @@ export function convert2Css(g: ComputedGradient, width = 100, height = 100, stan
     const first = newStops[0];
     const last = newStops[newStops.length - 1];
     if (standard && (first.offset > 0 || last.offset < 1)) {
+      const fa = first.color[3] ?? 1;
+      const la = last.color[3] ?? 1;
       const dc = [
         first.color[0] - last.color[0],
         first.color[1] - last.color[1],
         first.color[2] - last.color[2],
-        first.color[3] ?? 1 - last.color[3] ?? 1,
+        fa - la,
       ];
       const dl = 1 - last.offset + first.offset;
       if (first.offset > 0) {
