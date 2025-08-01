@@ -3379,14 +3379,6 @@ class Text extends Node {
   override clone(override?: Record<string, Override[]>) {
     const props = clone(this.props);
     const oldUUid = this.uuid;
-    if (override && override.hasOwnProperty(oldUUid)) {
-      override[oldUUid].forEach(item => {
-        const { key, value } = item;
-        if (key[0] === 'content') {
-          this._content = value;
-        }
-      });
-    }
     props.uuid = uuid.v4();
     props.sourceUuid = oldUUid;
     if (this.rich) {
@@ -3401,7 +3393,14 @@ class Text extends Node {
         };
       });
     }
-    props.content = this._content;
+    if (override && override.hasOwnProperty(oldUUid)) {
+      override[oldUUid].forEach(item => {
+        const { key, value } = item;
+        if (key[0] === 'content') {
+          props.content = value;
+        }
+      });
+    }
     const {
       left,
       right,
