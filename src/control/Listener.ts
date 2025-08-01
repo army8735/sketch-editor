@@ -1518,6 +1518,7 @@ export default class Listener extends Event {
     );
     // 忽略画板
     if (node && !(node instanceof ArtBoard)) {
+      // 双击优先唯一选择此节点
       if (this.selected.length !== 1 || node !== this.selected[0]) {
         if (this.options.disabled?.select) {
           return;
@@ -1525,7 +1526,10 @@ export default class Listener extends Event {
         this.selected.splice(0);
         this.selected.push(node);
         this.select.showSelect(this.selected);
+        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
+        return;
       }
+      // 已唯一选择才是进入编辑态
       if (node instanceof Text) {
         if (this.options.disabled?.editText) {
           return;
@@ -1556,9 +1560,6 @@ export default class Listener extends Event {
         else {
           this.emit(Listener.SELECT_NODE, this.selected.slice(0));
         }
-      }
-      else {
-        this.emit(Listener.SELECT_NODE, this.selected.slice(0));
       }
     }
   }
