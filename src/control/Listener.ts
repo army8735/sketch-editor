@@ -779,6 +779,10 @@ export default class Listener extends Event {
     const selected = this.selected;
     // 操作控制尺寸的时候，已经mousedown了
     if (this.isControl) {
+      // 防手抖功能，按下的瞬间可能有轻微移动，会干扰，甚至会出现dx/dy都是0的干扰
+      if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+        return;
+      }
       // 特殊单个节点旋转操控，知道节点中心坐标，点击初始坐标，移动后坐标，3点确定三角形，余弦定理求夹角
       if (this.isRotate) {
         const cx = this.centerX - this.originX;
@@ -856,6 +860,10 @@ export default class Listener extends Event {
     }
     // 先看是否编辑文字决定选择一段文本，再看是否有选择节点决定是拖拽节点还是多选框
     else if (this.isMouseDown) {
+      // 防手抖功能，按下的瞬间可能有轻微移动，会干扰，甚至会出现dx/dy都是0的干扰
+      if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+        return;
+      }
       if (this.state === state.EDIT_TEXT) {
         const x = (e.clientX - this.originX) * dpi;
         const y = (e.clientY - this.originY) * dpi;
