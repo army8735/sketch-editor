@@ -43,7 +43,7 @@ module.exports = {
       .moveToElement('canvas', 210, 230)
       .mouseButtonDown(0)
       .keys(browser.Keys.NULL)
-      .moveToElement('canvas', 211, 230) // 未按下meta移动使得不是frame框选，后面再按下meta变成不吸附参考线模式
+      .moveToElement('canvas', 212, 230) // 未按下meta移动使得不是frame框选，后面再按下meta变成不吸附参考线模式
       .keys(browser.Keys.META)
       .moveToElement('canvas', 213, 230)
       .keys(browser.Keys.NULL)
