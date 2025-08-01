@@ -5,7 +5,8 @@ import Panel from './Panel';
 import { ShadowStyle } from '../format';
 import ShadowCommand from '../history/ShadowCommand';
 import picker from './picker';
-import { color2rgbaStr, getCssShadow } from '../style/css';
+import { getCssShadow } from '../style/css';
+import { color2rgbaStr } from '../style/color';
 import { ComputedGradient, ComputedPattern, ComputedShadow } from '../style/define';
 import state from './state';
 

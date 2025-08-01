@@ -3,7 +3,8 @@ import Node from '../node/Node';
 import Listener from './Listener';
 import picker from './picker';
 import { ComputedColorStop, ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
-import { color2rgbaStr, normalizeColor } from '../style/css';
+import { normalizeColor } from '../style/css';
+import { color2rgbaStr } from '../style/color';
 import { r2d } from '../math/geom';
 import { toPrecision } from '../math';
 

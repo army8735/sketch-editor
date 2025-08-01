@@ -15,7 +15,7 @@ import Panel from './Panel';
 import { Rich, TextProps } from '../format';
 import font, { FontData } from '../style/font';
 import inject from '../util/inject';
-import { color2rgbaStr } from '../style/css';
+import { color2rgbaStr } from '../style/color';
 import { RefreshLevel } from '../refresh/level';
 import { PanelOptions } from './opts';
 

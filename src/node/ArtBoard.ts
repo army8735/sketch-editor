@@ -4,7 +4,7 @@ import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { ArtBoardProps, JNode, Override, Props, TAG_NAME } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoints } from '../math/matrix';
-import { color2gl } from '../style/css';
+import { color2gl } from '../style/color';
 import Container from './Container';
 import Node from './Node';
 import Tile from '../refresh/Tile';

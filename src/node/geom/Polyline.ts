@@ -2,7 +2,8 @@ import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { Point, Override, PolylineProps, TAG_NAME, JPoint } from '../../format';
-import { calSize, color2rgbaInt, normalizePoints } from '../../style/css';
+import { calSize, normalizePoints } from '../../style/css';
+import { color2rgbaInt } from '../../style/color';
 import {
   CURVE_MODE,
   StyleUnit,

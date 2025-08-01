@@ -25,7 +25,6 @@ import TextureCache from '../refresh/TextureCache';
 import {
   calNormalLineHeight,
   calSize,
-  color2rgbaStr,
   equalStyle,
   getCssBlur,
   getCssFillStroke,
@@ -33,6 +32,7 @@ import {
   getCssStrokePosition,
   normalize,
 } from '../style/css';
+import { color2rgbaStr } from '../style/color';
 import {
   BLUR,
   ComputedGradient,

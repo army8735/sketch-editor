@@ -1,4 +1,5 @@
-import { color2rgbaStr, getCssFillStroke } from '../style/css';
+import { getCssFillStroke } from '../style/css';
+import { color2rgbaStr } from '../style/color';
 import { ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
 import { convert2Css } from '../style/gradient';
 import Listener from './Listener';

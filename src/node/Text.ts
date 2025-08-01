@@ -7,13 +7,12 @@ import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
 import {
   calNormalLineHeight,
-  color2rgbaInt,
-  color2rgbaStr,
   getBaseline,
   getContentArea,
   normalizeRich,
   setFontStyle,
 } from '../style/css';
+import { color2rgbaInt, color2rgbaStr } from '../style/color';
 import {
   ComputedGradient,
   ComputedPattern,

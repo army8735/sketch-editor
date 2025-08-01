@@ -1,6 +1,6 @@
 import * as uuid from 'uuid';
 import Text from '../node/Text';
-import { color2hexStr } from '../style/css';
+import { color2hexStr } from '../style/color';
 import {
   ComputedStyle,
   StyleNumValue,

@@ -26,7 +26,7 @@ import Text from '../node/Text';
 import AbstractFrame from '../node/AbstractFrame';
 import config from '../util/config';
 import { canvasPolygon } from './paint';
-import { color2gl } from '../style/css';
+import { color2gl } from '../style/color';
 import {
   BLUR,
   ComputedBlur,

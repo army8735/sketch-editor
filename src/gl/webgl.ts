@@ -1,5 +1,5 @@
 import { calRectPoints } from '../math/matrix';
-import { color2gl } from '../style/css';
+import { color2gl } from '../style/color';
 import inject from '../util/inject';
 
 export function initShaders(

@@ -19,7 +19,8 @@ import {
 import { PAGE_H as H, PAGE_W as W } from './dft';
 import inject, { OffScreen } from '../util/inject';
 import { d2r } from '../math/geom';
-import { color2rgbaInt, color2rgbaStr, normalizeColor } from '../style/css';
+import { normalizeColor } from '../style/css';
+import { color2rgbaInt, color2rgbaStr } from '../style/color';
 import { getLinearCoords } from '../style/gradient';
 import { toPrecision } from '../math';
 

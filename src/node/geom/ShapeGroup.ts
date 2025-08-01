@@ -5,7 +5,7 @@ import { Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bo from '../../math/bo';
 import { calPoint, isE } from '../../math/matrix';
 import { svgPolygon } from '../../refresh/paint';
-import { color2rgbaInt } from '../../style/css';
+import { color2rgbaInt } from '../../style/color';
 import {
   BOOLEAN_OPERATION,
   FILL_RULE,

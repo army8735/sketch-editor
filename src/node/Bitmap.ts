@@ -6,7 +6,7 @@ import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
 import { canvasPolygon } from '../refresh/paint';
 import TextureCache from '../refresh/TextureCache';
-import { color2rgbaStr } from '../style/css';
+import { color2rgbaStr } from '../style/color';
 import {
   ComputedGradient,
   ComputedPattern,

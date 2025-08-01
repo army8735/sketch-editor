@@ -1,7 +1,7 @@
 import { angleBySides, d2r, r2d } from '../math/geom';
 import { identity, multiplyRotateZ, multiplyScaleY } from '../math/matrix';
 import { clone } from '../util/type';
-import { color2rgbaInt, color2rgbaStr } from './css';
+import { color2rgbaInt, color2rgbaStr } from './color';
 import { calUnit, ColorStop, ComputedColorStop, ComputedGradient, GRADIENT, StyleNumValue, StyleUnit } from './define';
 import reg from './reg';
 import { calMatrixByOrigin } from './transform';

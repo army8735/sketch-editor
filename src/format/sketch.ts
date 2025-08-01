@@ -1,6 +1,6 @@
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import JSZip from 'jszip';
-import { color2rgbaStr } from '../style/css';
+import { color2rgbaStr } from '../style/color';
 import {
   ExportOptions,
   JArtBoard,
