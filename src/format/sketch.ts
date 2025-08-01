@@ -1,6 +1,6 @@
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import JSZip from 'jszip';
-import { color2rgbaStr } from '../style/color';
+import { clampColor, color2rgbaStr } from '../style/color';
 import {
   ExportOptions,
   JArtBoard,
@@ -270,12 +270,12 @@ async function convertItem(
     }
     const hasBackgroundColor = layer.hasBackgroundColor;
     const backgroundColor = hasBackgroundColor
-      ? [
-        Math.floor(layer.backgroundColor.red * 255),
-        Math.floor(layer.backgroundColor.green * 255),
-        Math.floor(layer.backgroundColor.blue * 255),
+      ? clampColor([
+        layer.backgroundColor.red * 255,
+        layer.backgroundColor.green * 255,
+        layer.backgroundColor.blue * 255,
         layer.backgroundColor.alpha,
-      ]
+      ])
       : [255, 255, 255, 1];
     if (layer._class === SketchFormat.ClassValue.SymbolMaster) {
       const symbolId = layer.symbolID;
@@ -556,12 +556,12 @@ async function convertItem(
   const shadows = layer.style?.shadows;
   if (shadows) {
     shadows.forEach((item) => {
-      const color = [
-        Math.floor(item.color.red * 255),
-        Math.floor(item.color.green * 255),
-        Math.floor(item.color.blue * 255),
+      const color = clampColor([
+        item.color.red * 255,
+        item.color.green * 255,
+        item.color.blue * 255,
         item.color.alpha,
-      ];
+      ]);
       shadow.push(`${color2rgbaStr(color)} ${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread} `);
       shadowEnable.push(item.isEnabled);
     });
@@ -569,12 +569,12 @@ async function convertItem(
   const innerShadows = layer.style?.innerShadows;
   if (innerShadows) {
     innerShadows.forEach((item) => {
-      const color = [
-        Math.floor(item.color.red * 255),
-        Math.floor(item.color.green * 255),
-        Math.floor(item.color.blue * 255),
+      const color = clampColor([
+        item.color.red * 255,
+        item.color.green * 255,
+        item.color.blue * 255,
         item.color.alpha,
-      ];
+      ]);
       innerShadow.push(`${color2rgbaStr(color)} ${item.offsetX} ${item.offsetY} ${item.blurRadius} ${item.spread}`);
       innerShadowEnable.push(item.isEnabled);
     });
@@ -961,12 +961,12 @@ async function convertItem(
           textDecoration,
           lineHeight: maximumLineHeight,
           paragraphSpacing,
-          color: [
-            Math.floor(red * 255),
-            Math.floor(green * 255),
-            Math.floor(blue * 255),
+          color: clampColor([
+            red * 255,
+            green * 255,
+            blue * 255,
             alpha,
-          ],
+          ]),
         } as JRich;
       })
       : [];
@@ -993,12 +993,12 @@ async function convertItem(
     }
     const paragraphSpacing = paragraphStyle?.paragraphSpacing || 0;
     const color = MSAttributedStringColorAttribute
-      ? [
-        Math.floor(MSAttributedStringColorAttribute.red * 255),
-        Math.floor(MSAttributedStringColorAttribute.green * 255),
-        Math.floor(MSAttributedStringColorAttribute.blue * 255),
+      ? clampColor([
+        MSAttributedStringColorAttribute.red * 255,
+        MSAttributedStringColorAttribute.green * 255,
+        MSAttributedStringColorAttribute.blue * 255,
         MSAttributedStringColorAttribute.alpha,
-      ]
+      ])
       : (rich[0]?.color || [0, 0, 0, 1]);
     // 保持一致
     if (rich[0] && rich[0].textAlign !== textAlign) {
@@ -1331,9 +1331,9 @@ export async function convertFill(item: SketchFormat.Fill, opt: Opt) {
     const to = parseStrPoint(g.to);
     const stops = g.stops.map((item) => {
       const color = color2rgbaStr([
-        Math.floor(item.color.red * 255),
-        Math.floor(item.color.green * 255),
-        Math.floor(item.color.blue * 255),
+        Math.round(item.color.red * 255),
+        Math.round(item.color.green * 255),
+        Math.round(item.color.blue * 255),
         item.color.alpha,
       ]);
       return color + ' ' + item.position * 100 + '%';
@@ -1357,12 +1357,12 @@ export async function convertFill(item: SketchFormat.Fill, opt: Opt) {
     }
   }
   else {
-    return [
-      Math.floor(item.color.red * 255),
-      Math.floor(item.color.green * 255),
-      Math.floor(item.color.blue * 255),
+    return clampColor([
+      item.color.red * 255,
+      item.color.green * 255,
+      item.color.blue * 255,
       item.color.alpha,
-    ];
+    ]);
   }
 }
 
@@ -1404,9 +1404,9 @@ export async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
         const to = parseStrPoint(g.to);
         const stops = g.stops.map((item) => {
           const color = color2rgbaStr([
-            Math.floor(item.color.red * 255),
-            Math.floor(item.color.green * 255),
-            Math.floor(item.color.blue * 255),
+            Math.round(item.color.red * 255),
+            Math.round(item.color.green * 255),
+            Math.round(item.color.blue * 255),
             item.color.alpha,
           ]);
           return color + ' ' + item.position * 100 + '%';
@@ -1438,12 +1438,12 @@ export async function geomStyle(layer: SketchFormat.AnyLayer, opt: Opt) {
         }
       }
       else {
-        stroke.push([
-          Math.floor(item.color.red * 255),
-          Math.floor(item.color.green * 255),
-          Math.floor(item.color.blue * 255),
+        stroke.push(clampColor([
+          item.color.red * 255,
+          item.color.green * 255,
+          item.color.blue * 255,
           item.color.alpha,
-        ]);
+        ]));
       }
       strokeEnable.push(item.isEnabled);
       strokeWidth.push(item.thickness || 0);
