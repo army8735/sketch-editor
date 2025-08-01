@@ -22,7 +22,7 @@ module.exports = {
       .assert.cssProperty('#main div.input', 'opacity', '1')
       .assert.cssProperty('#main div.input', 'left', '80.0859px')
       .assert.cssProperty('#main div.input', 'top', '0px')
-      .assert.cssProperty('#side .text-panel .pick', 'backgroundColor', 'rgba(255, 66, 66, 1)')
+      .assert.cssProperty('#side .text-panel .pick', 'backgroundColor', 'rgba(255, 67, 67, 1)')
 
       .moveToElement('canvas', 90, 30)
       .mouseButtonDown(0)
