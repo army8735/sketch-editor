@@ -19,8 +19,7 @@ import {
 import { PAGE_H as H, PAGE_W as W } from './dft';
 import inject, { OffScreen } from '../util/inject';
 import { d2r } from '../math/geom';
-import { normalizeColor } from '../style/css';
-import { color2rgbaInt, color2rgbaStr } from '../style/color';
+import { color2rgbaInt, color2rgbaStr, clampColor } from '../style/color';
 import { getLinearCoords } from '../style/gradient';
 import { toPrecision } from '../math';
 
@@ -582,7 +581,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
             const color = last.color.slice(0);
             const pa = prev.color[3] ?? 1;
             const la = last.color[3] ?? 1;
-            last.color = normalizeColor([
+            last.color = clampColor([
               prev.color[0] + (last.color[0] - prev.color[0]) * p,
               prev.color[1] + (last.color[1] - prev.color[1]) * p,
               prev.color[2] + (last.color[2] - prev.color[2]) * p,
@@ -600,7 +599,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
             const color = first.color.slice(0);
             const fa = first.color[3] ?? 1;
             const na = next.color[3] ?? 1;
-            first.color = normalizeColor([
+            first.color = clampColor([
               first.color[0] + (next.color[0] - first.color[0]) * p,
               first.color[1] + (next.color[1] - first.color[1]) * p,
               first.color[2] + (next.color[2] - first.color[2]) * p,

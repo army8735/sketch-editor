@@ -3,8 +3,7 @@ import Node from '../node/Node';
 import Listener from './Listener';
 import picker from './picker';
 import { ComputedColorStop, ComputedGradient, ComputedPattern, GRADIENT } from '../style/define';
-import { normalizeColor } from '../style/css';
-import { color2rgbaStr } from '../style/color';
+import { color2rgbaStr, clampColor } from '../style/color';
 import { r2d } from '../math/geom';
 import { toPrecision } from '../math';
 
@@ -753,7 +752,7 @@ function getConicOffset(cx: number, cy: number, x: number, y: number, scaleX = 1
 }
 
 function genNewStop(prev: ComputedColorStop, next: ComputedColorStop, p: number) {
-  return normalizeColor([
+  return clampColor([
     prev.color[0] + (next.color[0] - prev.color[0]) * p,
     prev.color[1] + (next.color[1] - prev.color[1]) * p,
     prev.color[2] + (next.color[2] - prev.color[2]) * p,

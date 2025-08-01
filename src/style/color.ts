@@ -61,12 +61,12 @@ export function color2rgbaInt(color: string | number[]): number[] {
 export function color2rgbaStr(color: string | number[]): string {
   const c = color2rgbaInt(color);
   if (Array.isArray(c)) {
-    const r = Math.floor(Math.max(c[0], 0));
-    const g = Math.floor(Math.max(c[1], 0));
-    const b = Math.floor(Math.max(c[2], 0));
+    const r = Math.floor(Math.min(255, Math.max(c[0], 0)));
+    const g = Math.floor(Math.min(255, Math.max(c[1], 0)));
+    const b = Math.floor(Math.min(255, Math.max(c[2], 0)));
     if (c.length === 3 || c.length === 4) {
       if (c.length === 4) {
-        const a = Math.max(c[3], 0);
+        const a = Math.min(1, Math.max(c[3], 0));
         return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
       }
       return 'rgba(' + r + ',' + g + ',' + b + ',1)';
@@ -86,21 +86,21 @@ function toHex(n: number) {
 export function color2hexStr(color: string | number[]): string {
   const c = color2rgbaInt(color);
   if (Array.isArray(c)) {
+    const r = Math.floor(Math.min(255, Math.max(c[0], 0)));
+    const g = Math.floor(Math.min(255, Math.max(c[1], 0)));
+    const b = Math.floor(Math.min(255, Math.max(c[2], 0)));
     if (c.length === 3 || c.length === 4) {
-      c[0] = Math.floor(Math.max(c[0], 0));
-      c[1] = Math.floor(Math.max(c[1], 0));
-      c[2] = Math.floor(Math.max(c[2], 0));
-      if (c.length === 4 && c[3] < 1) {
-        c[3] = Math.max(c[3], 0);
+      if (c.length === 4) {
+        const a = Math.min(1, Math.max(c[3], 0));
         return (
           '#' +
-          toHex(c[0]) +
-          toHex(c[1]) +
-          toHex(c[2]) +
-          toHex(Math.floor(c[3] * 255))
+          toHex(r) +
+          toHex(g) +
+          toHex(b) +
+          toHex(Math.floor(a * 255))
         );
       }
-      return '#' + toHex(c[0]) + toHex(c[1]) + toHex(c[2]);
+      return '#' + toHex(r) + toHex(g) + toHex(b);
     }
   }
   return (color as string) || '#000';
@@ -118,9 +118,21 @@ export function color2gl(color: string | number[]): number[] {
   ];
 }
 
+export function clampColor(c: number[]) {
+  const r = Math.floor(Math.min(255, Math.max(c[0], 0)));
+  const g = Math.floor(Math.min(255, Math.max(c[1], 0)));
+  const b = Math.floor(Math.min(255, Math.max(c[2], 0)));
+  if (c.length > 3) {
+    const a = Math.min(1, Math.max(0, c[3]));
+    return [r, g, b, a];
+  }
+  return [r, g, b];
+}
+
 export default {
   color2rgbaInt,
   color2rgbaStr,
   color2hexStr,
   color2gl,
+  clampColor,
 };
