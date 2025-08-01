@@ -86,7 +86,7 @@ import ExportCommand from '../history/ExportCommand';
 
 export type ListenerOptions = {
   enabled?: {
-    selectWithMeta?: boolean; // 初始状态hover/select时强制按下meta
+    selectWithMeta?: boolean; // 初始状态时强制按下meta
     resizeWithAlt?: boolean; // 拖拽尺寸时强制按下alt
   };
   disabled?: {
@@ -102,6 +102,7 @@ export type ListenerOptions = {
     contextMenu?: boolean; // 右键菜单
     guides?: boolean; // 参考线功能
     editGeom?: boolean; // 编辑矢量
+    metaFrame?: boolean; // meta框选
   };
 };
 
@@ -919,7 +920,7 @@ export default class Listener extends Event {
           meta = !meta;
         }
         // 如果NORMAL时（避免矢量编辑态歧义）按下meta且第一次移动，认为是框选
-        if (!this.isMouseMove && this.state === state.NORMAL && meta) {
+        if (!this.isMouseMove && this.state === state.NORMAL && meta && !this.options.disabled?.metaFrame) {
           this.isFrame = true;
         }
         // 矢量编辑也特殊，框选发生在没按下矢量点按在空白处，onDown里判断
@@ -1260,7 +1261,7 @@ export default class Listener extends Event {
         y: text.computedStyle.top,
         parent: text.parent!,
       }]));
-      // this.emit(Listener.ADD_NODE, [text]);
+      this.emit(Listener.ADD_NODE, [text]);
       const old = this.state;
       this.state = state.EDIT_TEXT;
       this.emit(Listener.STATE_CHANGE, old, this.state);
@@ -1320,7 +1321,7 @@ export default class Listener extends Event {
             y: node.computedStyle.top,
             parent: node.parent!,
           }]));
-          // this.emit(Listener.ADD_NODE, [node]);
+          this.emit(Listener.ADD_NODE, [node]);
         }
       }
       this.customGeom.cancel();
@@ -1370,7 +1371,7 @@ export default class Listener extends Event {
           y: bitmap.computedStyle.top,
           parent: bitmap.parent!,
         }]));
-        // this.emit(Listener.ADD_NODE, [bitmap]);
+        this.emit(Listener.ADD_NODE, [bitmap]);
         this.img.remove();
         this.img = undefined;
       }
@@ -1926,7 +1927,7 @@ export default class Listener extends Event {
       });
       this.select.hideSelect();
       this.history.addCommand(new RemoveCommand(nodes2, data));
-      // this.emit(Listener.REMOVE_NODE, nodes2.slice(0));
+      this.emit(Listener.REMOVE_NODE, nodes2.slice(0));
       this.emit(Listener.SELECT_NODE, []);
     }
   }
@@ -1975,7 +1976,7 @@ export default class Listener extends Event {
         this.history.addCommand(new AddCommand(nodes2, data));
         this.selected = nodes2.slice(0);
         this.updateActive();
-        // this.emit(Listener.ADD_NODE, nodes2.slice(0));
+        this.emit(Listener.ADD_NODE, nodes2.slice(0));
         this.emit(Listener.SELECT_NODE, nodes2.slice(0));
       }
     }
@@ -2415,7 +2416,7 @@ export default class Listener extends Event {
           if (this.shiftKey) {
             this.selected.splice(0);
             this.select.hideSelect();
-            // this.emit(Listener.REMOVE_NODE, nodes.slice(0));
+            this.emit(Listener.REMOVE_NODE, nodes.slice(0));
             this.emit(Listener.SELECT_NODE, []);
           }
           else {
@@ -2423,7 +2424,7 @@ export default class Listener extends Event {
               return c.data[i].selected || item;
             });
             this.updateActive();
-            // this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
+            this.emit(Listener.ADD_NODE, nodes.slice(0), this.selected.slice(0));
             this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
         }
@@ -2432,13 +2433,13 @@ export default class Listener extends Event {
             this.selected.splice(0);
             this.selected.push(...nodes)
             this.updateActive();
-            // this.emit(Listener.ADD_NODE, nodes.slice(0));
+            this.emit(Listener.ADD_NODE, nodes.slice(0));
             this.emit(Listener.SELECT_NODE, nodes.slice(0));
           }
           else {
             this.selected.splice(0);
             this.select.hideSelect();
-            // this.emit(Listener.REMOVE_NODE, nodes.slice(0));
+            this.emit(Listener.REMOVE_NODE, nodes.slice(0));
             this.emit(Listener.SELECT_NODE, []);
             // 新增后撤销
             if (this.state === state.EDIT_TEXT) {
@@ -2793,7 +2794,7 @@ export default class Listener extends Event {
             y: bitmap.computedStyle.top,
             parent: bitmap.parent!,
           }]));
-          // this.emit(Listener.ADD_NODE, [bitmap]);
+          this.emit(Listener.ADD_NODE, [bitmap]);
           this.emit(Listener.SELECT_NODE, [bitmap]);
         });
       };
@@ -2909,8 +2910,8 @@ export default class Listener extends Event {
   static SHADOW_NODE = 'SHADOW_NODE';
   static BLUR_NODE = 'BLUR_NODE';
   static COLOR_ADJUST_NODE = 'COLOR_ADJUST_NODE';
-  // static REMOVE_NODE = 'REMOVE_NODE';
-  // static ADD_NODE = 'ADD_NODE';
+  static REMOVE_NODE = 'REMOVE_NODE';
+  static ADD_NODE = 'ADD_NODE';
   static PREV_NODE = 'PREV_NODE';
   static NEXT_NODE = 'NEXT_NODE';
   static POSITION_NODE = 'POSITION_NODE';
