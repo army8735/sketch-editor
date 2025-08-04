@@ -248,9 +248,6 @@ class Node extends Event {
 
   lay(data: LayoutData) {
     this.refreshLevel = RefreshLevel.REFLOW;
-    if (this.name === '矩形') {
-      console.log(JSON.stringify(this.style.width));
-    }
     // 布局时计算所有样式，更新时根据不同级别调用
     this.calReflowStyle();
     const { style, computedStyle } = this;
@@ -1733,6 +1730,7 @@ class Node extends Event {
     res.strokePosition = style.strokePosition.map(item => getCssStrokePosition(item.v));
     res.strokeMiterlimit = style.strokeMiterlimit.v;
     res.strokeDasharray = style.strokeDasharray.map(item => item.v);
+    res.strokeMode = style.strokeMode.map(item => getCssMbm(item.v));
     res.maskMode = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with'][style.maskMode.v];
     res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][style.booleanOperation.v];
     const blur = calComputedBlur(style.blur);
