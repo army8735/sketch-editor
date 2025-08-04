@@ -1,12 +1,18 @@
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import Node from './Node';
-import { JNode, Props, TAG_NAME } from '../format';
+import { Props, TAG_NAME } from '../format';
 
 class Slice extends Node {
   constructor(props: Props) {
     super(props);
     this.isSlice = true;
+  }
+
+  override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps();
+    const res = new Slice(props);
+    return res;
   }
 
   override calContent() {

@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { Props, TAG_NAME } from '../format';
+import { Override, Props, TAG_NAME } from '../format';
 import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 
@@ -8,6 +8,19 @@ class Graphic extends AbstractFrame {
   constructor(props: Props, children: Node[]) {
     super(props, children);
     this.isGraphic = true;
+  }
+
+  override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps();
+    const children = filter ? this.children.filter(filter) : this.children;
+    const res = new Graphic(props, children.map(item => item.clone(filter)));
+    return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
+    const props = this.cloneProps();
+    const res = new Graphic(props, this.children.map(item => item.cloneAndLink(overrides)));
+    return res;
   }
 
   override toJson() {

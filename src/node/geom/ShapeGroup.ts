@@ -1,19 +1,15 @@
-import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bo from '../../math/bo';
 import { calPoint, isE } from '../../math/matrix';
 import { svgPolygon } from '../../refresh/paint';
-import { color2rgbaInt } from '../../style/color';
 import {
   BOOLEAN_OPERATION,
   FILL_RULE,
   STROKE_POSITION,
-  StyleUnit,
   VISIBILITY,
 } from '../../style/define';
-import { clone } from '../../util/type';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
@@ -349,24 +345,26 @@ class ShapeGroup extends AbstractGroup {
     return s + '</svg>';
   }
 
-  // @ts-ignore
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    const oldUUid = props.uuid;
-    props.uuid = uuid.v4();
-    props.sourceUuid = oldUUid;
-    const res = new ShapeGroup(props, this.children.map(item => item.clone(override)));
-    res.style = clone(this.style);
-    if (override && override.hasOwnProperty(oldUUid)) {
-      override[oldUUid].forEach(item => {
+  override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps() as ShapeGroupProps;
+    const children = filter ? this.children.filter(filter) : this.children;
+    const res = new ShapeGroup(props, children.map(item => item.clone(filter)));
+    return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
+    const props = this.cloneProps() as ShapeGroupProps;
+    const oldUUid = this.uuid;
+    if (overrides && overrides.hasOwnProperty(oldUUid)) {
+      overrides[oldUUid].forEach(item => {
         const { key, value } = item;
         if (key[0] === 'fill') {
           const i = parseInt(key[1]) || 0;
-          props.style.fill[i] = value;
-          res.style.fill[i] = { v: color2rgbaInt(value), u: StyleUnit.RGBA };
+          props.style!.fill![i] = value;
         }
       });
     }
+    const res = new ShapeGroup(props, this.children.map(item => item.cloneAndLink(overrides)));
     return res;
   }
 

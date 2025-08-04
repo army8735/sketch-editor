@@ -1,14 +1,10 @@
-import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { Point, Override, PolylineProps, TAG_NAME, JPoint } from '../../format';
-import { calSize, normalizePoints } from '../../style/css';
-import { color2rgbaInt } from '../../style/color';
+import { calSize, getPropsPoints, normalizePoints } from '../../style/css';
 import {
   CURVE_MODE,
-  StyleUnit,
 } from '../../style/define';
-import { clone } from '../../util/type';
 import Geom from './Geom';
 import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
@@ -25,7 +21,9 @@ class Polyline extends Geom {
   constructor(props: PolylineProps) {
     super(props);
     this.props = props;
-    this.points.push(...normalizePoints(this.props.points));
+    props.points.forEach(item => {
+      this.points.push(normalizePoints(item));
+    });
     this.isPolyline = true;
     this.isRectangle = !!props.isRectangle;
     this.isOval = !!props.isOval;
@@ -168,33 +166,31 @@ class Polyline extends Geom {
     return super.toSvg(scale, this.isClosed);
   }
 
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    const oldUUid = props.uuid;
-    props.uuid = uuid.v4();
-    props.sourceUuid = oldUUid;
-    props.name = this.name;
-    props.nameIsFixed = this.nameIsFixed;
-    props.index = this.index;
-    props.points = this.points.map(item => {
-      return {
-        ...item,
-        curveMode: ['none', 'straight', 'mirrored', 'asymmetric', 'disconnected'][item.curveMode] || 'none',
-      };
-    });
+  override cloneProps() {
+    const props = super.cloneProps() as PolylineProps;
+    props.points = this.points.map(item => getPropsPoints(item));
+    return props;
+  }
+
+  override clone() {
+    const props = this.cloneProps();
     const res = new Polyline(props);
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
-    if (override && override.hasOwnProperty(oldUUid)) {
-      override[oldUUid].forEach(item => {
+    return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
+    const props = this.cloneProps();
+    const oldUUid = this.uuid;
+    if (overrides && overrides.hasOwnProperty(oldUUid)) {
+      overrides[oldUUid].forEach(item => {
         const { key, value } = item;
         if (key[0] === 'fill') {
           const i = parseInt(key[1]) || 0;
-          props.style.fill[i] = value;
-          res.style.fill[i] = { v: color2rgbaInt(value), u: StyleUnit.RGBA };
+          props.style!.fill![i] = value;
         }
       });
     }
+    const res = new Polyline(props);
     return res;
   }
 

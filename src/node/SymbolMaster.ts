@@ -1,11 +1,9 @@
-import * as uuid from 'uuid';
-import { Override, SymbolMasterProps, TAG_NAME } from '../format';
-import Frame from './Frame';
+import { SymbolMasterProps, TAG_NAME } from '../format';
+import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import SymbolInstance from './SymbolInstance';
-import { clone } from '../util/type';
 
-class SymbolMaster extends Frame {
+class SymbolMaster extends AbstractFrame {
   symbolInstances: SymbolInstance[];
 
   constructor(props: SymbolMasterProps, children: Array<Node>) {
@@ -27,14 +25,10 @@ class SymbolMaster extends Frame {
     }
   }
 
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    props.uuid = uuid.v4();
-    props.sourceUuid = this.uuid;
-    const res = new SymbolMaster(props, this.children.map(item => item.clone(override)));
-    res.symbolInstances = [];
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
+  override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps() as SymbolMasterProps;
+    const children = filter ? this.children.filter(filter) : this.children;
+    const res = new SymbolMaster(props, children.map(item => item.clone(filter)));
     return res;
   }
 

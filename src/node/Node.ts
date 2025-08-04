@@ -1,7 +1,7 @@
 import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { ExportOptions, getDefaultStyle, JNode, JStyle, Override, Props } from '../format';
+import { ExportOptions, getDefaultStyle, JStyle, Override, Props } from '../format';
 import { ResizingConstraint, toSketchColor } from '../format/sketch';
 import { kernelSize, outerSizeByD } from '../math/blur';
 import { d2r } from '../math/geom';
@@ -28,6 +28,7 @@ import {
   equalStyle,
   getCssBlur,
   getCssFillStroke,
+  getCssMbm,
   getCssShadow,
   getCssStrokePosition,
   normalize,
@@ -40,11 +41,9 @@ import {
   ComputedShadow,
   ComputedStyle,
   FILL_RULE,
-  Gradient,
   GRADIENT,
   MASK,
   MIX_BLEND_MODE,
-  Pattern,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
@@ -65,6 +64,7 @@ import { canvasPolygon } from '../refresh/paint';
 import inject, { OffScreen } from '../util/inject';
 import { getCanvasGCO } from '../style/mbm';
 import { getConic, getLinear, getRadial } from '../style/gradient';
+import { calComputedBlur, calComputedFill, calComputedShadow, calComputedStroke } from '../style/compute';
 
 export type Loader = {
   error: boolean;
@@ -458,52 +458,12 @@ class Node extends Event {
     computedStyle.visibility = style.visibility.v;
     computedStyle.color = style.color.v;
     computedStyle.backgroundColor = style.backgroundColor.v;
-    computedStyle.fill = style.fill.map((item) => {
-      if (Array.isArray(item.v)) {
-        return item.v.slice(0);
-      }
-      const p = item.v as Pattern;
-      if (p && p.url !== undefined) {
-        return {
-          url: p.url,
-          type: p.type,
-          scale: (p.scale?.v ?? 100) * 0.01,
-        } as ComputedPattern;
-      }
-      const v = item.v as Gradient;
-      return {
-        t: v.t,
-        d: v.d.slice(0),
-        stops: v.stops.map(item => {
-          const offset = item.offset.v * 0.01;
-          return {
-            color: item.color.v.slice(0),
-            offset,
-          };
-        }),
-      } as ComputedGradient;
-    });
+    computedStyle.fill = calComputedFill(style.fill);
     computedStyle.fillEnable = style.fillEnable.map((item) => item.v);
     computedStyle.fillOpacity = style.fillOpacity.map((item) => item.v);
     computedStyle.fillMode = style.fillMode.map((item) => item.v);
     computedStyle.fillRule = style.fillRule.v;
-    computedStyle.stroke = style.stroke.map((item) => {
-      if (Array.isArray(item.v)) {
-        return item.v.slice(0);
-      }
-      const v = item.v as Gradient;
-      return {
-        t: v.t,
-        d: v.d.slice(0),
-        stops: v.stops.map(item => {
-          const offset = item.offset ? item.offset.v * 0.01 : undefined;
-          return {
-            color: item.color.v.slice(0),
-            offset,
-          };
-        }),
-      } as ComputedGradient;
-    });
+    computedStyle.stroke = calComputedStroke(style.stroke);
     computedStyle.strokeEnable = style.strokeEnable.map((item) => item.v);
     computedStyle.strokeWidth = style.strokeWidth.map((item) => item.v);
     computedStyle.strokePosition = style.strokePosition.map((item) => item.v);
@@ -609,24 +569,8 @@ class Node extends Event {
 
   calFilter(lv: RefreshLevel) {
     const { style, computedStyle } = this;
-    const blur = style.blur.v;
-    computedStyle.blur = {
-      t: blur.t,
-      radius: blur.radius?.v || 0,
-      center: blur.center ? blur.center.map(item => item.v * 0.01) as [number, number] : [0.5, 0.5],
-      saturation: (blur.saturation?.v ?? 100) * 0.01,
-      angle: blur.angle ? blur.angle.v : 0,
-    };
-    computedStyle.shadow = style.shadow.map((item) => {
-      const v = item.v;
-      return {
-        x: v.x.v,
-        y: v.y.v,
-        blur: v.blur.v,
-        spread: v.spread.v,
-        color: v.color.v,
-      };
-    });
+    computedStyle.blur = calComputedBlur(style.blur);
+    computedStyle.shadow = calComputedShadow(style.shadow);
     computedStyle.shadowEnable = style.shadowEnable.map((item) => item.v);
     computedStyle.hueRotate = style.hueRotate.v;
     computedStyle.saturate = style.saturate.v * 0.01;
@@ -1319,7 +1263,7 @@ class Node extends Event {
       //         canvasCache.release();
       //       };
       //       img.src = URL.createObjectURL(blob);
-      //       img.setAttribute('name', this.name + i);
+      //       img.setAttribute('name', this.name + ',' + i);
       //       document.body.appendChild(img);
       //     }
       //   });
@@ -1707,27 +1651,28 @@ class Node extends Event {
 
   getComputedStyle() {
     const res: ComputedStyle = Object.assign({}, this.computedStyle);
-    res.color = res.color.slice(0);
-    res.backgroundColor = res.backgroundColor.slice(0);
-    res.fill = clone(res.fill);
-    res.stroke = clone(res.stroke);
-    res.shadow = clone(res.shadow);
-    res.innerShadow = clone(res.innerShadow);
-    res.fillOpacity = res.fillOpacity.slice(0);
-    res.fillEnable = res.fillEnable.slice(0);
-    res.fillMode = res.fillMode.slice(0);
-    res.strokeEnable = res.strokeEnable.slice(0);
-    res.strokeWidth = res.strokeWidth.slice(0);
-    res.transformOrigin = res.transformOrigin.slice(0);
-    res.strokeDasharray = res.strokeDasharray.slice(0);
-    res.shadowEnable = res.shadowEnable.slice(0);
+    if (this.isMounted) {
+      res.color = res.color.slice(0);
+      res.backgroundColor = res.backgroundColor.slice(0);
+      res.fill = clone(res.fill);
+      res.stroke = clone(res.stroke);
+      res.shadow = clone(res.shadow);
+      res.innerShadow = clone(res.innerShadow);
+      res.fillOpacity = res.fillOpacity.slice(0);
+      res.fillEnable = res.fillEnable.slice(0);
+      res.fillMode = res.fillMode.slice(0);
+      res.strokeEnable = res.strokeEnable.slice(0);
+      res.strokeWidth = res.strokeWidth.slice(0);
+      res.transformOrigin = res.transformOrigin.slice(0);
+      res.strokeDasharray = res.strokeDasharray.slice(0);
+      res.shadowEnable = res.shadowEnable.slice(0);
+    }
     return res;
   }
 
-  getCssStyle() {
-    const res: any = {};
+  getCssStyle(standard = false) {
     const { style, computedStyle } = this;
-    Object.assign(res, computedStyle);
+    const res: any = {};
     // %单位转换
     [
       'top', 'right', 'bottom', 'left', 'width', 'height',
@@ -1745,62 +1690,62 @@ class Node extends Event {
         res[k] = o.v;
       }
     });
-    res.opacity = computedStyle.opacity;
-    res.visibility = computedStyle.visibility === VISIBILITY.VISIBLE ? 'visible' : 'hidden';
-    res.color = color2rgbaStr(computedStyle.color);
-    res.backgroundColor = color2rgbaStr(computedStyle.backgroundColor);
-    res.fontStyle = ['normal', 'italic', 'oblique'][computedStyle.fontStyle];
-    res.textAlign = ['left', 'center', 'right', 'justify'][computedStyle.textAlign];
-    res.textVerticalAlign = ['top', 'middle', 'bottom'][computedStyle.textVerticalAlign];
-    res.mixBlendMode = [
-      'normal',
-      'multiply',
-      'screen',
-      'overlay',
-      'darken',
-      'lighten',
-      'color-dodge',
-      'color-burn',
-      'hard-light',
-      'soft-light',
-      'difference',
-      'exclusion',
-      'hue',
-      'saturation',
-      'color',
-      'luminosity',
-    ][computedStyle.mixBlendMode];
+    res.opacity = style.opacity.v;
+    res.visibility = style.visibility.v === VISIBILITY.VISIBLE ? 'visible' : 'hidden';
+    res.color = color2rgbaStr(style.color.v);
+    res.backgroundColor = color2rgbaStr(style.backgroundColor.v);
+    res.fontStyle = ['normal', 'italic', 'oblique'][style.fontStyle.v];
+    res.textAlign = ['left', 'center', 'right', 'justify'][style.textAlign.v];
+    res.textVerticalAlign = ['top', 'middle', 'bottom'][style.textVerticalAlign.v];
+    res.mixBlendMode = getCssMbm(style.mixBlendMode.v);
     ['shadowEnable', 'strokeEnable', 'fillEnable', 'fillOpacity', 'strokeWidth'].forEach((k) => {
-      res[k] = computedStyle[k as 'shadowEnable' | 'strokeEnable' | 'fillEnable' | 'fillOpacity' | 'strokeWidth'].slice(0);
+      res[k] = style[k as 'shadowEnable' | 'strokeEnable' | 'fillEnable' | 'fillOpacity' | 'strokeWidth'].map(item => item.v);
     });
-    res.fill = computedStyle.fill.map(item => getCssFillStroke(item, this.width, this.height));
-    res.fillRule = ['nonzero', 'evenodd'][computedStyle.fillRule];
-    res.fillMode = computedStyle.fillMode;
-    res.stroke = computedStyle.stroke.map(item => getCssFillStroke(item, this.width, this.height));
-    res.strokeLinecap = ['butt', 'round', 'square'][computedStyle.strokeLinecap];
-    res.strokeLinejoin = ['miter', 'round', 'bevel'][computedStyle.strokeLinejoin];
-    res.strokePosition = computedStyle.strokePosition.map(item => getCssStrokePosition(item));
-    res.strokeMiterlimit = computedStyle.strokeMiterlimit;
-    res.strokeDasharray = computedStyle.strokeDasharray;
-    res.maskMode = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with'][computedStyle.maskMode];
-    res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor']
-      [computedStyle.booleanOperation];
-    const blur = computedStyle.blur;
+    if (standard) {
+      if (this.isMounted) {
+        res.fill = computedStyle.fill.map(item => getCssFillStroke(item, this.width, this.height, true));
+      }
+      else {
+        inject.error('Can not get CSS standard fill unmounted');
+      }
+    }
+    else {
+      res.fill = calComputedFill(style.fill).map(item => getCssFillStroke(item));
+    }
+    res.fillRule = ['nonzero', 'evenodd'][style.fillRule.v];
+    res.fillMode = style.fillMode.map(item => getCssMbm(item.v));
+    if (standard) {
+      if (this.isMounted) {
+        res.stroke = computedStyle.stroke.map(item => getCssFillStroke(item, this.width, this.height, true));
+      }
+      else {
+        inject.error('Can not get CSS standard stroke unmounted');
+      }
+    }
+    else {
+      res.stroke = calComputedStroke(style.stroke).map(item => getCssFillStroke(item, this.width, this.height));
+    }
+    res.strokeLinecap = ['butt', 'round', 'square'][style.strokeLinecap.v];
+    res.strokeLinejoin = ['miter', 'round', 'bevel'][style.strokeLinejoin.v];
+    res.strokePosition = style.strokePosition.map(item => getCssStrokePosition(item.v));
+    res.strokeMiterlimit = style.strokeMiterlimit.v;
+    res.strokeDasharray = style.strokeDasharray.map(item => item.v);
+    res.maskMode = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with'][style.maskMode.v];
+    res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][style.booleanOperation.v];
+    const blur = calComputedBlur(style.blur);
     res.blur = getCssBlur(blur.t, blur.radius, blur.angle, blur.center, blur.saturation);
-    res.shadow = computedStyle.shadow.map((item: ComputedShadow) => getCssShadow(item));
-    const tfo = style.transformOrigin;
-    res.transformOrigin = computedStyle.transformOrigin.map((item: number, i: number) => {
-      const o = tfo[i];
-      if (o.u === StyleUnit.PERCENT) {
-        return o.v + '%';
+    res.shadow = calComputedShadow(style.shadow).map((item: ComputedShadow) => getCssShadow(item));
+    res.transformOrigin = style.transformOrigin.map(item => {
+      if (item.u === StyleUnit.PERCENT) {
+        return item.v + '%';
       }
       return item;
     });
-    res.hueRotate = computedStyle.hueRotate;
-    res.saturate = computedStyle.saturate * 100 + '%';
-    res.brightness = computedStyle.brightness * 100 + '%';
-    res.contrast = computedStyle.contrast * 100 + '%';
-    res.overflow = ['visible', 'hidden'][computedStyle.overflow] || 'visible';
+    res.hueRotate = style.hueRotate.v;
+    res.saturate = style.saturate.v + '%';
+    res.brightness = style.brightness.v + '%';
+    res.contrast = style.contrast.v + '%';
+    res.overflow = ['visible', 'hidden'][style.overflow.v];
     return res as JStyle;
   }
 
@@ -2214,7 +2159,7 @@ class Node extends Event {
     return false;
   }
 
-  toJson(): JNode {
+  toJson() {
     return {
       tagName: 'node',
       props: Object.assign({}, clone(this.props), {
@@ -2226,7 +2171,7 @@ class Node extends Event {
         isLocked: this.isLocked,
         isExpanded: this.isExpanded,
         exportOptions: this.exportOptions,
-        style: clone(this.style),
+        style: this.getCssStyle(),
       }),
     };
   }
@@ -2590,18 +2535,38 @@ class Node extends Event {
     return json;
   }
 
-  clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    props.uuid = uuid.v4();
+  cloneProps() {
+    const props = Object.assign({}, this.props);
+    props.uuid = uuid.v4(); // 需要新的，source记录源供debug
     props.sourceUuid = this.uuid;
     props.name = this.name;
     props.nameIsFixed = this.nameIsFixed;
+    props.constrainProportions = this.constrainProportions;
+    props.isLocked = this.isLocked;
+    props.isExpanded = this.isExpanded;
+    props.exportOptions = {
+      exportFormats: this.exportOptions.exportFormats.map(item => {
+        return {
+          fileFormat: item.fileFormat,
+          scale: item.scale,
+        };
+      }),
+    };
     props.index = this.index;
+    // symbol初始化时还没didMount没有computedStyle；didMount后的修改都只改this.style不会动props.style
+    props.style = this.getCssStyle();
+    return props;
+  }
+
+  clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps();
     const res = new Node(props);
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
-    if (override) {
-    }
+    return res;
+  }
+
+  cloneAndLink(overrides?: Record<string, Override[]>) {
+    const res = this.clone();
+    if (overrides) {}
     return res;
   }
 

@@ -1,4 +1,4 @@
-import { JPoint, JRich, JStyle, Rich } from '../format';
+import { JPoint, JRich, JStyle, Rich, Point } from '../format';
 import inject from '../util/inject';
 import { isNil, isString } from '../util/type';
 import {
@@ -738,7 +738,7 @@ export function normalize(style: any): Style {
   return res;
 }
 
-export function normalizeRich(rich: JRich): Rich {
+export function normalizeRich(rich: JRich) {
   return {
     ...rich,
     color: color2rgbaInt(rich.color),
@@ -747,15 +747,26 @@ export function normalizeRich(rich: JRich): Rich {
       center: TEXT_ALIGN.CENTER,
       right: TEXT_ALIGN.RIGHT,
       justify: TEXT_ALIGN.JUSTIFY,
-    }[rich.textAlign],
+    }[rich.textAlign] || TEXT_ALIGN.LEFT,
     textDecoration: rich.textDecoration.map(item => {
       return {
         'none': TEXT_DECORATION.NONE,
         'underline': TEXT_DECORATION.UNDERLINE,
         'lineThrough': TEXT_DECORATION.LINE_THROUGH,
         'line-through': TEXT_DECORATION.LINE_THROUGH,
-      }[item];
+      }[item] || TEXT_DECORATION.NONE;
     }),
+  };
+}
+
+export function getPropsRich(rich: Rich) {
+  return {
+    ...rich,
+    textAlign: (['left', 'right', 'center', 'justify'][rich.textAlign] || 'left') as JRich['textAlign'],
+    textDecoration: rich.textDecoration.map(o => {
+      return ['none', 'underline', 'lineThrough'][o] || 'none';
+    }) as JRich['textDecoration'],
+    color: color2rgbaStr(rich.color),
   };
 }
 
@@ -1070,31 +1081,73 @@ export function getCssStrokePosition(o: STROKE_POSITION) {
   return (['center', 'inside', 'outside'][o] || 'inside') as 'center' | 'inside' | 'outside';
 }
 
-export function normalizePoints(points: JPoint[]) {
-  return points.map(item => {
-    return {
-      ...item,
-      curveMode: {
-        'none': CURVE_MODE.NONE,
-        'straight': CURVE_MODE.STRAIGHT,
-        'mirrored': CURVE_MODE.MIRRORED,
-        'asymmetric': CURVE_MODE.ASYMMETRIC,
-        'disconnected': CURVE_MODE.DISCONNECTED,
-      }[item.curveMode] || CURVE_MODE.NONE,
-      absX: 0,
-      absY: 0,
-      absFx: 0,
-      absFy: 0,
-      absTx: 0,
-      absTy: 0,
-      dspX: 0,
-      dspY: 0,
-      dspFx: 0,
-      dspFy: 0,
-      dspTx: 0,
-      dspTy: 0,
-    };
-  });
+export function getCssMbm(v: MIX_BLEND_MODE) {
+  return [
+    'normal',
+    'multiply',
+    'screen',
+    'overlay',
+    'darken',
+    'lighten',
+    'color-dodge',
+    'color-burn',
+    'hard-light',
+    'soft-light',
+    'difference',
+    'exclusion',
+    'hue',
+    'saturation',
+    'color',
+    'luminosity',
+  ][v];
+}
+
+export function normalizePoints(item: JPoint) {
+  return {
+    x: item.x,
+    y: item.y,
+    cornerRadius: item.cornerRadius,
+    fx: item.fx,
+    fy: item.fy,
+    tx: item.tx,
+    ty: item.ty,
+    hasCurveFrom: item.hasCurveFrom,
+    hasCurveTo: item.hasCurveTo,
+    curveMode: ({
+      'none': CURVE_MODE.NONE,
+      'straight': CURVE_MODE.STRAIGHT,
+      'mirrored': CURVE_MODE.MIRRORED,
+      'asymmetric': CURVE_MODE.ASYMMETRIC,
+      'disconnected': CURVE_MODE.DISCONNECTED,
+    }[item.curveMode] || CURVE_MODE.NONE) as Point['curveMode'],
+    absX: 0,
+    absY: 0,
+    absFx: 0,
+    absFy: 0,
+    absTx: 0,
+    absTy: 0,
+    dspX: 0,
+    dspY: 0,
+    dspFx: 0,
+    dspFy: 0,
+    dspTx: 0,
+    dspTy: 0,
+  };
+}
+
+export function getPropsPoints(item: Point) {
+  return {
+    x: item.x,
+    y: item.y,
+    cornerRadius: item.cornerRadius,
+    curveMode: (['none', 'straight', 'mirrored', 'asymmetric', 'disconnected'][item.curveMode] || 'none') as JPoint['curveMode'],
+    fx: item.fx,
+    fy: item.fy,
+    tx: item.tx,
+    ty: item.ty,
+    hasCurveFrom: item.hasCurveFrom,
+    hasCurveTo: item.hasCurveTo,
+  };
 }
 
 export default {
@@ -1111,4 +1164,7 @@ export default {
   getCssShadow,
   getCssFillStroke,
   getCssStrokePosition,
+  getCssMbm,
+  getPropsRich,
+  getPropsPoints,
 };

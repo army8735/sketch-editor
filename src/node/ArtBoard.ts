@@ -1,14 +1,12 @@
-import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { ArtBoardProps, JNode, Override, Props, TAG_NAME } from '../format';
+import { ArtBoardProps, Override, Props, TAG_NAME } from '../format';
 import { convertCoords2Gl } from '../gl/webgl';
 import { calRectPoints } from '../math/matrix';
 import { color2gl } from '../style/color';
 import Container from './Container';
 import Node from './Node';
 import Tile from '../refresh/Tile';
-import { clone } from '../util/type';
 
 const SHADOW_SIZE = 8;
 
@@ -200,13 +198,16 @@ class ArtBoard extends Container {
     gl.useProgram(programs.program);
   }
 
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    props.uuid = uuid.v4();
-    props.sourceUuid = this.uuid;
-    const res = new ArtBoard(props, this.children.map(item => item.clone(override)));
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
+  override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps() as ArtBoardProps;
+    const children = filter ? this.children.filter(filter) : this.children;
+    const res = new ArtBoard(props, children.map(item => item.clone(filter)));
+    return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
+    const props = this.cloneProps() as ArtBoardProps;
+    const res = new ArtBoard(props, this.children.map(item => item.cloneAndLink(overrides)));
     return res;
   }
 

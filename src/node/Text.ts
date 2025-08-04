@@ -1,7 +1,6 @@
-import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { JNode, JRich, ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
+import { ModifyRichStyle, Override, Rich, TAG_NAME, TextProps } from '../format';
 import { calPoint, inverse4 } from '../math/matrix';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
@@ -9,6 +8,7 @@ import {
   calNormalLineHeight,
   getBaseline,
   getContentArea,
+  getPropsRich,
   normalizeRich,
   setFontStyle,
 } from '../style/css';
@@ -3375,94 +3375,63 @@ class Text extends Node {
     return res;
   }
 
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    const oldUUid = this.uuid;
-    props.uuid = uuid.v4();
-    props.sourceUuid = oldUUid;
-    if (this.rich) {
-      props.rich = this.rich.map(item => {
-        return {
-          ...item,
-          textAlign: ['left', 'right', 'center', 'justify'][item.textAlign] || 'left',
-          textDecoration: item.textDecoration.map(o => {
-            return ['none', 'underline', 'lineThrough'][o] || 'none';
-          }),
-          color: color2rgbaStr(item.color),
-        };
-      });
+  getTextBehaviour() {
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      width,
+      height,
+    } = this.style;
+    const autoW = width.u === StyleUnit.AUTO
+      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
+    const autoH = height.u === StyleUnit.AUTO
+      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
+    if (autoW) {
+      return 'auto';
     }
-    if (override && override.hasOwnProperty(oldUUid)) {
-      override[oldUUid].forEach(item => {
+    else if (autoH) {
+      return 'autoH';
+    }
+    else {
+      return 'fixed';
+    }
+  }
+
+  override cloneProps() {
+    const props = super.cloneProps() as TextProps;
+    props.rich = this.rich.map(item => getPropsRich(item));
+    props.textBehaviour = this.getTextBehaviour();
+    return props;
+  }
+
+  override clone() {
+    const props = this.cloneProps();
+    const res = new Text(props);
+    return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
+    const props = this.cloneProps();
+    const oldUUid = this.uuid;
+    if (overrides && overrides.hasOwnProperty(oldUUid)) {
+      overrides[oldUUid].forEach(item => {
         const { key, value } = item;
         if (key[0] === 'content') {
           props.content = value;
         }
       });
     }
-    const {
-      left,
-      right,
-      top,
-      bottom,
-      width,
-      height,
-    } = this.style;
-    const autoW = width.u === StyleUnit.AUTO
-      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
-    const autoH = height.u === StyleUnit.AUTO
-      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
-    if (autoW) {
-      props.textBehaviour = 'auto';
-    }
-    else if (autoH) {
-      props.textBehaviour = 'autoH';
-    }
-    else {
-      props.textBehaviour = 'fixed';
-    }
     const res = new Text(props);
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
     return res;
   }
 
   override toJson() {
     const res = super.toJson();
     res.tagName = TAG_NAME.TEXT;
-    if (this.rich) {
-      (res.props as TextProps).rich = this.rich.map(item => {
-        return {
-          ...item,
-          textAlign: (['left', 'right', 'center', 'justify'][item.textAlign] || 'left') as JRich['textAlign'],
-          textDecoration: item.textDecoration.map(o => {
-            return ['none', 'underline', 'lineThrough'][o] || 'none';
-          }) as JRich['textDecoration'],
-          color: color2rgbaStr(item.color),
-        };
-      });
-    }
-    const {
-      left,
-      right,
-      top,
-      bottom,
-      width,
-      height,
-    } = this.style;
-    const autoW = width.u === StyleUnit.AUTO
-      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO);
-    const autoH = height.u === StyleUnit.AUTO
-      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO);
-    if (autoW) {
-      (res.props as TextProps).textBehaviour = 'auto';
-    }
-    else if (autoH) {
-      (res.props as TextProps).textBehaviour = 'autoH';
-    }
-    else {
-      (res.props as TextProps).textBehaviour = 'fixed';
-    }
+    (res.props as TextProps).rich = this.rich.map(item => getPropsRich(item));
+    (res.props as TextProps).textBehaviour = this.getTextBehaviour();
     return res;
   }
 

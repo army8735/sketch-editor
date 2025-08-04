@@ -1,10 +1,7 @@
-import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import {
-  JNode,
   JPage,
-  Override,
   PageProps,
   TAG_NAME,
 } from '../format/';
@@ -14,7 +11,6 @@ import { calMatrix } from '../style/transform';
 import Container from './Container';
 import Node from './Node';
 import { parse } from './parser';
-import { clone } from '../util/type';
 
 class Page extends Container {
   json?: JPage;
@@ -167,13 +163,10 @@ class Page extends Container {
     return n;
   }
 
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    props.uuid = uuid.v4();
-    props.sourceUuid = this.uuid;
-    const res = new Page(props, this.children.map(item => item.clone(override)));
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
+  override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps() as PageProps;
+    const children = filter ? this.children.filter(filter) : this.children;
+    const res = new Page(props, children.map(item => item.clone(filter)));
     return res;
   }
 

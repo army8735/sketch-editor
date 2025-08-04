@@ -1,16 +1,15 @@
-import * as uuid from 'uuid';
-import { Override, SymbolInstanceProps, TAG_NAME } from '../format';
+import { SymbolInstanceProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
-import Group from './Group';
-import { clone } from '../util/type';
+import AbstractGroup from './AbstractGroup';
+import Node from './Node';
 
-class SymbolInstance extends Group {
+class SymbolInstance extends AbstractGroup {
   symbolMaster: SymbolMaster;
   scale: number;
 
   constructor(props: SymbolInstanceProps, symbolMaster: SymbolMaster) {
     const overrideValues = props.overrideValues || {};
-    const children = symbolMaster.children.map(item => item.clone(overrideValues));
+    const children = symbolMaster.children.map(item => item.cloneAndLink(overrideValues));
     super(props, children);
     this.isSymbolInstance = true;
     this.symbolMaster = symbolMaster;
@@ -23,15 +22,10 @@ class SymbolInstance extends Group {
     super.willMount();
   }
 
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    props.uuid = uuid.v4();
-    props.sourceUuid = this.uuid;
-    const sm = this.symbolMaster.clone(override);
-    const res = new SymbolInstance(props, sm);
-    sm.addSymbolInstance(res);
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
+  // 特殊，使用同一个sm，没法filter，因为禁止修改
+  override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps() as SymbolInstanceProps;
+    const res = new SymbolInstance(props, this.symbolMaster);
     return res;
   }
 

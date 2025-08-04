@@ -1,7 +1,6 @@
-import * as uuid from 'uuid';
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { BitmapProps, JNode, Override, TAG_NAME } from '../format';
+import { BitmapProps, Override, TAG_NAME } from '../format';
 import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
 import { canvasPolygon } from '../refresh/paint';
@@ -20,7 +19,6 @@ import {
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
 import inject, { OffScreen } from '../util/inject';
-import { clone } from '../util/type';
 import Node from './Node';
 
 type Loader = {
@@ -851,16 +849,26 @@ class Bitmap extends Node {
     }
   }
 
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    props.uuid = uuid.v4();
-    props.sourceUuid = this.uuid;
+  override cloneProps() {
+    const props = super.cloneProps() as BitmapProps;
     props.src = this._src;
+    return props;
+  }
+
+  override clone() {
+    const props = this.cloneProps();
     const res = new Bitmap(props);
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
-    if (override) {
+    return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
+    const props = this.cloneProps();
+    const oldUUid = this.uuid;
+    if (oldUUid) {
+      if (overrides && overrides.hasOwnProperty(oldUUid)) {
+      }
     }
+    const res = new Bitmap(props);
     return res;
   }
 

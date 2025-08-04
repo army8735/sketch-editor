@@ -1,11 +1,10 @@
-import * as uuid from 'uuid';
 import { JContainer, JNode, Override, Props } from '../format';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
 import { Struct } from '../refresh/struct';
 import Tile from '../refresh/Tile';
 import inject from '../util/inject';
-import { clone, isNil } from '../util/type';
+import { isNil } from '../util/type';
 import { LayoutData } from './layout';
 import { calRectPoints } from '../math/matrix';
 
@@ -345,13 +344,17 @@ class Container<T extends Node = Node> extends Node {
     return structs.slice(i, i + struct.total + 1);
   }
 
-  override clone(override?: Record<string, Override[]>) {
-    const props = clone(this.props);
-    props.uuid = uuid.v4();
-    props.sourceUuid = this.uuid;
-    const res = new Container(props, this.children.map(item => item.clone(override)));
-    res.style = clone(this.style);
-    res.computedStyle = clone(this.computedStyle);
+  override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps();
+    const children = filter ? this.children.filter(filter) : this.children;
+    const res = new Container(props, children.map(item => item.clone(filter)));
+    return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
+    const props = this.cloneProps();
+    const res = new Container(props, this.children.map(item => item.cloneAndLink(overrides)));
+    if (overrides) {}
     return res;
   }
 
