@@ -81,16 +81,16 @@ class Polyline extends Geom {
     const w = rect[2] - rect[0];
     if (w < 0.5) {
       const mid = rect[0] + w * 0.5;
-      const r0 = mid - 0.25;
-      const r1 = mid + 0.25;
+      const r0 = rect[0] = mid - 0.25;
+      const r1 = rect[2] = mid + 0.25;
       dx1 = r0;
       dx2 = r1 - this.width;
     }
     const h = rect[3] - rect[1];
     if (h < 0.5) {
       const mid = rect[1] + h * 0.5;
-      const r0 = mid - 0.25;
-      const r1 = mid + 0.25;
+      const r0 = rect[1] = mid - 0.25;
+      const r1 = rect[3] = mid + 0.25;
       dy1 = r0;
       dy2 = r1 - this.height;
     }
