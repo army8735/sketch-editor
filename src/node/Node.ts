@@ -248,6 +248,9 @@ class Node extends Event {
 
   lay(data: LayoutData) {
     this.refreshLevel = RefreshLevel.REFLOW;
+    if (this.name === '矩形') {
+      console.log(JSON.stringify(this.style.width));
+    }
     // 布局时计算所有样式，更新时根据不同级别调用
     this.calReflowStyle();
     const { style, computedStyle } = this;

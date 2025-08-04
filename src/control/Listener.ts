@@ -32,7 +32,7 @@ import {
   getNodeByPoint,
   getOverlayArtBoardByPoint,
 } from '../tool/root';
-import { appendWithPosAndSize } from '../tool/container';
+import { appendWithIndex } from '../tool/container';
 import {
   createLine,
   createOval,
@@ -1964,11 +1964,14 @@ export default class Listener extends Event {
       nodes.forEach(item => {
         // 因为和原节点index相同，所以会被添加到其后面，并重设索引
         const o = {
-          x: item.node.computedStyle.left,
-          y: item.node.computedStyle.top,
+          x: 0,
+          y: 0,
           parent: item.parent,
         };
-        appendWithPosAndSize(item.node, o, true);
+        appendWithIndex(item.parent, item.node, true);
+        // 新节点没有computedStyle，append后补上
+        o.x = item.node.computedStyle.left;
+        o.y = item.node.computedStyle.top;
         nodes2.push(item.node);
         data.push(o);
       });
