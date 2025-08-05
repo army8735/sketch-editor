@@ -790,22 +790,7 @@ export function getPointWithDByApprox(points: { x: number, y: number }[], x: num
     const len1 = Math.sqrt(Math.pow(x1, 2) + Math.pow(y1, 2));
     const len2 = Math.sqrt(Math.pow(x2, 2) + Math.pow(y2, 2));
     let cos = includedAngle(x1, y1, x2, y2, true);
-    let t;
-    if (cos === 1) {
-      t = -x2 / len1;
-    }
-    else if (cos === -1) {
-      t = x2 / len1;
-    }
-    else if (cos === Infinity) {
-      t = -y2 / len1;
-    }
-    else if (cos === -Infinity) {
-      t = y2 / len1;
-    }
-    else {
-      t = len2 * cos / len1;
-    }
+    const t = len2 * cos / len1;
     let tx = x1 * t;
     let ty = y1 * t;
     tx += points[0].x;
