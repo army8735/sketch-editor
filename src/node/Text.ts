@@ -3421,6 +3421,18 @@ class Text extends Node {
         if (key[0] === 'content') {
           props.content = value;
         }
+        else if (key[0] === 'color') {
+          props.style!.color = value;
+          props.rich?.forEach(item => {
+            item.color = value;
+          });
+        }
+        else if (key[0] === 'fontSize') {
+          props.style!.fontSize = value;
+          props.rich?.forEach(item => {
+            item.fontSize = value;
+          });
+        }
       });
     }
     const res = new Text(props);

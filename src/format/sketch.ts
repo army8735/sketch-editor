@@ -1674,16 +1674,53 @@ async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[
     const [uuid, property] = item.overrideName.split('_');
     const [type, k] = property.split(':');
     const key = (k || type).split('-');
-    let value = item.value as string;
+    let value: any;
     if (key[0] === 'stringValue') {
       key[0] = 'content';
+      value = item.value as string;
     }
     else if (key[0] === 'fill') {
       if (type === 'color') {
         // @ts-ignore
-        value = await convertFill({ color: value } as SketchFormat.Fill, opt);
-        value = color2rgbaStr(value);
+        const v = item.value as SketchFormat.Color;
+        const c = clampColor([
+          v.red * 255,
+          v.green * 255,
+          v.blue * 255,
+          v.alpha,
+        ]);
+        value = color2rgbaStr(c);
       }
+    }
+    else if (key[0] === 'border') {
+      key[0] = 'stroke';
+      if (type === 'color') {
+        // @ts-ignore
+        const v = item.value as SketchFormat.Color;
+        const c = clampColor([
+          v.red * 255,
+          v.green * 255,
+          v.blue * 255,
+          v.alpha,
+        ]);
+        value = color2rgbaStr(c);
+      }
+    }
+    else if (key[0] === 'textColor') {
+      key[0] = 'color';
+      // @ts-ignore
+      const v = item.value as SketchFormat.Color;
+      const c = clampColor([
+        v.red * 255,
+        v.green * 255,
+        v.blue * 255,
+        v.alpha,
+      ]);
+      value = color2rgbaStr(c);
+    }
+    else if (key[0] === 'textSize') {
+      key[0] = 'fontSize';
+      value = parseFloat(item.value as string);
     }
     const o = hash[uuid] = hash[uuid] || [];
     o.push({

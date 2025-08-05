@@ -1963,15 +1963,13 @@ export default class Listener extends Event {
       const data: AddData[] = [];
       nodes.forEach(item => {
         // 因为和原节点index相同，所以会被添加到其后面，并重设索引
-        const o = {
-          x: 0,
-          y: 0,
-          parent: item.parent,
-        };
         appendWithIndex(item.parent, item.node, true);
         // 新节点没有computedStyle，append后补上
-        o.x = item.node.computedStyle.left;
-        o.y = item.node.computedStyle.top;
+        const o = {
+          x: item.node.computedStyle.left,
+          y: item.node.computedStyle.top,
+          parent: item.parent,
+        };
         nodes2.push(item.node);
         data.push(o);
       });

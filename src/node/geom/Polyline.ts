@@ -10,6 +10,7 @@ import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
 import { calPoint, identity, multiply, multiplyScaleX, multiplyScaleY, multiplyTranslate } from '../../math/matrix';
 import { calMatrixByOrigin, calRotateZ } from '../../style/transform';
+import { clampColor } from '../../style/color';
 
 const EPS = 1e-4;
 
@@ -187,6 +188,10 @@ class Polyline extends Geom {
         if (key[0] === 'fill') {
           const i = parseInt(key[1]) || 0;
           props.style!.fill![i] = value;
+        }
+        else if (key[0] === 'stroke') {
+          const i = parseInt(key[1]) || 0;
+          props.style!.stroke![i] = value;
         }
       });
     }

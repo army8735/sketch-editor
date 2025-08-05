@@ -329,7 +329,7 @@ export enum TAG_NAME {
 
 export type Override = {
   key: string[];
-  value: string;
+  value: any;
 };
 
 export type ResizeStyle = Partial<Pick<JStyle, 'left' | 'right' | 'top' | 'bottom' | 'width' | 'height' | 'scaleX' | 'scaleY'>>;
