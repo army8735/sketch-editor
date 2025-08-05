@@ -3393,6 +3393,7 @@ class Text extends Node {
         };
       });
     }
+    props.content = this._content;
     if (override && override.hasOwnProperty(oldUUid)) {
       override[oldUUid].forEach(item => {
         const { key, value } = item;
