@@ -4,10 +4,12 @@ import Node from './Node';
 import SymbolInstance from './SymbolInstance';
 
 class SymbolMaster extends AbstractFrame {
+  includeBackgroundColorInInstance: boolean;
   symbolInstances: SymbolInstance[];
 
   constructor(props: SymbolMasterProps, children: Array<Node>) {
     super(props, children);
+    this.includeBackgroundColorInInstance = !!props.includeBackgroundColorInInstance;
     this.isSymbolMaster = true;
     this.symbolInstances = [];
   }
@@ -25,8 +27,14 @@ class SymbolMaster extends AbstractFrame {
     }
   }
 
+  override cloneProps() {
+    const props = super.cloneProps() as SymbolMasterProps;
+    props.includeBackgroundColorInInstance = this.includeBackgroundColorInInstance;
+    return props;
+  }
+
   override clone(filter?: (node: Node) => boolean) {
-    const props = this.cloneProps() as SymbolMasterProps;
+    const props = this.cloneProps();
     const children = filter ? this.children.filter(filter) : this.children;
     const res = new SymbolMaster(props, children.map(item => item.clone(filter)));
     return res;

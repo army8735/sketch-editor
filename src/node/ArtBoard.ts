@@ -198,15 +198,23 @@ class ArtBoard extends Container {
     gl.useProgram(programs.program);
   }
 
+  override cloneProps() {
+    const props = super.cloneProps() as ArtBoardProps;
+    props.hasBackgroundColor = this.hasBackgroundColor;
+    props.resizesContent = this.resizesContent;
+    props.includeBackgroundColorInExport = this.includeBackgroundColorInExport;
+    return props;
+  }
+
   override clone(filter?: (node: Node) => boolean) {
-    const props = this.cloneProps() as ArtBoardProps;
+    const props = this.cloneProps();
     const children = filter ? this.children.filter(filter) : this.children;
     const res = new ArtBoard(props, children.map(item => item.clone(filter)));
     return res;
   }
 
   override cloneAndLink(overrides?: Record<string, Override[]>) {
-    const props = this.cloneProps() as ArtBoardProps;
+    const props = this.cloneProps();
     const res = new ArtBoard(props, this.children.map(item => item.cloneAndLink(overrides)));
     return res;
   }

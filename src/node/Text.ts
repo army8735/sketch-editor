@@ -3403,6 +3403,7 @@ class Text extends Node {
     const props = super.cloneProps() as TextProps;
     props.rich = this.rich.map(item => getPropsRich(item));
     props.textBehaviour = this.getTextBehaviour();
+    props.content = this._content;
     return props;
   }
 

@@ -170,6 +170,7 @@ class Polyline extends Geom {
   override cloneProps() {
     const props = super.cloneProps() as PolylineProps;
     props.points = this.points.map(item => getPropsPoints(item));
+    props.isClosed = this.isClosed;
     return props;
   }
 
