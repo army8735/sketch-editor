@@ -1732,6 +1732,7 @@ class Node extends Event {
     res.strokeDasharray = style.strokeDasharray.map(item => item.v);
     res.strokeMode = style.strokeMode.map(item => getCssMbm(item.v));
     res.maskMode = ['none', 'outline', 'alpha', 'gray', 'alpha-with', 'gray-with'][style.maskMode.v];
+    res.breakMask = style.breakMask.v;
     res.booleanOperation = ['none', 'union', 'subtract', 'intersect', 'xor'][style.booleanOperation.v];
     const blur = calComputedBlur(style.blur);
     res.blur = getCssBlur(blur.t, blur.radius, blur.angle, blur.center, blur.saturation);
