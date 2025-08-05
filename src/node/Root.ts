@@ -897,23 +897,24 @@ class Root extends Container implements FrameCallback {
     const meta: SketchFormat.Meta = {
       commit: '',
       pagesAndArtboards,
-      version: 146,
+      // @ts-ignore
+      version: 168,
       compatibilityVersion: 99,
       app: SketchFormat.BundleId.PublicRelease,
       autosaved: 0,
       variant: 'NONAPPSTORE',
       created: {
         commit: '',
-        appVersion: '99.1',
+        appVersion: '2025.1.3',
         build: 0,
         app: SketchFormat.BundleId.PublicRelease,
-        coeditCompatibilityVersion: 145,
+        coeditCompatibilityVersion: 164,
         compatibilityVersion: 99,
-        version: 146,
+        version: 168,
         variant: 'NONAPPSTORE',
       },
       saveHistory: [],
-      appVersion: '99.1',
+      appVersion: '2025.1.3',
       build: 0,
     };
     const document: SketchFormat.Document = {
