@@ -32,24 +32,24 @@ export function projection(x1: number, y1: number, x2: number, y2: number) {
 // a和b夹角
 export function includedAngle(x1: number, y1: number, x2: number, y2: number, keepFunction = false) {
   let cos = 0;
-  if (y1 === y2) {
-    if (x2 > x1) {
+  // 特殊都是点
+  if (x1 === x2 && y1 === y2) {
+    cos = 1;
+  }
+  else if (y1 === y2 && y1 === 0) {
+    if (x1 > 0 && x2 > 0 || x1 < 0 && x2 < 0) {
       cos = 1;
     }
-    else if (x2 < x1) {
+    else {
       cos = -1;
     }
-    else {
-      // throw new Error('Vector is a point');
-      return 0;
-    }
   }
-  else if (x1 === x2) {
-    if (y2 > y1) {
-      cos = Infinity;
+  else if (x1 === x2 && x1 === 0) {
+    if (y1 > 0 && y2 > 0 || y1 < 0 && y2 < 0) {
+      cos = 1;
     }
-    else if (y2 < y1) {
-      cos = -Infinity;
+    else {
+      cos = -1;
     }
   }
   else {

@@ -207,3 +207,17 @@ describe('Event', function() {
     expect(count).to.eql(2);
   });
 });
+
+describe('vector', function() {
+  it('includedAngle', function() {
+    let vector = sketchEditor.math.vector;
+    expect(vector.includedAngle(0, 0, 0, 0)).to.eql(0);
+    expect(vector.includedAngle(84, 0, 119, 0)).to.eql(0);
+    expect(vector.includedAngle(-84, 0, -119, 0)).to.eql(0);
+    expect(vector.includedAngle(-84, 0, 119, 0)).to.eql(Math.PI);
+    expect(vector.includedAngle(0, 10, 0, 10)).to.eql(0);
+    expect(vector.includedAngle(0, -10, 0, -10)).to.eql(0);
+    expect(vector.includedAngle(0, 10, 0, -10)).to.eql(Math.PI);
+    expect(vector.includedAngle(0, 10, 10, 0)).to.eql(Math.PI * 0.5);
+  });
+});

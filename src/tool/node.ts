@@ -288,6 +288,7 @@ export function migrate(parent: Container, node: Node) {
   // 还要看向量间的夹角判断正负号，因为node原点可能在parent外，这时left/top要变成负
   const angle1 = includedAngle(vectorN0.x, vectorN0.y, vectorP1.x, vectorP1.y);
   const angle2 = includedAngle(vectorN0.x, vectorN0.y, vectorP2.x, vectorP2.y);
+  // console.log('angle', angle1, angle2)
   const rt = Math.PI * 0.5;
   if (angle1 <= rt && angle2 <= rt) {}
   else if (angle1 <= rt) {

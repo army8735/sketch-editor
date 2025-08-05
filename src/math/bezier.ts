@@ -752,7 +752,7 @@ export function getBezierMonotonicityT2(points: { x: number, y: number }[], isX 
         2 * (3 * p0 - 6 * p1 + 3 * p2),
         6 * (-p0 + 3 * p1 - 3 * p2 + p3),
       ])
-      .filter((i) => i > eps&& i < 1 - eps);console.log(t);
+      .filter((i) => i > eps&& i < 1 - eps);
     return t.sort(function (a, b) {
       return a - b;
     });
