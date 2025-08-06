@@ -14,10 +14,10 @@ module.exports = {
       .moveToElement('canvas', 330, 321)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
-      .keys(browser.Keys.ESCAPE)
-      .keys(browser.Keys.NULL)
       .click('#button4')
       .assert.value('#base64', '[0,"矩形"]')
+      .keys(browser.Keys.ESCAPE)
+      .keys(browser.Keys.NULL)
 
       .keys(browser.Keys.META)
       .moveToElement('canvas', 340, 320)
@@ -25,10 +25,10 @@ module.exports = {
       .moveToElement('canvas', 310, 321)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
-      .keys(browser.Keys.ESCAPE)
-      .keys(browser.Keys.NULL)
       .click('#button4')
       .assert.value('#base64', '[1,"2"]')
+      .keys(browser.Keys.ESCAPE)
+      .keys(browser.Keys.NULL)
 
       .keys(browser.Keys.META)
       .moveToElement('canvas', 100, 260)
@@ -36,10 +36,10 @@ module.exports = {
       .moveToElement('canvas', 101, 320)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
-      .keys(browser.Keys.ESCAPE)
-      .keys(browser.Keys.NULL)
       .click('#button4')
       .assert.value('#base64', '[[2,"1"],[2,"2"]]')
+      .keys(browser.Keys.ESCAPE)
+      .keys(browser.Keys.NULL)
 
       .keys(browser.Keys.META)
       .moveToElement('canvas', 150, 150)
@@ -47,10 +47,10 @@ module.exports = {
       .moveToElement('canvas', 151, 40)
       .mouseButtonUp(0)
       .keys(browser.Keys.NULL)
-      .keys(browser.Keys.ESCAPE)
-      .keys(browser.Keys.NULL)
       .click('#button4')
       .assert.value('#base64', '[[3,"abcdefg"],[3,"椭圆形"]]')
+      .keys(browser.Keys.ESCAPE)
+      .keys(browser.Keys.NULL)
 
       .end();
   }
