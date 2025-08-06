@@ -1432,8 +1432,8 @@ export async function toBitmap(node: Node, opts?: {
   const bbox = node._filterBbox2 || node.filterBbox2;
   const width = (bbox[2] - bbox[0]) * scale;
   const height = (bbox[3] - bbox[1]) * scale;
-  if (width > config.maxTextureSize || height > config.maxTextureSize) {
-    throw new Error('Out of range: ' + width + '/' + height + ', max is ' + config.maxTextureSize);
+  if (width > config.MAX_TEXTURE_SIZE || height > config.MAX_TEXTURE_SIZE) {
+    throw new Error('Out of range: ' + width + '/' + height + ', max is ' + config.MAX_TEXTURE_SIZE);
   }
   const canvas2 = document.createElement('canvas');
   canvas2.width = width;
