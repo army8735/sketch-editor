@@ -1071,7 +1071,7 @@ export function intersectLineLine(
     const toClip = (
       (ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)
     ) / d;
-    const eps2 = 1 - eps
+    const eps2 = 1 - eps;
     if (limit && (toSource < eps || toSource > eps2 || toClip < eps || toClip > eps2)) {
       return;
     }

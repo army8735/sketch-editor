@@ -11,6 +11,7 @@ import Polyline from '../node/geom/Polyline';
 import AbstractFrame from '../node/AbstractFrame';
 import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
 import { calRectPoints } from '../math/matrix';
+import { intersectLineLine } from '../math/isec';
 import { VISIBILITY } from '../style/define';
 import config from '../util/config';
 
@@ -32,14 +33,62 @@ function getTopShapeGroup(node: Geom | ShapeGroup) {
 }
 
 function isAllInFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
-  const rect = n.getBoundingClientRect();
+  const { left, top, right, bottom } = n.getBoundingClientRect();
   if (x1 > x2) {
     [x1, x2] = [x2, x1];
   }
   if (y1 > y2) {
     [y1, y2] = [y2, y1];
   }
-  return rect.left > x1 && rect.top > y1 && rect.right < x2 && rect.bottom < y2;
+  return left >= x1 && top >= y1 && right <= x2 && bottom <= y2;
+}
+
+function isCrossFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
+  if (x1 > x2) {
+    [x1, x2] = [x2, x1];
+  }
+  if (y1 > y2) {
+    [y1, y2] = [y2, y1];
+  }
+  const points = n.getBoundingClientRect().points;
+  let isIn = false;
+  let isOut = false;
+  // 先看节点的顶点是否在选框内外出现，快速判断
+  for (let i = 0; i < points.length; i++) {
+    const { x, y } = points[i];
+    if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
+      isIn = true;
+    }
+    else {
+      isOut = true;
+    }
+    if (isIn && isOut) {
+      return true;
+    }
+  }
+  // 再看节点的4条边和frame是否相交
+  const line1 = [
+    [{ x: x1, y: y1}, { x: x2, y: y1 }],
+    [{ x: x2, y: y1 }, { x: x2, y: y2 }],
+    [{ x: x2, y: y2 }, { x: x1, y: y2 }],
+    [{ x: x1, y: y2}, { x: x1, y: y1 }],
+  ];
+  const line2 = [
+    [{ x: points[0].x, y: points[0].y }, { x: points[1].x, y: points[1].y }],
+    [{ x: points[1].x, y: points[1].y }, { x: points[2].x, y: points[2].y }],
+    [{ x: points[2].x, y: points[2].y }, { x: points[3].x, y: points[3].y }],
+    [{ x: points[3].x, y: points[3].y }, { x: points[0].x, y: points[0].y }],
+  ];
+  for (let i = 0; i < line1.length; i++) {
+    const a = line1[i];
+    for (let j = 0; j < line2.length; j++) {
+      const b = line2[j];
+      if (intersectLineLine(a[0].x, a[0].y, a[1].x, a[1].y, b[0].x, b[0].y, b[1].x, b[1].y)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function getChildByPoint(parent: Container, x: number, y: number): Node | undefined {
@@ -345,7 +394,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
       }
       // 按下metaKey，需返回最深的叶子节点，但不返回组、画板
       if (metaKey) {
-        return res.filter(item => {
+        const res2 = res.filter(item => {
           if (item instanceof Group) {
             return false;
           }
@@ -357,6 +406,27 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           }
           return true;
         });
+        // 交互优化，如果只有1个节点，返回它
+        if (res2.length < 2) {
+          return res2;
+        }
+        // 多个节点时，矢量需要和选框交叉或被选框包含，如果选框完全在矢量内则忽略
+        const res3 = res2.filter(item => {
+          if (item instanceof Polyline || item instanceof ShapeGroup) {
+            if (isAllInFrame(x1, y1, x2, y2, item) || isCrossFrame(x1, y1, x2, y2, item)) {
+              return true;
+            }
+            else {
+              return false;
+            }
+          }
+          return true;
+        });
+        if (res3.length) {
+          return res3;
+        }
+        // 防止都被过滤掉，至少返回一个，取上层最深
+        return res2.slice(-1);
       }
       // 不按下metaKey，是page下直接子节点，忽略Group，如果是画板需要选取完全包含
       const res2: Node[] = [];
