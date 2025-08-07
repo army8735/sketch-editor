@@ -2887,6 +2887,8 @@ export default class Listener extends Event {
     this.geometry.destroy();
     this.gradient.destroy();
     this.input.destroy();
+    contextMenu.destroy();
+    picker.destroy();
   }
 
   static HOVER_NODE = 'HOVER_NODE';

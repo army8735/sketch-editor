@@ -44,12 +44,15 @@ const htmlCanvas = `
   <div class="item version">版本 ${version}</div>
 `;
 
+let onClick: (e: MouseEvent) => void;
+let onVisibleChange: (e: Event) => void;
+
 function init(listener: Listener) {
   if (!canvasDiv) {
     canvasDiv = document.createElement('div');
     document.body.appendChild(canvasDiv);
     // 点击自动关闭，外部或者子项都可，但点自身不关闭，因为有padding或者不可点击的项视为点自己
-    document.addEventListener('click', (e) => {
+    onClick = (e) => {
       if (o.keep) {
         o.keep = false;
         return;
@@ -57,14 +60,16 @@ function init(listener: Listener) {
       if (hide()) {
         listener.emit(Listener.CONTEXT_MENU, false, canvasDiv);
       }
-    });
-    document.addEventListener('visibilitychange', (e) => {
+    };
+    document.addEventListener('click', onClick);
+    onVisibleChange = (e) => {
       if (document.visibilityState === 'hidden') {
         if (hide()) {
           listener.emit(Listener.CONTEXT_MENU, false, canvasDiv);
         }
       }
-    });
+    };
+    document.addEventListener('visibilitychange', onVisibleChange);
     canvasDiv.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const classList = target.classList;
@@ -284,6 +289,10 @@ const o = {
     listener.emit(Listener.CONTEXT_MENU, true, canvasDiv);
   },
   hide,
+  destroy() {
+    document.removeEventListener('click', onClick);
+    document.removeEventListener('visibilitychange', onVisibleChange);
+  },
 };
 
 export default o;

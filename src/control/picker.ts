@@ -564,6 +564,10 @@ const o = {
       bg.style.background = convert2Css(t, bg.clientWidth, bg.clientHeight, true).replace(/\([^,]*,/, '(to right,');
     }
   },
+  destroy() {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('click', onClick2);
+  },
 };
 
 function initStops(data: ComputedGradient, line: HTMLElement) {
