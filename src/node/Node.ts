@@ -274,19 +274,6 @@ class Node extends Event {
       fixedBottom = true;
       computedStyle.bottom = calSize(bottom, data.h);
     }
-    // 考虑min值约束
-    // if (width.u !== StyleUnit.AUTO) {
-    //   this.minWidth = this.width;
-    // }
-    // else {
-    //   this.minWidth = 0.5;
-    // }
-    // if (height.u !== StyleUnit.AUTO) {
-    //   this.minHeight = this.height;
-    // }
-    // else {
-    //   this.minHeight = 0.5;
-    // }
     // 左右决定width
     if (fixedLeft && fixedRight) {
       this.width = computedStyle.width =
@@ -428,7 +415,7 @@ class Node extends Event {
     else {
       computedStyle.lineHeight = lineHeight.v;
     }
-    this.width = this.height = 0;
+    this.width = this.height = 0; // 归零方便debug，后续有min值约束
     const width = style.width;
     const height = style.height;
     if (parent) {
@@ -442,10 +429,10 @@ class Node extends Event {
     // 不应该没有parent，Root会自己强制计算要求px，但防止特殊逻辑比如添加自定义矢量fake计算还是兜底
     else {
       if (width.u === StyleUnit.PX) {
-        this.width = computedStyle.width = width.v;
+        this.width = computedStyle.width = Math.max(this.minWidth, width.v);
       }
       if (height.u === StyleUnit.PX) {
-        this.height = computedStyle.height = height.v;
+        this.height = computedStyle.height = Math.max(this.minWidth, height.v);
       }
     }
     computedStyle.letterSpacing = style.letterSpacing.v;
