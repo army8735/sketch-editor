@@ -7,7 +7,7 @@ import Root from '../node/Root';
 import Bitmap from '../node/Bitmap';
 import ShapeGroup from '../node/geom/ShapeGroup';
 import Slice from '../node/Slice';
-import { MASK, MIX_BLEND_MODE, VISIBILITY } from '../style/define';
+import { MASK, MIX_BLEND_MODE, OVERFLOW, VISIBILITY } from '../style/define';
 import config from '../util/config';
 import {
   checkInRect,
@@ -631,6 +631,7 @@ function renderWebglTile(
       if (
         target?.available && target !== node.textureCache[scaleIndex]
         || computedStyle.maskMode
+        || !isInScreen && computedStyle.overflow === OVERFLOW.HIDDEN // Frame裁剪不在范围内
       ) {
         // 有种特殊情况，group没内容且没next，但children有内容，outline蒙版需要渲染出来
         if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(computedStyle.maskMode)
@@ -1044,6 +1045,7 @@ function renderWebglNoTile(
     if (
       target?.available && target !== node.textureCache[scaleIndex]
       || computedStyle.maskMode
+      || !isInScreen && computedStyle.overflow === OVERFLOW.HIDDEN // Frame裁剪不在范围内
     ) {
       // 有种特殊情况，group没内容且没next，但children有内容，outline蒙版需要渲染出来
       if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(computedStyle.maskMode)
