@@ -410,17 +410,14 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
         if (res2.length < 2) {
           return res2;
         }
-        // 多个节点时，矢量需要和选框交叉或被选框包含，如果选框完全在矢量内则忽略
+        // 多个节点时，节点需要和选框交叉或被选框包含，如果选框完全在节点则忽略
         const res3 = res2.filter(item => {
-          if (item instanceof Polyline || item instanceof ShapeGroup) {
-            if (isAllInFrame(x1, y1, x2, y2, item) || isCrossFrame(x1, y1, x2, y2, item)) {
-              return true;
-            }
-            else {
-              return false;
-            }
+          if (isAllInFrame(x1, y1, x2, y2, item) || isCrossFrame(x1, y1, x2, y2, item)) {
+            return true;
           }
-          return true;
+          else {
+            return false;
+          }
         });
         if (res3.length) {
           return res3;
