@@ -1,7 +1,10 @@
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { SymbolInstanceProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
 import AbstractGroup from './AbstractGroup';
 import Node from './Node';
+import { color2gl } from '../style/color';
 
 class SymbolInstance extends AbstractGroup {
   symbolMaster: SymbolMaster;
@@ -33,6 +36,81 @@ class SymbolInstance extends AbstractGroup {
     const res = super.toJson();
     res.tagName = TAG_NAME.SYMBOL_INSTANCE;
     return res;
+  }
+
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
+    const json = await super.toSketchJson(zip, blobHash) as SketchFormat.SymbolInstance;
+    json._class = SketchFormat.ClassValue.SymbolInstance;
+    json.overrideValues = [];
+    const ov = (this.props as SymbolInstanceProps).overrideValues;
+    for (let uuid in ov) {
+      if (ov.hasOwnProperty(uuid)) {
+        const list = ov[uuid];
+        list.forEach(item => {
+          const { key, value } = item;
+          if (key[0] === 'content') {
+            json.overrideValues.push({
+              _class: SketchFormat.ClassValue.OverrideValue,
+              value,
+              overrideName: uuid + '_stringValue',
+            });
+          }
+          else if (key[0] === 'fontSize') {
+            json.overrideValues.push({
+              _class: SketchFormat.ClassValue.OverrideValue,
+              value: value.toString(),
+              overrideName: uuid + '_textSize',
+            });
+          }
+          else if (key[0] === 'color') {
+            const c = color2gl(value);
+            json.overrideValues.push({
+              _class: SketchFormat.ClassValue.OverrideValue,
+              value: {
+                // @ts-ignore
+                _class: SketchFormat.ClassValue.Color,
+                red: c[0],
+                green: c[1],
+                blue: c[2],
+                alpha: c[3],
+              },
+              overrideName: uuid + '_textColor',
+            });
+          }
+          else if (key[0] === 'fill') {
+            const c = color2gl(value);
+            json.overrideValues.push({
+              _class: SketchFormat.ClassValue.OverrideValue,
+              value: {
+                // @ts-ignore
+                _class: SketchFormat.ClassValue.Color,
+                red: c[0],
+                green: c[1],
+                blue: c[2],
+                alpha: c[3],
+              },
+              overrideName: uuid + '_color:' + key.join('-'),
+            });
+          }
+          else if (key[0] === 'stroke') {
+            const c = color2gl(value);
+            json.overrideValues.push({
+              _class: SketchFormat.ClassValue.OverrideValue,
+              value: {
+                // @ts-ignore
+                _class: SketchFormat.ClassValue.Color,
+                red: c[0],
+                green: c[1],
+                blue: c[2],
+                alpha: c[3],
+              },
+              overrideName: uuid + '_color:border-' + key.slice(1).join('-'),
+            });
+          }
+        });
+      }
+    }
+    return json;
   }
 }
 
