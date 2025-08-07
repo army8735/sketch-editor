@@ -215,7 +215,7 @@ export function genMerge(
       return b.lv - a.lv;
     });
   }
-  console.warn('mergeList', mergeList.slice(0));
+  // console.warn('mergeList', mergeList.slice(0));
   // 先循环求一遍各自merge的bbox汇总，以及是否有嵌套关系
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const item = mergeList[j];
