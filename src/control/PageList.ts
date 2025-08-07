@@ -6,6 +6,7 @@ export default class PageList {
   root: Root;
   dom: HTMLElement;
   listener: Listener;
+  ul: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -14,7 +15,7 @@ export default class PageList {
 
     const page = root.getCurPage();
     const pageContainer = root.pageContainer;
-    const ul = document.createElement('ul');
+    const ul = this.ul = document.createElement('ul');
     pageContainer.children.forEach(item => {
       const li = document.createElement('li');
       li.title = item.name || '';
@@ -46,5 +47,9 @@ export default class PageList {
         }
       }
     });
+  }
+
+  destroy() {
+    this.ul.remove();
   }
 };

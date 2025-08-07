@@ -6,13 +6,14 @@ class Zoom {
   root: Root;
   dom: HTMLElement;
   listener: Listener;
+  select: HTMLElement;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
 
-    const select = document.createElement('select');
+    const select = this.select = document.createElement('select');
     select.innerHTML = `
       <option value="" disabled="disabled">请选择</option>
       <option value="up">放大</option>
@@ -46,6 +47,10 @@ class Zoom {
     listener.on(Listener.ZOOM_PAGE, (zoom: number) => {
       div.innerText = toPrecision(zoom * 100, 0).toString() + '%';
     });
+  }
+
+  destroy() {
+    this.select.remove();
   }
 }
 

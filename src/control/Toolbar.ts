@@ -63,28 +63,34 @@ class Toolbar {
   root: Root;
   dom: HTMLElement;
   listener: Listener;
+  sel: HTMLElement;
+  geom: HTMLElement;
+  text: HTMLElement;
+  image: HTMLElement;
+  bool: HTMLElement;
+  onClick: (e: MouseEvent) => void;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
     this.dom = dom;
     this.listener = listener;
 
-    const sel = document.createElement('div');
+    const sel = this.sel = document.createElement('div');
     sel.className = 'sel item active';
     sel.innerHTML = selHtml;
     dom.appendChild(sel);
 
-    const geom = document.createElement('div');
+    const geom = this.geom = document.createElement('div');
     geom.className = 'geom item';
     geom.innerHTML = geomHtml;
     dom.appendChild(geom);
 
-    const text = document.createElement('div');
+    const text = this.text = document.createElement('div');
     text.className = 'text item';
     text.innerHTML = textHtml;
     dom.appendChild(text);
 
-    const image = document.createElement('div');
+    const image = this.image = document.createElement('div');
     image.className = 'img item';
     image.innerHTML = imageHtml;
     dom.appendChild(image);
@@ -94,7 +100,7 @@ class Toolbar {
     // mask.innerHTML = maskHtml;
     // dom.appendChild(mask);
 
-    const bool = document.createElement('div');
+    const bool = this.bool = document.createElement('div');
     bool.className = 'bool item';
     bool.innerHTML = boolHtml;
     dom.appendChild(bool);
@@ -290,13 +296,14 @@ class Toolbar {
       }
     });
 
-    document.addEventListener('click', (e) => {
+    this.onClick = (e) => {
       if (keep) {
         keep = false;
         return;
       }
       dom.querySelector('.show')?.classList.remove('show');
-    });
+    };
+    document.addEventListener('click', this.onClick);
 
     listener.on(Listener.STATE_CHANGE, (prev: state, next: state) => {
       if (next === state.NORMAL || prev === state.ADD_TEXT && next === state.EDIT_TEXT) {
@@ -470,6 +477,15 @@ class Toolbar {
       }
     }
     listener.on(Listener.CANCEL_ADD_ESC, reset);
+  }
+
+  destroy() {
+    this.sel.remove();
+    this.geom.remove();
+    this.text.remove();
+    this.image.remove();
+    this.bool.remove();
+    document.removeEventListener('click', this.onClick);
   }
 }
 
