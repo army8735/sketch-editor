@@ -194,6 +194,9 @@ class Page extends Container {
       base: 0,
       guides: [],
     };
+    if (this.json) {
+      this.initIfNot();
+    }
     const list = await Promise.all(this.children.map(item => {
       return item.toSketchJson(zip, blobHash);
     }));

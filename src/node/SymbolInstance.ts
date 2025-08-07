@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { SymbolInstanceProps, TAG_NAME } from '../format';
+import { SymbolInstanceProps, SymbolMasterProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
 import AbstractGroup from './AbstractGroup';
 import Node from './Node';
@@ -41,6 +41,7 @@ class SymbolInstance extends AbstractGroup {
   override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     const json = await super.toSketchJson(zip, blobHash) as SketchFormat.SymbolInstance;
     json._class = SketchFormat.ClassValue.SymbolInstance;
+    json.symbolID = (this.symbolMaster.props as SymbolMasterProps).symbolId;
     json.overrideValues = [];
     const ov = (this.props as SymbolInstanceProps).overrideValues;
     for (let uuid in ov) {

@@ -51,6 +51,7 @@ class SymbolMaster extends AbstractFrame {
   override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
     const json = await super.toSketchJson(zip, blobHash) as SketchFormat.SymbolMaster;
     json._class = SketchFormat.ClassValue.SymbolMaster;
+    json.symbolID = (this.props as SymbolMasterProps).symbolId;
     const list = await Promise.all(this.children.map(item => {
       return item.toSketchJson(zip, blobHash);
     }));

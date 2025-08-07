@@ -278,7 +278,6 @@ async function convertItem(
       ])
       : [255, 255, 255, 1];
     if (layer._class === SketchFormat.ClassValue.SymbolMaster) {
-      const symbolId = layer.symbolID;
       const includeBackgroundColorInInstance = layer.includeBackgroundColorInInstance;
       return {
         tagName: TAG_NAME.SYMBOL_MASTER,
@@ -289,7 +288,7 @@ async function convertItem(
           constrainProportions,
           hasBackgroundColor,
           resizesContent: layer.resizesContent,
-          symbolId,
+          symbolId: layer.symbolID,
           includeBackgroundColorInInstance,
           exportOptions,
           style: {
