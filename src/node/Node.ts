@@ -44,6 +44,7 @@ import {
   GRADIENT,
   MASK,
   MIX_BLEND_MODE,
+  OVERFLOW,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
@@ -2228,6 +2229,7 @@ class Node extends Event {
       mixBlendMode,
       scaleX,
       scaleY,
+      overflow,
     } = computedStyle;
     const shadows: SketchFormat.Shadow[] = [];
     const innerShadows: SketchFormat.InnerShadow[] = [];
@@ -2362,6 +2364,10 @@ class Node extends Event {
         },
       },
     };
+    if (overflow === OVERFLOW.HIDDEN) {
+      // @ts-ignore
+      json.clippingBehavior = 1;
+    }
     json.style!.fills = await Promise.all(computedStyle.fill.map(async (f, i) => {
       const color: SketchFormat.Color = {
         _class: 'color',
@@ -2533,6 +2539,8 @@ class Node extends Event {
           SketchFormat.BlurType.Background,
         ][blur.t - 1],
       };
+      // @ts-ignore 新版
+      json.style!.blurs = [json.style!.blur];
     }
     return json;
   }

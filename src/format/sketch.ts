@@ -278,6 +278,23 @@ async function convertItem(
       ])
       : [255, 255, 255, 1];
     if (layer._class === SketchFormat.ClassValue.SymbolMaster) {
+      const {
+        fill,
+        fillEnable,
+        fillOpacity,
+        fillMode,
+        stroke,
+        strokeEnable,
+        strokeWidth,
+        strokePosition,
+        strokeMode,
+        strokeDasharray,
+        strokeLinecap,
+        strokeLinejoin,
+        strokeMiterlimit,
+      } = await geomStyle(layer, opt);
+      // @ts-ignore
+      const clippingBehavior = layer.clippingBehavior;
       const includeBackgroundColorInInstance = layer.includeBackgroundColorInInstance;
       return {
         tagName: TAG_NAME.SYMBOL_MASTER,
@@ -285,6 +302,7 @@ async function convertItem(
           uuid: layer.do_objectID,
           name: layer.name,
           nameIsFixed: layer.nameIsFixed,
+          index,
           constrainProportions,
           hasBackgroundColor,
           resizesContent: layer.resizesContent,
@@ -300,6 +318,20 @@ async function convertItem(
             translateY,
             rotateZ,
             backgroundColor,
+            fill,
+            fillEnable,
+            fillOpacity,
+            fillMode,
+            stroke,
+            strokeEnable,
+            strokeWidth,
+            strokePosition,
+            strokeMode,
+            strokeDasharray,
+            strokeLinecap,
+            strokeLinejoin,
+            strokeMiterlimit,
+            overflow: clippingBehavior === 2 ? 'visible' : 'hidden',
           },
           isLocked,
           isExpanded,
@@ -314,6 +346,7 @@ async function convertItem(
         uuid: layer.do_objectID,
         name: layer.name,
         nameIsFixed: layer.nameIsFixed,
+        index,
         constrainProportions,
         hasBackgroundColor,
         resizesContent: layer.resizesContent,

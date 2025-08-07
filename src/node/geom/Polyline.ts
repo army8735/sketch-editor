@@ -10,7 +10,6 @@ import { getCurve, getStraight, isCornerPoint, XY } from './corner';
 import { sliceBezier } from '../../math/bezier';
 import { calPoint, identity, multiply, multiplyScaleX, multiplyScaleY, multiplyTranslate } from '../../math/matrix';
 import { calMatrixByOrigin, calRotateZ } from '../../style/transform';
-import { clampColor } from '../../style/color';
 
 const EPS = 1e-4;
 
