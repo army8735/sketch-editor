@@ -2884,6 +2884,9 @@ export default class Listener extends Event {
     this.originStyle.splice(0);
     this.cssStyle.splice(0);
     this.select.destroy();
+    this.geometry.destroy();
+    this.gradient.destroy();
+    this.input.destroy();
   }
 
   static HOVER_NODE = 'HOVER_NODE';

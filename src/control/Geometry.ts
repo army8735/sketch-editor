@@ -22,6 +22,9 @@ export default class Geometry {
   nodes: Polyline[];
   idxes: number[][]; // 当前激活点索引，多个编辑节点下的多个顶点，一维是node索引
   clonePoints: Point[][]; // 同上，编辑前的point数据
+  onMouseMove: (e: MouseEvent) => void;
+  onMouseUp: (e: MouseEvent) => void;
+  onClick: (e: MouseEvent) => void;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -297,7 +300,7 @@ export default class Geometry {
       }
     });
     // 已选节点可能移出panel范围，所以侦听document
-    document.addEventListener('mousemove', (e) => {
+    this.onMouseMove = (e) => {
       // 当前按下移动的那个point属于的node，用来算diff距离，多个其它node上的point会跟着这个点一起变
       const node = this.nodes[nodeIdx];
       if (!node) {
@@ -395,9 +398,10 @@ export default class Geometry {
         listener.emit(Listener.POINT_NODE, [node]);
       }
       isMove = true;
-    });
+    };
+    document.addEventListener('mousemove', this.onMouseMove);
 
-    document.addEventListener('mouseup', () => {
+    this.onMouseUp = (e) => {
       const node = this.nodes[nodeIdx];
       if (!node) {
         return;
@@ -466,7 +470,8 @@ export default class Geometry {
         }
       }
       isVt = isControlF = isControlT = isMove = false;
-    });
+    };
+    document.addEventListener('mouseup', this.onMouseUp);
 
     // 侦听在path上的移动，高亮当前path以及投影点，范围一定在panel内
     let pathIdx = -1;
@@ -536,13 +541,14 @@ export default class Geometry {
       }
     });
     // 自身点击设置keep，阻止document全局侦听关闭
-    document.addEventListener('click', (e) => {
+    this.onClick = (e) => {
       if (this.keep || this.keepVertPath) {
         this.keep = false;
         this.keepVertPath = false;
         return;
       }
-    });
+    };
+    document.addEventListener('click', this.onClick);
   }
 
   show(nodes: Polyline[], idx?: number[][]) {
@@ -887,6 +893,12 @@ export default class Geometry {
       });
       this.emitSelectPoint();
     }
+  }
+
+  destroy() {
+    document.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup', this.onMouseMove);
+    document.removeEventListener('click', this.onClick);
   }
 }
 

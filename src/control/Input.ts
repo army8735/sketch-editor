@@ -15,6 +15,7 @@ export default class Input {
   node?: Text;
   ignoreBlur: HTMLElement[];
   hasBlur: boolean; // blur后再focus输入，UpdateText命令强制独立不合并，输入后取消
+  onClick: (e: MouseEvent) => void;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -173,7 +174,7 @@ export default class Input {
     });
 
     // 点击外部会blur，当来自画布节点内自身且是编辑态需自动focus，还有来自textPanel（ignoreBlur）
-    document.addEventListener('click', (e) => {
+    this.onClick = (e) => {
       if (listener.state === state.EDIT_TEXT) {
         let target = e.target as HTMLElement;
         let p = target as HTMLElement | null;
@@ -194,7 +195,8 @@ export default class Input {
         node.afterEdit();
         node.inputStyle = undefined;
       }
-    });
+    };
+    document.addEventListener('click', this.onClick);
   }
 
   show(node: Text, x: number, y: number) {
@@ -259,7 +261,7 @@ export default class Input {
   }
 
   destroy() {
-    this.hide();
     this.containerEl.remove();
+    document.removeEventListener('click', this.onClick);
   }
 }

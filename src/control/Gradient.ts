@@ -17,6 +17,9 @@ export default class Gradient {
   onInput?: (data: ComputedGradient, fromGradient?: boolean) => void;
   onChange?: () => void;
   keep?: boolean; // 保持窗口外部点击时不关闭
+  onMouseMove: (e: MouseEvent) => void;
+  onMouseUp: (e: MouseEvent) => void;
+  onClick: (e: MouseEvent) => void;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -166,7 +169,7 @@ export default class Gradient {
         isDrag = true;
       }
     });
-    document.addEventListener('mousemove', (e) => {
+    this.onMouseMove = (e) => {
       if (isEllipse) {
         const data = this.data;
         if (data) {
@@ -246,8 +249,10 @@ export default class Gradient {
           }
         }
       }
-    });
-    document.addEventListener('mouseup', () => {
+    };
+    document.addEventListener('mousemove', this.onMouseMove);
+
+    this.onMouseUp = (e) => {
       if (isEllipse) {
         isEllipse = false;
       }
@@ -264,7 +269,8 @@ export default class Gradient {
           this.onChange();
         }
       }
-    });
+    };
+    document.addEventListener('mouseup', this.onMouseUp);
 
     // 操作过程阻止滚轮拖动
     panel.addEventListener('wheel', (e) => {
@@ -273,14 +279,15 @@ export default class Gradient {
       }
     });
     // 自身点击设置keep，阻止document全局侦听关闭
-    document.addEventListener('click', () => {
+    this.onClick = (e) => {
       if (this.keep) {
         this.keep = false;
         return;
       }
       // 直接关，state变化逻辑listener内部关心
       this.hide();
-    });
+    };
+    document.addEventListener('click', this.onClick);
   }
 
   show(node: Node, data: number[] | ComputedGradient | ComputedPattern, onInput: (data: ComputedGradient) => void, onChange?: () => void) {
@@ -666,6 +673,12 @@ export default class Gradient {
     if (this.node) {
       this.updateSize(this.node);
     }
+  }
+
+  destroy() {
+    document.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup', this.onMouseMove);
+    document.removeEventListener('click', this.onClick);
   }
 }
 
