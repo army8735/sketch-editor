@@ -193,7 +193,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
         if (res instanceof Group) {
           let p = res.parent;
           while (p && p !== root) {
-            if (p instanceof ArtBoard) {
+            if (p instanceof ArtBoard || p instanceof AbstractFrame && p.struct.lv <= 3) {
               return p;
             }
             p = p.parent;
@@ -252,7 +252,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
             }
           }
           const p = n.parent!;
-          if (p instanceof ArtBoard) {
+          if (p instanceof ArtBoard || p instanceof AbstractFrame && p.struct.lv <= 3) {
             break;
           }
           n = p;
@@ -262,8 +262,8 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
       /**
        * 当前激活的lv和已选的最大lv对比，不一致的话，将大的那个向上取parent，直到一致，
        * 此时如果2个互为兄弟，则成功返回，否则继续将2个同时向上取parent，继续循环判断兄弟关系，
-       * 直到最上层page下直接子节点，但如果是画板则还是下钻一级，除非空画板
-       * 先看已选自己或者它的兄弟，激活的是已选自己活兄弟最优先，
+       * 直到最上层page下直接子节点，但如果是画板（根Frame）则还是下钻一级，除非空画板
+       * 先看已选自己或者它的兄弟，激活的是已选自己或兄弟最优先，
        * 没有则向上递归，看已选的父亲和其的兄弟，如此循环，
        * 没有则是page下直接子节点，但如果是画板则还是下钻一级，除非空画板
        */
@@ -299,7 +299,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
             }
           }
           const p = n.parent!;
-          if (p instanceof ArtBoard) {
+          if (p instanceof ArtBoard || p instanceof AbstractFrame && p.struct.lv <= 3) {
             break;
           }
           n = p;

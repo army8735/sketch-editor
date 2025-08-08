@@ -20,7 +20,7 @@ import TintPanel from './TintPanel';
 import ExportPanel from './ExportPanel';
 import Zoom from './Zoom';
 import picker from './picker';
-import contextMenu from './contextMenu';
+import ContextMenu from './ContextMenu';
 import Guides from './Guides';
 import Toolbar from './Toolbar';
 import state from './state';
@@ -136,7 +136,7 @@ export default {
   ExportPanel,
   Zoom,
   picker,
-  contextMenu,
+  ContextMenu,
   Guides,
   state,
   CustomGeom,

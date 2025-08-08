@@ -15,7 +15,6 @@ import Graphic from '../node/Graphic';
 import Container from '../node/Container';
 import Listener from './Listener';
 import config from '../util/config';
-import contextMenu from './contextMenu';
 import state from './state';
 import { MASK, VISIBILITY } from '../style/define';
 import PositionCommand, { position } from '../history/PositionCommand';
@@ -1049,7 +1048,7 @@ export default class Tree {
         onActive(dl, true);
       }
       this.silence = false;
-      contextMenu.showTree(e.pageX, e.pageY, this.listener);
+      listener.contextMenu.showTree(e.pageX, e.pageY);
     });
   }
 

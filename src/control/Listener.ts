@@ -21,7 +21,7 @@ import Gradient from './Gradient';
 import Geometry from './Geometry';
 import state from './state';
 import picker from './picker';
-import contextMenu from './contextMenu';
+import ContextMenu from './ContextMenu';
 import CustomGeom from './CustomGeom';
 import { clone } from '../util/type';
 import inject from '../util/inject';
@@ -160,6 +160,7 @@ export default class Listener extends Event {
   imgHeight: number;
   dragHover: HTMLElement;
   customGeom: CustomGeom;
+  contextMenu: ContextMenu;
 
   constructor(root: Root, dom: HTMLElement, options: ListenerOptions = {}) {
     super();
@@ -216,6 +217,7 @@ export default class Listener extends Event {
     dom.appendChild(this.dragHover);
     this.clones = [];
     this.customGeom = new CustomGeom(this);
+    this.contextMenu = new ContextMenu(this);
 
     this.eventListenerList = [
       { type: 'mousedown',    cb: this.onMouseDown.bind(this) },
@@ -702,7 +704,7 @@ export default class Listener extends Event {
         return;
       }
       if ([state.EDIT_GRADIENT, state.EDIT_GEOM].includes(this.state)) {
-        contextMenu.showOk(e.pageX, e.pageY, this);
+        this.contextMenu.showOk(e.pageX, e.pageY);
         return;
       }
       if (this.metaKey || isWin && this.ctrlKey || this.state === state.EDIT_TEXT || this.options.disabled?.contextMenu) {
@@ -710,8 +712,8 @@ export default class Listener extends Event {
       }
       const target = e.target as HTMLElement;
       // 复用普通左键选择的部分逻辑
-      this.onDown(target, e);
-      contextMenu.showCanvas(e.pageX, e.pageY, this);
+      this.onDown(target, e);console.log(1, this.selected.slice(0))
+      this.contextMenu.showCanvas(e.pageX, e.pageY);
       return;
     }
     // 编辑gradient/geom按下无效（geom左键可以按下框选不无效），左键则取消编辑状态，但可以滚动
@@ -2111,7 +2113,7 @@ export default class Listener extends Event {
     }
     // esc，优先隐藏颜色picker，再编辑文字回到普通，普通取消选择
     else if (keyCode === 27 || code === 'Escape') {
-      contextMenu.hide();
+      this.contextMenu.hide();
       if (picker.isShow()) {
         picker.hide();
         if (this.state === state.EDIT_GRADIENT) {
@@ -2887,7 +2889,7 @@ export default class Listener extends Event {
     this.geometry.destroy();
     this.gradient.destroy();
     this.input.destroy();
-    contextMenu.destroy();
+    this.contextMenu.destroy();
     picker.destroy();
   }
 
