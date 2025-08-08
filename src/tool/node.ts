@@ -301,7 +301,7 @@ export function migrate(parent: Container, node: Node) {
     left = -left;
     top = -top;
   }
-  // console.log('left', left, 'top', top);
+  // console.log(node.name, 'left', left, 'top', top);
   // 调试代码，渲染检查node假设调整后是否和parent的flip、rotateZ一致
   // if (flipN.x !== flipP.x) {
   //   node.updateStyle({
@@ -403,7 +403,7 @@ export function migrate(parent: Container, node: Node) {
     ) {
       style.top.v = top * 100 / heightP;
     }
-    // 左右皆为百分比
+    // 上下皆为百分比
     else {
       style.top.v = top * 100 / heightP;
       style.bottom.v = ((heightP - top - node.height) * 100) / heightP;

@@ -31,10 +31,26 @@ abstract class AbstractGroup extends Container {
       rectC = this.getChildrenRect();
     }
     let { width, height } = this;
-    const dx1 = rectC.minX,
+    let dx1 = rectC.minX,
       dy1 = rectC.minY,
       dx2 = rectC.maxX - width,
       dy2 = rectC.maxY - height;
+    const w = rectC.maxX - rectC.minX;
+    if (w < 0.5) {
+      const mid = rectC.minX + w * 0.5;
+      const r0 = rectC.minX = mid - 0.25;
+      const r1 = rectC.maxX = mid + 0.25;
+      dx1 = r0;
+      dx2 = r1 - width;
+    }
+    const h = rectC.maxY - rectC.minY;
+    if (h < 0.5) {
+      const mid = rectC.minY + h * 0.5;
+      const r0 = rectC.minY = mid - 0.25;
+      const r1 = rectC.maxY = mid + 0.25;
+      dy1 = r0;
+      dy2 = r1 - height;
+    }
     // 检查真正有变化，位置相对于自己原本位置为原点
     if (Math.abs(dx1) > EPS
       || Math.abs(dy1) > EPS

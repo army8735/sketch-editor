@@ -14,10 +14,13 @@ export function group(nodes: Node[], group?: AbstractGroup) {
   sortTempIndex(nodes2);
   const first = nodes2[0];
   const parent = first.parent!;
-  // 锁定parent，如果first和nodes[1]为兄弟，first在remove后触发调整会使nodes[1]的style发生变化，migrate的操作无效
-  if (parent instanceof AbstractGroup) {
-    parent.fixedPosAndSize = true;
-  }
+  // 先锁定各自节点的老parent，防止同一个parent下的2个节点先后迁移时干扰计算
+  const parents = nodes2.map(item => item.parent!);
+  parents.forEach(parent => {
+    if (parent instanceof AbstractGroup) {
+      parent.fixedPosAndSize = true;
+    }
+  });
   // 首次命令没有生成，后续redo时就有了
   if (!group) {
     // 先添加空组并撑满，这样确保多个节点添加过程中，目标位置的parent尺寸不会变化（节点remove会触发校正逻辑）
@@ -39,15 +42,15 @@ export function group(nodes: Node[], group?: AbstractGroup) {
   for (let i = 0, len = nodes2.length; i < len; i++) {
     const item = nodes2[i];
     migrate(group, item);
-  }
-  // 迁移后再remove&add，因为过程会导致parent尺寸位置变化，干扰其它节点migrate
-  for (let i = 0, len = nodes2.length; i < len; i++) {
-    group.appendChild(nodes2[i]);
+    group.appendChild(item);
   }
   group.fixedPosAndSize = false;
-  if (parent instanceof AbstractGroup) {
-    parent.fixedPosAndSize = false;
-  }
+  parents.forEach(parent => {
+    if (parent instanceof AbstractGroup) {
+      parent.fixedPosAndSize = false;
+      parent.checkPosSizeSelf();
+    }
+  });
   group.checkPosSizeSelf();
   return group;
 }
