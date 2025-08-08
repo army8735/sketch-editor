@@ -712,7 +712,7 @@ export default class Listener extends Event {
       }
       const target = e.target as HTMLElement;
       // 复用普通左键选择的部分逻辑
-      this.onDown(target, e);console.log(1, this.selected.slice(0))
+      this.onDown(target, e);
       this.contextMenu.showCanvas(e.pageX, e.pageY);
       return;
     }

@@ -1,7 +1,6 @@
 import Listener from './Listener';
 import { version } from '../../package.json';
 import state from './state';
-import o from './1';
 import AbstractGroup from '../node/AbstractGroup';
 import { MASK, VISIBILITY } from '../style/define';
 
