@@ -32,7 +32,7 @@ function getTopShapeGroup(node: Geom | ShapeGroup) {
   return res;
 }
 
-function isAllInFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
+export function isAllInFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
   const { left, top, right, bottom } = n.getBoundingClientRect();
   if (x1 > x2) {
     [x1, x2] = [x2, x1];
@@ -43,7 +43,29 @@ function isAllInFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
   return left >= x1 && top >= y1 && right <= x2 && bottom <= y2;
 }
 
-function isCrossFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
+export function isContainFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
+  if (x1 > x2) {
+    [x1, x2] = [x2, x1];
+  }
+  if (y1 > y2) {
+    [y1, y2] = [y2, y1];
+  }
+  const points = [
+    { x: x1, y: y1 },
+    { x: x2, y: y1 },
+    { x: x2, y: y2 },
+    { x: x1, y: y2 },
+  ];
+  for (let i = 0, len = points.length; i < len; i++) {
+    const p = points[i];
+    if (!pointInRect(p.x, p.y, 0, 0, n.width, n.height, n.matrixWorld, true)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function isCrossFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
   if (x1 > x2) {
     [x1, x2] = [x2, x1];
   }
@@ -68,10 +90,10 @@ function isCrossFrame(x1: number, y1: number, x2: number, y2: number, n: Node) {
   }
   // 再看节点的4条边和frame是否相交
   const line1 = [
-    [{ x: x1, y: y1}, { x: x2, y: y1 }],
+    [{ x: x1, y: y1 }, { x: x2, y: y1 }],
     [{ x: x2, y: y1 }, { x: x2, y: y2 }],
     [{ x: x2, y: y2 }, { x: x1, y: y2 }],
-    [{ x: x1, y: y2}, { x: x1, y: y1 }],
+    [{ x: x1, y: y2 }, { x: x1, y: y1 }],
   ];
   const line2 = [
     [{ x: points[0].x, y: points[0].y }, { x: points[1].x, y: points[1].y }],
@@ -406,17 +428,20 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           }
           return true;
         });
+        // console.log(res2.map(item => item.name))
         // 交互优化，如果只有1个节点，返回它
         if (res2.length < 2) {
           return res2;
         }
-        // 多个节点时，节点需要和选框交叉或被选框包含，如果选框完全在节点则忽略
-        const res3 = res2.filter(item => {
+        // 多个节点时，节点需要和选框交叉或被选框包含，否则忽略
+        // 有个特例，如果被遮罩节点包含选框，但此时master已经被选了，也视作被选中
+        const res3: Node[] = [];
+        res2.forEach(item => {
           if (isAllInFrame(x1, y1, x2, y2, item) || isCrossFrame(x1, y1, x2, y2, item)) {
-            return true;
+            res3.push(item);
           }
-          else {
-            return false;
+          else if (item.mask && res3.includes(item.mask) && isContainFrame(x1, y1, x2, y2, item)) {
+            res3.push(item);
           }
         });
         if (res3.length) {
@@ -718,4 +743,7 @@ export default {
   search2,
   getOffsetByPoint,
   addNode,
+  isAllInFrame,
+  isContainFrame,
+  isCrossFrame,
 };
