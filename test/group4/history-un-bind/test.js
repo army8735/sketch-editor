@@ -13,7 +13,7 @@ module.exports = {
       .mouseButtonUp(2)
       .assert.elementPresent('.sketch-editor-context-menu')
       .assert.cssProperty('.sketch-editor-context-menu .un-bind', 'display', 'block')
-      .moveToElement('.sketch-editor-context-menu .un-bind')
+      .moveToElement('.sketch-editor-context-menu .un-bind', 5, 5)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
       .assert.cssProperty('.sketch-editor-context-menu', 'display', 'none')
