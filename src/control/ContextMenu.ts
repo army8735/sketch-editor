@@ -216,6 +216,12 @@ class ContextMenu {
     const nodes = listener.selected;
     if (nodes.length > 1) {
       classList.add('multi');
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i] instanceof SymbolInstance) {
+          classList.add('symbol-instance');
+          break;
+        }
+      }
     }
     else if (nodes.length === 1) {
       const node = nodes[0];
@@ -223,7 +229,7 @@ class ContextMenu {
         classList.add('single-group');
       }
       else if (node instanceof SymbolInstance) {
-        classList.add('single-si');
+        classList.add('symbol-instance');
       }
       else {
         classList.add('single');
