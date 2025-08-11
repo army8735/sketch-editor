@@ -18,20 +18,20 @@ module.exports = {
       .mouseButtonUp(0)
       .assert.cssProperty('.sketch-editor-context-menu', 'display', 'none')
       .assert.not.elementPresent('#tree .symbol-instance')
-      .assert.elementPresent('#tree span[name="2"]')
+      .assert.elementPresent('#tree span[title="2"]')
 
       .keys(browser.Keys.META)
       .keys('z')
       .keys(browser.Keys.NULL)
       .assert.elementPresent('#tree .symbol-instance')
-      .assert.elementPresent('#tree span[name="2"]')
+      .assert.elementPresent('#tree span[title="2"]')
 
       .keys(browser.Keys.META)
       .keys(browser.Keys.SHIFT)
       .keys('z')
       .keys(browser.Keys.NULL)
       .assert.not.elementPresent('#tree .symbol-instance')
-      .assert.elementPresent('#tree span[name="2"]')
+      .assert.elementPresent('#tree span[title="2"]')
 
       .end();
   }
