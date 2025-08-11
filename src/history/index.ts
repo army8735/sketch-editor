@@ -29,6 +29,7 @@ import NextCommand from './NextCommand';
 import TintCommand from './TintCommand';
 import PositionCommand from './PositionCommand';
 import ExportCommand from './ExportCommand';
+import UnBindCommand from './UnBindCommand';
 
 export default {
   History,
@@ -62,4 +63,5 @@ export default {
   TintCommand,
   PositionCommand,
   ExportCommand,
+  UnBindCommand,
 };
