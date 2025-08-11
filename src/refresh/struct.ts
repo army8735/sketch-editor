@@ -408,6 +408,8 @@ function renderWebglTile(
         abRect[1] = 0;
         abRect[2] = W;
         abRect[3] = H;
+        // 屏幕外的画板整体不展示
+        i += total + next;
         continue;
       }
       // 和普通渲染比没有画布索引部分，仅图片检查内容加载计数器
