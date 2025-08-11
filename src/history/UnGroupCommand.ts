@@ -5,7 +5,6 @@ import AbstractGroup from '../node/AbstractGroup';
 import { unGroup } from '../tool/group';
 import { migrate } from '../tool/node';
 import { appendWithIndex } from '../tool/container';
-import ShapeGroup from '../node/geom/ShapeGroup';
 
 export type UnGroupData = {
   parent: Container;

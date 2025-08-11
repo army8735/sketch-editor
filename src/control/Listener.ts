@@ -83,6 +83,8 @@ import PositionCommand from '../history/PositionCommand';
 import TintCommand, { TintData } from '../history/TintCommand';
 import ClosedCommand from '../history/ClosedCommand';
 import ExportCommand from '../history/ExportCommand';
+import SymbolInstance from '../node/SymbolInstance';
+import UnBindCommand from '../history/UnBindCommand';
 
 export type ListenerOptions = {
   enabled?: {
@@ -1985,6 +1987,22 @@ export default class Listener extends Event {
     }
   }
 
+  unBind(nodes = this.selected) {
+    const si = nodes.filter(item => item instanceof SymbolInstance);
+    if (si.length) {
+      const data = UnBindCommand.operate(si as SymbolInstance[]);
+      this.history.addCommand(new UnBindCommand(si, data.map(item => {
+        return {
+          node: item,
+        };
+      })));
+      this.selected = data;
+      this.updateActive();
+      this.emit(Listener.UN_BIND_NODE, data.slice(0));
+      this.emit(Listener.SELECT_NODE, data.slice(0));
+    }
+  }
+
   hover(x: number, y: number) {
     let node = this.getNode(x, y);
     // 画板的text标题特殊判断
@@ -2402,6 +2420,7 @@ export default class Listener extends Event {
           && !(c instanceof ClosedCommand)
           && !(c instanceof FlattenCommand)
           && !(c instanceof PositionCommand)
+          && !(c instanceof UnBindCommand)
         ) {
           this.selected.splice(0);
           this.selected.push(...nodes);
@@ -2692,6 +2711,22 @@ export default class Listener extends Event {
         else if (c instanceof ExportCommand) {
           this.emit(Listener.EXPORT_NODE, nodes.slice(0));
         }
+        else if (c instanceof UnBindCommand) {
+          this.selected.splice(0);
+          if (this.shiftKey) {
+            const nodes2 = c.data.map(item => item.node);
+            this.selected.push(...nodes2);
+            this.updateActive();
+            this.emit(Listener.UN_BIND_NODE, nodes2.slice(0));
+            this.emit(Listener.SELECT_NODE, nodes2.slice(0));
+          }
+          else {
+            this.selected.push(...nodes);
+            this.updateActive();
+            this.emit(Listener.BIND_NODE, nodes.slice(0));
+            this.emit(Listener.SELECT_NODE, nodes.slice(0));
+          }
+        }
         // 不发送事件可能导致有的panel不显示，比如没选择节点然后undo更改了fill，opacity就不显示
         // 定义无论是人工导致还是命令导致，选择节点一旦发生变更，统一触发SELECT事件
         // SELECT事件最后触发，主要是需要在ADD、GROUP之后
@@ -2942,6 +2977,8 @@ export default class Listener extends Event {
   static SELECT_POINT = 'SELECT_POINT'; // 选择矢量点
   static TINT_NODE = 'TINT_NODE';
   static EXPORT_NODE = 'EXPORT_NODE';
+  static UN_BIND_NODE = 'UN_BIND_NODE';
+  static BIND_NODE = 'BIND_NODE';
   static ZOOM_PAGE = 'ZOOM_PAGE';
   static CONTEXT_MENU = 'CONTEXT_MENU';
   static STATE_CHANGE = 'STATE_CHANGE';

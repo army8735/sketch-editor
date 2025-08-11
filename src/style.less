@@ -2897,7 +2897,7 @@
     }
   }
 
-  .ok, .prev, .next {
+  .ok, .prev, .next, .un-bind {
     display: none;
   }
 
@@ -3025,6 +3025,12 @@
     .next {
       opacity: 0.3;
       pointer-events: none;
+    }
+  }
+
+  &.single-si {
+    .un-bind {
+      display: block;
     }
   }
 }

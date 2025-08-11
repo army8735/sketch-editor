@@ -3,6 +3,7 @@ import { version } from '../../package.json';
 import state from './state';
 import AbstractGroup from '../node/AbstractGroup';
 import { MASK, VISIBILITY } from '../style/define';
+import SymbolInstance from '../node/SymbolInstance';
 
 const htmlCanvas = `
   <div class="item group">编组选择对象</div>
@@ -34,6 +35,8 @@ const htmlCanvas = `
     </div>
   </div>
   <div class="item break-mask"><span class="checked">✅</span>忽略底层蒙版</div>
+  <div class="split"></div>
+  <div class="item un-bind">与控件解绑</div>
   <div class="split"></div>
   <div class="item scale-up">放大</div>
   <div class="item scale-down">缩小</div>
@@ -187,6 +190,9 @@ class ContextMenu {
       else if (classList.contains('next')) {
         listener.next();
       }
+      else if (classList.contains('un-bind')) {
+        listener.unBind();
+      }
     });
     document.body.appendChild(this.dom);
     document.addEventListener('click', this.onClick);
@@ -215,6 +221,9 @@ class ContextMenu {
       const node = nodes[0];
       if (node instanceof AbstractGroup) {
         classList.add('single-group');
+      }
+      else if (node instanceof SymbolInstance) {
+        classList.add('single-si');
       }
       else {
         classList.add('single');

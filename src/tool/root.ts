@@ -9,6 +9,8 @@ import Text from '../node/Text';
 import Page from '../node/Page';
 import Polyline from '../node/geom/Polyline';
 import AbstractFrame from '../node/AbstractFrame';
+import Frame from '../node/Frame';
+import Graphic from '../node/Graphic';
 import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
 import { calRectPoints } from '../math/matrix';
 import { intersectLineLine } from '../math/isec';
@@ -215,7 +217,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
         if (res instanceof Group) {
           let p = res.parent;
           while (p && p !== root) {
-            if (p instanceof ArtBoard || p instanceof AbstractFrame && p.struct.lv <= 3) {
+            if (p instanceof ArtBoard || (p instanceof Frame || p instanceof Graphic) && p.struct.lv <= 3) {
               return p;
             }
             p = p.parent;
@@ -244,7 +246,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           if (p instanceof ArtBoard) {
             break;
           }
-          if (p instanceof AbstractFrame && p.struct.lv <= 3) {
+          if ((p instanceof Frame || p instanceof Graphic) && p.struct.lv <= 3) {
             break;
           }
           n = p;
@@ -254,7 +256,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           return;
         }
         // 顶层非空frame不能选
-        if (n instanceof AbstractFrame && n.children.length && n.struct.lv <= 3) {
+        if ((n instanceof Frame || n instanceof Graphic) && n.children.length && n.struct.lv <= 3) {
           return;
         }
         return n;
@@ -274,7 +276,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
             }
           }
           const p = n.parent!;
-          if (p instanceof ArtBoard || p instanceof AbstractFrame && p.struct.lv <= 3) {
+          if (p instanceof ArtBoard || (p instanceof Frame || p instanceof Graphic) && p.struct.lv <= 3) {
             break;
           }
           n = p;
@@ -321,7 +323,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
             }
           }
           const p = n.parent!;
-          if (p instanceof ArtBoard || p instanceof AbstractFrame && p.struct.lv <= 3) {
+          if (p instanceof ArtBoard || (p instanceof Frame || p instanceof Graphic) && p.struct.lv <= 3) {
             break;
           }
           n = p;
@@ -337,7 +339,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           return;
         }
         // 顶层非空frame不能选
-        if (n instanceof AbstractFrame && n.children.length && n.struct.lv <= 3) {
+        if ((n instanceof Frame || n instanceof Graphic) && n.children.length && n.struct.lv <= 3) {
           return;
         }
         return n;
@@ -414,7 +416,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           res.push(item);
         }
       }
-      // 按下metaKey，需返回最深的叶子节点，但不返回组、画板
+      // 按下metaKey，需返回最深的叶子节点，但不返回组、画板、Frame
       if (metaKey) {
         const res2 = res.filter(item => {
           if (item instanceof Group) {
@@ -423,7 +425,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           if (item instanceof ArtBoard) {
             return false;
           }
-          if (item instanceof AbstractFrame) {
+          if (item instanceof Frame || item instanceof Graphic) {
             return false;
           }
           return true;
@@ -468,7 +470,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           continue;
         }
         // 新版sketch中的Frame特殊逻辑，根Frame非空忽略（选到Frame的空白部分），空则直接选取
-        if (item instanceof AbstractFrame && item.struct.lv === 3) {
+        if ((item instanceof Frame || item instanceof Graphic) && item.struct.lv === 3) {
           if (item.children.length) {
             // continue;
           }
@@ -492,7 +494,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
             }
           }
           // 需要查看新版根Frame是否完全包含，完全才选择否则选子节点，空的Frame不会进来因为前面过滤了
-          else if (p instanceof AbstractFrame && p.struct.lv === 3) {
+          else if ((p instanceof Frame || p instanceof Graphic) && p.struct.lv === 3) {
             if (!isAllInFrame(x1, y1, x2, y2, p)) {
               break;
             }

@@ -2,11 +2,11 @@ import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { SymbolInstanceProps, SymbolMasterProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
-import AbstractGroup from './AbstractGroup';
+import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import { color2gl } from '../style/color';
 
-class SymbolInstance extends AbstractGroup {
+class SymbolInstance extends AbstractFrame {
   symbolMaster: SymbolMaster;
   scale: number;
 
