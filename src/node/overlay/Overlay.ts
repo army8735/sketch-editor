@@ -6,11 +6,12 @@ import Container from '../Container';
 import Node from '../Node';
 import SymbolMaster from '../SymbolMaster';
 import Text from '../Text';
-import AbstractFrame from '../AbstractFrame';
+import Frame from '../Frame';
+import Graphic from '../Graphic';
 
 class Overlay extends Container {
   nameContainer: Container; // artboard,frame,graphic
-  list: { node: ArtBoard | AbstractFrame, text: Text }[];
+  list: { node: ArtBoard | Frame | Graphic | SymbolMaster, text: Text }[];
 
   constructor(props: Props, children: Node[]) {
     super(props, children);
@@ -31,7 +32,7 @@ class Overlay extends Container {
     this.list = [];
   }
 
-  setList(list: (ArtBoard | AbstractFrame)[]) {
+  setList(list: (ArtBoard | Frame | Graphic | SymbolMaster)[]) {
     this.nameContainer.clearChildren();
     this.list.splice(0);
     for (let i = 0, len = list.length; i < len; i++) {
@@ -53,7 +54,7 @@ class Overlay extends Container {
     }
   }
 
-  updateList(node: ArtBoard | AbstractFrame) {
+  updateList(node: ArtBoard | Frame | Graphic | SymbolMaster) {
     const list = this.list;
     for (let i = 0, len = list.length; i < len; i++) {
       if (list[i].node === node) {
@@ -63,7 +64,7 @@ class Overlay extends Container {
     }
   }
 
-  removeList(node: ArtBoard | AbstractFrame) {
+  removeList(node: ArtBoard | Frame | Graphic | SymbolMaster) {
     const list = this.list;
     for (let i = 0, len = list.length; i < len; i++) {
       if (list[i].node === node) {

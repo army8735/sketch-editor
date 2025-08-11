@@ -56,7 +56,8 @@ import Page from './Page';
 import { checkReflow } from './reflow';
 import SymbolMaster from './SymbolMaster';
 import Bitmap from './Bitmap';
-import AbstractFrame from './AbstractFrame';
+import Frame from './Frame';
+import Graphic from './Graphic';
 import { MASK, StyleUnit, VISIBILITY } from '../style/define';
 import inject from '../util/inject';
 
@@ -315,9 +316,9 @@ class Root extends Container implements FrameCallback {
       visibility: 'visible',
     });
     // this.lastPage = newPage;
-    const children: (ArtBoard | AbstractFrame)[] = [];
+    const children: (ArtBoard | Frame | Graphic | SymbolMaster)[] = [];
     newPage.children.forEach((item) => {
-      if (item instanceof ArtBoard || item instanceof AbstractFrame) {
+      if (item instanceof ArtBoard || item instanceof Frame || item instanceof Graphic || item instanceof SymbolMaster) {
         children.push(item);
       }
     });
@@ -355,7 +356,7 @@ class Root extends Container implements FrameCallback {
       }
     }
     if (removeDom) {
-      if (node instanceof ArtBoard || node instanceof AbstractFrame) {
+      if (node instanceof ArtBoard || node instanceof Frame || node instanceof Graphic || node instanceof SymbolMaster) {
         this.overlay.removeList(node);
       }
       // 防止overlay中的图层
