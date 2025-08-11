@@ -288,9 +288,9 @@ class ContextMenu {
 
   showTree(x: number, y: number) {
     this.init();
+    this.showCanvas(x, y);
     const classList = this.dom.classList;
     classList.add('only-tree');
-    this.showCanvas(x, y);
   }
 
   showOk(x: number, y: number) {
