@@ -74,12 +74,12 @@ class ContextMenu {
   }
 
   init() {
+    this.dom.className = 'sketch-editor-context-menu';
     if (this.hasInit) {
       return;
     }
     this.hasInit = true;
     this.dom.innerHTML = htmlCanvas;
-    this.dom.className = 'sketch-editor-context-menu';
     const listener = this.listener;
     this.dom.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
