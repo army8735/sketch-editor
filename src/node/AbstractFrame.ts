@@ -6,7 +6,6 @@ import { H } from '../math/geom';
 abstract class AbstractFrame extends Container {
   constructor(props: Props, children: Node[]) {
     super(props, children);
-    this.isFrame = true;
   }
 
   override calContent() {
