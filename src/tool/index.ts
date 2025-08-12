@@ -4,6 +4,7 @@ import root from './root';
 import container from './container';
 import polyline from './polyline';
 import group from './group';
+import symbolInstance from './symbolInstance';
 
 export default {
   node,
@@ -12,4 +13,5 @@ export default {
   container,
   polyline,
   group,
+  symbolInstance,
 };
