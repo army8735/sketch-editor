@@ -210,7 +210,7 @@ describe('Event', function() {
 
 describe('vector', function() {
   it('includedAngle', function() {
-    let vector = sketchEditor.math.vector;
+    const vector = sketchEditor.math.vector;
     expect(vector.includedAngle(0, 0, 0, 0)).to.eql(0);
     expect(vector.includedAngle(84, 0, 119, 0)).to.eql(0);
     expect(vector.includedAngle(-84, 0, -119, 0)).to.eql(0);
@@ -219,5 +219,102 @@ describe('vector', function() {
     expect(vector.includedAngle(0, -10, 0, -10)).to.eql(0);
     expect(vector.includedAngle(0, 10, 0, -10)).to.eql(Math.PI);
     expect(vector.includedAngle(0, 10, 10, 0)).to.eql(Math.PI * 0.5);
+  });
+});
+
+describe('geom', function() {
+  it('isConvexPolygonsOverlap', function() {
+    const geom = sketchEditor.math.geom;
+    // 2矩形仅中间部分重叠
+    expect(geom.isConvexPolygonsOverlap(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 100, y: 10 },
+        { x: 0, y: 10 },
+      ],
+      [
+        { x: 50, y: -10 },
+        { x: 60, y: -10 },
+        { x: 60, y: 20 },
+        { x: 50, y: 20 },
+      ],
+    )).to.eql(true);
+    // 矩形部分重叠，某顶点在对方内部
+    expect(geom.isConvexPolygonsOverlap(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 100, y: 100 },
+        { x: 0, y: 100 },
+      ],
+      [
+        { x: 50, y: 50 },
+        { x: 150, y: 50 },
+        { x: 150, y: 150 },
+        { x: 50, y: 150 },
+      ],
+    )).to.eql(true);
+    // 完全包含在内
+    expect(geom.isConvexPolygonsOverlap(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 100, y: 100 },
+        { x: 0, y: 100 },
+      ],
+      [
+        { x: 50, y: 50 },
+        { x: 60, y: 50 },
+        { x: 60, y: 60 },
+        { x: 50, y: 60 },
+      ],
+    )).to.eql(true);
+    // 不相交
+    expect(geom.isConvexPolygonsOverlap(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 100, y: 100 },
+        { x: 0, y: 100 },
+      ],
+      [
+        { x: 150, y: 150 },
+        { x: 200, y: 150 },
+        { x: 200, y: 200 },
+        { x: 150, y: 200 },
+      ],
+    )).to.eql(false);
+    // 相邻不传参
+    expect(geom.isConvexPolygonsOverlap(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 },
+        { x: 100, y: 100 },
+        { x: 0, y: 100 },
+      ],
+      [
+        { x: 100, y: 0 },
+        { x: 200, y: 0 },
+        { x: 200, y: 200 },
+        { x: 100, y: 200 },
+      ],
+    )).to.eql(false);
+    // 相邻传参
+    expect(geom.isConvexPolygonsOverlap(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 },
+        { x: 100, y: 100 },
+        { x: 0, y: 100 },
+      ],
+      [
+        { x: 100, y: 0 },
+        { x: 200, y: 0 },
+        { x: 200, y: 200 },
+        { x: 100, y: 200 },
+      ],
+      true,
+    )).to.eql(true);
   });
 });
