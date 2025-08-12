@@ -21,13 +21,22 @@ class UnBindCommand extends AbstractCommand {
     if (this.data.length) {
       this.data.forEach((item, i) => {
         const node = item.node;
-        const parent = this.nodes[i].parent;
+        const { parent, prev, next } = this.nodes[i];
         if (parent) {
           if (parent instanceof AbstractGroup) {
             parent.fixedPosAndSize = true;
           }
-          this.nodes[i].insertAfter(node);
+          // 必须先移除，因为复用children
           this.nodes[i].remove();
+          if (prev) {
+            prev.insertAfter(node);
+          }
+          else if (next) {
+            next.insertBefore(node);
+          }
+          else {
+            parent.appendChild(node);
+          }
           if (parent instanceof AbstractGroup) {
             parent.fixedPosAndSize = false;
             // 尺寸无变化无需checkPosAndSize()
@@ -50,13 +59,22 @@ class UnBindCommand extends AbstractCommand {
   undo() {
     this.data.forEach((item, i) => {
       const node = item.node;
-      const parent = node.parent;
+      const { parent, prev, next } = node;
       if (parent) {
         if (parent instanceof AbstractGroup) {
           parent.fixedPosAndSize = true;
         }
-        node.insertAfter(this.nodes[i]);
+        // 必须先移除，因为复用children
         node.remove();
+        if (prev) {
+          prev.insertAfter(this.nodes[i]);
+        }
+        else if (next) {
+          next.insertBefore(this.nodes[i]);
+        }
+        else {
+          parent.appendChild(this.nodes[i]);
+        }
         if (parent instanceof AbstractGroup) {
           parent.fixedPosAndSize = false;
           // 尺寸无变化无需checkPosAndSize()
