@@ -14,7 +14,7 @@ import Graphic from '../node/Graphic';
 import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
 import { calRectPoints } from '../math/matrix';
 import { intersectLineLine } from '../math/isec';
-import { VISIBILITY } from '../style/define';
+import { OVERFLOW, VISIBILITY } from '../style/define';
 import config from '../util/config';
 
 function getTopShapeGroup(node: Geom | ShapeGroup) {
@@ -141,7 +141,7 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
       }
     }
     const inRect = pointInRect(x, y, rect[0], rect[1], rect[2], rect[3], matrixWorld, true);
-    const overflowVisible = child instanceof AbstractFrame && computedStyle.visibility === VISIBILITY.VISIBLE;
+    const overflowVisible = child instanceof AbstractFrame && computedStyle.overflow === OVERFLOW.VISIBLE;
     // 普通container主要是group，在范围内继续递归子节点寻找
     if (inRect) {
       if (child instanceof Container) {
