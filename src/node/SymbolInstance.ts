@@ -20,11 +20,6 @@ class SymbolInstance extends AbstractFrame {
     symbolMaster.addSymbolInstance(this);
   }
 
-  override willMount() {
-    this.symbolInstance = this;
-    super.willMount();
-  }
-
   // 特殊，使用同一个sm，没法filter，因为禁止修改
   override clone(filter?: (node: Node) => boolean) {
     const props = this.cloneProps() as SymbolInstanceProps;

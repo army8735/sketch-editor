@@ -660,13 +660,32 @@ export default class Tree {
       }
       // 按下当前的，所有已选跟随拖拽
       if (dt.classList.contains('active')) {
-        dom.querySelectorAll('dt.active').forEach(item => {
-          dragTarget.push(item.parentElement!);
-        });
+        const list = dom.querySelectorAll('dt.active');
+        let hasInSymbolInstance = false;
+        for (let i = 0, len = list.length; i < len; i++) {
+          const uuid = list[i].parentElement!.getAttribute('uuid')!;
+          const n = root.refs[uuid];
+          if (n && n.symbolInstance && !(n instanceof SymbolInstance)) {
+            hasInSymbolInstance = true;
+            break;
+          }
+        }
+        if (!hasInSymbolInstance) {
+          list.forEach(item => {
+            dragTarget.push(item.parentElement!);
+          });
+        }
       }
       // 否则只拖拽按下的
       else {
-        dragTarget.push(dt.parentElement!);
+        const uuid = dt.parentElement!.getAttribute('uuid')!;
+        const n = root.refs[uuid];
+        // symbolInstance子节点不能拖拽
+        if (n && n.symbolInstance && !(n instanceof SymbolInstance)) {
+        }
+        else {
+          dragTarget.push(dt.parentElement!);
+        }
       }
       if (dragTarget.length) {
         const o = dom.getBoundingClientRect();

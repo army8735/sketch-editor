@@ -23,11 +23,6 @@ class ArtBoard extends Container {
     this.isArtBoard = true;
   }
 
-  override willMount() {
-    this.artBoard = this;
-    super.willMount();
-  }
-
   // 画板有自定义背景色时有内容
   override calContent() {
     return (this.hasContent = this.hasBackgroundColor);

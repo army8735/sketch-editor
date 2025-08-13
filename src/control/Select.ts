@@ -5,6 +5,7 @@ import Polyline from '../node/geom/Polyline';
 import { r2d } from '../math/geom';
 import { VISIBILITY } from '../style/define';
 import { getFlipOnPage } from '../tool/node';
+import SymbolInstance from '../node/SymbolInstance';
 
 export type Rect = {
   x: number;
@@ -186,6 +187,12 @@ export default class Select {
       else {
         this.select.classList.add('hide');
       }
+      if (selected[0].symbolInstance && !(selected[0] instanceof SymbolInstance)) {
+        this.select.classList.add('symbol-instance');
+      }
+      else {
+        this.select.classList.remove('symbol-instance');
+      }
       const res = this.calRect(selected[0]);
       this.select.style.left = res.left + 'px';
       this.select.style.top = res.top + 'px';
@@ -196,6 +203,13 @@ export default class Select {
     // 多个时表现不一样，忽略了旋转镜像等transform，取所有节点的boundingClientRect全集
     else if (selected.length > 1) {
       this.select.classList.add('multi');
+      const si = selected.filter(item => item.symbolInstance && !(item instanceof SymbolInstance));
+      if (si.length) {
+        this.select.classList.add('symbol-instance');
+      }
+      else {
+        this.select.classList.remove('symbol-instance');
+      }
       let left = 0, top = 0, right = 0, bottom = 0;
       const rects: { left: number, top: number, right: number, bottom: number, visible: boolean }[] = [];
       selected.forEach((item, i) => {

@@ -420,6 +420,15 @@
         }
       }
 
+      &.symbol-instance {
+        .t, .r, .b, .l {
+          pointer-events: none;
+        }
+        .tl, .tr, .bl, .br {
+          display: none;
+        }
+      }
+
       &.multi {
         .t b, .r b, .b b, .l b {
           border-color: #999;
@@ -3031,6 +3040,13 @@
   &.symbol-instance {
     .un-bind {
       display: block;
+    }
+  }
+
+  &.no-remove {
+    .remove {
+      opacity: 0.3;
+      pointer-events: none;
     }
   }
 }

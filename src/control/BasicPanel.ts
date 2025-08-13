@@ -18,6 +18,7 @@ import { ComputedStyle, OVERFLOW, Style, StyleUnit } from '../style/define';
 import { JStyle } from '../format';
 import state from './state';
 import Panel from './Panel';
+import SymbolInstance from '../node/SymbolInstance';
 
 const html = `
   <div class="line">
@@ -766,6 +767,15 @@ class BasicPanel extends Panel {
     }
     else {
       ov.parentElement!.style.display = 'none';
+    }
+    // symbolInstance子节点禁止修改
+    if (nodes.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
+      panel.querySelectorAll('.input-unit,.cp,.fh,.fv').forEach(item => {
+        item.classList.add('disabled');
+      });
+      panel.querySelectorAll('input').forEach(item => {
+        item.disabled = true;
+      });
     }
   }
 }

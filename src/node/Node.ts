@@ -217,13 +217,22 @@ class Node extends Event {
     this.parentOpId = parent.localOpId;
     this.parentMwId = parent.localMwId;
     const root = (this.root = parent.root);
-    if (!this.isPage) {
+    if (parent.isPage) {
+      this.page = parent as Page;
+    }
+    else {
       this.page = parent.page;
     }
-    if (!this.isArtBoard) {
+    if (parent.isArtBoard) {
+      this.artBoard = parent as ArtBoard;
+    }
+    else {
       this.artBoard = parent.artBoard;
     }
-    if (!this.isSymbolInstance) {
+    if (parent.isSymbolInstance) {
+      this.symbolInstance = parent as SymbolInstance;
+    }
+    else {
       this.symbolInstance = parent.symbolInstance;
     }
     const uuid = this.uuid;

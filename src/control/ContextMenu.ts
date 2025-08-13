@@ -295,6 +295,9 @@ class ContextMenu {
     if (!hasNext) {
       classList.add('no-next');
     }
+    if (nodes.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
+      classList.add('no-remove');
+    }
     this.dom.style.left = x + 'px';
     this.dom.style.top = y + 'px';
     this.dom.style.display = 'block';

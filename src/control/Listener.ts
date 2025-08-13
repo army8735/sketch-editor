@@ -2325,6 +2325,10 @@ export default class Listener extends Event {
         }
         else {
           const nodes = this.selected.slice(0);
+          // symbolInstance子节点禁止修改
+          if (nodes.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
+            return;
+          }
           const data: MoveData[] = [];
           const changeAb: Node[] = [];
           nodes.forEach((node) => {
