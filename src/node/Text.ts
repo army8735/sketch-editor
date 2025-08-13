@@ -3442,6 +3442,18 @@ class Text extends Node {
             item.fontSize = value;
           });
         }
+        else if (key[0] === 'textDecoration') {
+          props.style!.textDecoration = [value];
+          props.rich?.forEach(item => {
+            item.textDecoration = [value];
+          });
+        }
+        else if (key[0] === 'textAlign') {
+          props.style!.textAlign = value;
+          props.rich?.forEach(item => {
+            item.textAlign = value;
+          });
+        }
       });
     }
     const res = new Text(props);

@@ -1754,6 +1754,13 @@ async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[
       key[0] = 'fontSize';
       value = parseFloat(item.value as string);
     }
+    else if (key[0] === 'textDecoration') {
+      value = item.value as string;
+    }
+    else if (key[0] === 'textHAlign') {
+      key[0] = 'textAlign';
+      value = item.value as string;
+    }
     const o = hash[uuid] = hash[uuid] || [];
     o.push({
       key, // 默认开头props.style可省略
