@@ -446,20 +446,16 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           return res;
         }
         // 多个节点时，节点需要和选框交叉或被选框包含，否则忽略（即包含选框的）
-        // 有个特例，如果被遮罩节点包含选框，但此时mask已经被选了，也视作被选中
         const res2: Node[] = [];
         res.forEach(item => {
           if (isAllInFrame(x1, y1, x2, y2, item) || isCrossFrame(x1, y1, x2, y2, item)) {
-            res2.push(item);
-          }
-          else if (item.mask && res2.includes(item.mask) && isContainFrame(x1, y1, x2, y2, item)) {
             res2.push(item);
           }
         });
         if (res2.length) {
           return res2;
         }
-        // 防止都被过滤掉，至少返回一个，取最上层
+        // 防止都被过滤掉（理论不会），至少返回一个，取最上层
         return res.slice(-1);
       }
       // 不按下metaKey，是page下直接子节点，忽略Group，如果是画板需要选取完全包含
