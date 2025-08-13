@@ -3402,7 +3402,15 @@ class Text extends Node {
   override cloneProps() {
     const props = super.cloneProps() as TextProps;
     props.rich = this.rich.map(item => getPropsRich(item));
-    props.textBehaviour = this.getTextBehaviour();
+    const textBehaviour = props.textBehaviour = this.getTextBehaviour();
+    const style = props.style!;
+    if (textBehaviour === 'auto') {
+      style.width = this.width;
+      style.height = this.height;
+    }
+    else if (textBehaviour === 'autoH') {
+      style.height = this.height;
+    }
     props.content = this._content;
     return props;
   }
