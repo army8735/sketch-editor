@@ -11,7 +11,7 @@ import Polyline from '../node/geom/Polyline';
 import AbstractFrame from '../node/AbstractFrame';
 import Frame from '../node/Frame';
 import Graphic from '../node/Graphic';
-import { isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
+import { isConvexPolygonInAnother, isConvexPolygonOverlapRect, pointInRect } from '../math/geom';
 import { calRectPoints } from '../math/matrix';
 import { intersectLineLine } from '../math/isec';
 import { OVERFLOW, VISIBILITY } from '../style/define';
@@ -170,35 +170,58 @@ function getChildByPoint(parent: Container, x: number, y: number): Node | undefi
   }
 }
 
-function getChildrenByFrame(parent: Container, x1: number, y1: number, x2: number, y2: number) {
+function getChildrenByFrame(
+  parent: Container, x1: number, y1: number, x2: number, y2: number,
+  opts: { metaKey: boolean, fullOverlap?: boolean },
+) {
   const children = parent.children;
   const res: Node[] = [];
-  for (let i = 0, len = children.length; i < len; i++) {
+  for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
-    if (child.isLocked || child.computedStyle.visibility === VISIBILITY.HIDDEN) {
+    if (child.isLocked || child.computedStyle.visibility === VISIBILITY.HIDDEN || !child.computedStyle.pointerEvents) {
       continue;
     }
     const { matrixWorld } = child;
     const rect = child._rect || child.rect;
     const box = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrixWorld);
-    if (isConvexPolygonOverlapRect(x1, y1, x2, y2, [
+    const pts = [
       { x: box.x1, y: box.y1 },
       { x: box.x2, y: box.y2 },
       { x: box.x3, y: box.y3 },
       { x: box.x4, y: box.y4 },
-    ])) {
+    ];
+    if (isConvexPolygonOverlapRect(x1, y1, x2, y2, pts)) {
       if (child instanceof Container) {
-        const t = getChildrenByFrame(child, x1, y1, x2, y2);
+        const t = getChildrenByFrame(child, x1, y1, x2, y2, opts);
         if (t.length) {
-          res.push(...t);
+          res.unshift(...t);
         }
-        else if (child.computedStyle.pointerEvents) {
-          res.push(child);
+        // meta只返回非容器叶子结点，比如空frame
+        else if (!opts.metaKey) {
+          res.unshift(child);
         }
       }
-      else if (child.computedStyle.pointerEvents) {
-        res.push(child);
+      else {
+        // temp.push(child);
+        res.unshift(child);
+        // meta情况下如果frame在叶子节点内，说明frame被遮盖住，不再看下层兄弟节点
+        if (opts.metaKey) {
+          if (isConvexPolygonInAnother([
+            { x: x1, y: y1 },
+            { x: x2, y: y1 },
+            { x: x2, y: y2 },
+            { x: x1, y: y2 },
+          ], pts, true)) {
+            // 标记本次发生遮盖，下层非兄弟节点不再循环继续
+            opts.fullOverlap = true;
+            break;
+          }
+        }
       }
+    }
+    // 递归循环过程中发生遮盖，不再继续
+    if (opts.fullOverlap) {
+      break;
     }
   }
   return res;
@@ -395,7 +418,7 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
   }
   const page = root.lastPage;
   if (page) {
-    const nodes = getChildrenByFrame(page, x1, y1, x2, y2);
+    const nodes = getChildrenByFrame(page, x1, y1, x2, y2, { metaKey });
     if (nodes.length) {
       const res: Node[] = [];
       // 先把矢量过滤成它属于的最上层的ShapeGroup
@@ -416,41 +439,28 @@ export function getFrameNodes(root: Root, x1: number, y1: number, x2: number, y2
           res.push(item);
         }
       }
-      // 按下metaKey，需返回最深的叶子节点，但不返回组、画板、Frame
+      // 按下metaKey，返回最深的叶子节点，如果有节点完全包含frame，则下层已被屏蔽
       if (metaKey) {
-        const res2 = res.filter(item => {
-          if (item instanceof Group) {
-            return false;
+        // 交互优化，如果只有1个节点，返回它，不管是不是完全包含frame的
+        if (res.length < 2) {
+          return res;
+        }
+        // 多个节点时，节点需要和选框交叉或被选框包含，否则忽略（即包含选框的）
+        // 有个特例，如果被遮罩节点包含选框，但此时mask已经被选了，也视作被选中
+        const res2: Node[] = [];
+        res.forEach(item => {
+          if (isAllInFrame(x1, y1, x2, y2, item) || isCrossFrame(x1, y1, x2, y2, item)) {
+            res2.push(item);
           }
-          if (item instanceof ArtBoard) {
-            return false;
+          else if (item.mask && res2.includes(item.mask) && isContainFrame(x1, y1, x2, y2, item)) {
+            res2.push(item);
           }
-          if (item instanceof Frame || item instanceof Graphic) {
-            return false;
-          }
-          return true;
         });
-        // console.log(res2.map(item => item.name))
-        // 交互优化，如果只有1个节点，返回它
-        if (res2.length < 2) {
+        if (res2.length) {
           return res2;
         }
-        // 多个节点时，节点需要和选框交叉或被选框包含，否则忽略
-        // 有个特例，如果被遮罩节点包含选框，但此时master已经被选了，也视作被选中
-        const res3: Node[] = [];
-        res2.forEach(item => {
-          if (isAllInFrame(x1, y1, x2, y2, item) || isCrossFrame(x1, y1, x2, y2, item)) {
-            res3.push(item);
-          }
-          else if (item.mask && res3.includes(item.mask) && isContainFrame(x1, y1, x2, y2, item)) {
-            res3.push(item);
-          }
-        });
-        if (res3.length) {
-          return res3;
-        }
-        // 防止都被过滤掉，至少返回一个，取上层最深
-        return res2.slice(-1);
+        // 防止都被过滤掉，至少返回一个，取最上层
+        return res.slice(-1);
       }
       // 不按下metaKey，是page下直接子节点，忽略Group，如果是画板需要选取完全包含
       const res2: Node[] = [];

@@ -352,6 +352,16 @@ export function isConvexPolygonOverlapRect(
   return false;
 }
 
+// a凸多边形是否在b凸多边形内，即a每个顶点都在b内即可
+export function isConvexPolygonInAnother(a: { x: number, y: number }[], b: { x: number, y: number }[], includeIntersect = false) {
+  for (let i = 0, len = a.length; i < len; i++) {
+    if (!pointInConvexPolygon(a[i].x, a[i].y, b, includeIntersect)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export default {
   d2r,
   r2d,
@@ -367,4 +377,5 @@ export default {
   isRectsInside,
   isConvexPolygonsOverlap,
   isConvexPolygonOverlapRect,
+  isConvexPolygonInAnother,
 };
