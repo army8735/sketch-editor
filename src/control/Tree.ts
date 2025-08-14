@@ -26,6 +26,9 @@ function genNodeTreeStr(node: Node, lv: number) {
   if (node.isExpanded) {
     s += ' expand';
   }
+  if (node instanceof SymbolInstance) {
+    s += ' symbol-i';
+  }
   s += '"';
   s += ' uuid="' + node.uuid + '"';
   s += ' lv="' + lv + '"';

@@ -919,6 +919,10 @@ export default class Listener extends Event {
         if (this.options.disabled?.move) {
           return;
         }
+        // symbolInstance子节点禁止修改
+        if (selected.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
+          return;
+        }
         let meta = this.metaKey || isWin && this.ctrlKey;
         if (this.options.enabled?.selectWithMeta) {
           meta = !meta;
@@ -1903,6 +1907,10 @@ export default class Listener extends Event {
 
   removeNode(nodes = this.selected) {
     if (nodes.length) {
+      // symbolInstance子节点禁止修改
+      if (nodes.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
+        return;
+      }
       const sel = nodes.slice(0);
       const nodes2 = nodes.splice(0).map(item => {
         let p = item;
