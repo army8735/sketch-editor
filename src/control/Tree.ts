@@ -13,6 +13,7 @@ import Slice from '../node/Slice';
 import Frame from '../node/Frame';
 import Graphic from '../node/Graphic';
 import Container from '../node/Container';
+import Polyline from '../node/geom/Polyline';
 import Listener from './Listener';
 import config from '../util/config';
 import state from './state';
@@ -176,6 +177,23 @@ export default class Tree {
         const dl = dom.querySelector(`dl[uuid="${uuid}"]`);
         if (dl) {
           dl.appendChild(dd);
+        }
+      }
+      // 更新父级的shapeGroup图标
+      if (node instanceof Polyline || node instanceof ShapeGroup) {
+        let p = node.parent;
+        while (p) {
+          if (p instanceof ShapeGroup) {
+            const uuid = p.uuid;
+            if (uuid) {
+              const span = dom.querySelector(`dl[uuid="${uuid}"] .type.geom`) as HTMLElement;
+              span.innerHTML = p.toSvg(12);
+            }
+          }
+          else {
+            break;
+          }
+          p = p.parent;
         }
       }
     }
