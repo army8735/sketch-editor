@@ -128,13 +128,13 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
     document: {
       uuid: document.do_objectID,
       assets: {
-        uuid: document.assets.do_objectID,
+        uuid: document.assets?.do_objectID,
       },
       layerStyles: {
-        uuid: document.layerStyles.do_objectID,
+        uuid: document.layerStyles?.do_objectID,
       },
       layerTextStyles: {
-        uuid: document.layerTextStyles.do_objectID,
+        uuid: document.layerTextStyles?.do_objectID,
       },
     },
     pages,
@@ -177,7 +177,7 @@ async function convertPage(page: SketchFormat.Page, index: number, opt: Opt): Pr
       name: page.name,
       nameIsFixed: page.nameIsFixed,
       index,
-      constrainProportions: page.frame.constrainProportions || false,
+      constrainProportions: page.frame?.constrainProportions || false,
       style: {
         width: PAGE_W,
         height: PAGE_H,
