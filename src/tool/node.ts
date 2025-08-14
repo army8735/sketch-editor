@@ -99,28 +99,13 @@ export function moveBefore(nodes: Node[], target: Node) {
   moveTo(nodes, target, POSITION.BEFORE);
 }
 
-function getMatrixNoFlip(node: Node) {
-  const { scaleX, scaleY, rotateZ, transformOrigin: tfo } = node.computedStyle;
-  if (scaleX !== -1 || scaleY !== -1) {
-    return node.matrix;
-  }
-  const m = identity();
-  const transform = node.transform;
-  m[12] = transform[12];
-  m[13] = transform[13];
-  if (rotateZ) {
-    multiplyRotateZ(m, d2r(rotateZ));
-  }
-  return calMatrixByOrigin(m, tfo[0], tfo[1]);
-}
-
 // 获取节点相对于其所在Page的matrix，Page本身返回E
 export function getMatrixOnPage(node: Node) {
-  if (!node.page) {
-    throw new Error('Node not on a Page');
-  }
   if (node instanceof Page) {
     return identity();
+  }
+  if (!node.page) {
+    throw new Error('Node not on a Page');
   }
   // 从自己开始向上到page，累计matrix
   const page = node.page;
@@ -141,11 +126,11 @@ export function getMatrixOnPage(node: Node) {
 
 // 获取节点相对于其所在Page的x/y镜像，Page本身返回1
 export function getFlipOnPage(node: Node) {
-  if (!node.page) {
-    throw new Error('Node not on a Page');
-  }
   if (node instanceof Page) {
     return { x: 1, y: 1 };
+  }
+  if (!node.page) {
+    throw new Error('Node not on a Page');
   }
   let x = node.computedStyle.scaleX, y = node.computedStyle.scaleY;
   // 从自己开始向上到page，累计matrix
