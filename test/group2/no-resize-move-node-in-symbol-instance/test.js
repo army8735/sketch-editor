@@ -16,6 +16,7 @@ module.exports = {
       .assert.cssProperty('#main .select .l', 'pointer-events', 'none')
       .assert.cssProperty('#main .select .tl', 'display', 'none')
       .assert.cssClassPresent('#side .basic-panel .input-unit', ['input-unit', 'disabled'])
+      .assert.elementPresent('#tree dl.symbol-i')
 
       .end();
   }
