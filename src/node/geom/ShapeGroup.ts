@@ -17,6 +17,8 @@ import AbstractGroup from '../AbstractGroup';
 import { RefreshLevel } from '../../refresh/level';
 import { lineJoin } from './border';
 import { getShapeGroupRect } from '../../math/bbox';
+import Polygon from '../../math/bo/Polygon';
+import chains from '../../math/bo/chains';
 
 function scaleUp(points: number[][]) {
   return points.map(point => {
@@ -80,30 +82,6 @@ class ShapeGroup extends AbstractGroup {
     this.isShapeGroup = true;
   }
 
-  override didMount() {
-    super.didMount();
-    this.buildPoints();
-    if (!this.coords?.length) {
-      return;
-    }
-    const rect = this._rect || this.rect;
-    const { width, height } = this;
-    const EPS = AbstractGroup.EPS;
-    // 和group的对比不同，直接用points的结果的rect
-    if (Math.abs(rect[0]) > EPS
-      || Math.abs(rect[1]) > EPS
-      || Math.abs(width - rect[2]) > EPS
-      || Math.abs(height - rect[3]) > EPS) {
-      // 冒泡过程无需向下检测，直接向上
-      this.adjustPosAndSize({
-        minX: rect[0],
-        minY: rect[1],
-        maxX: rect[2],
-        maxY: rect[3],
-      });
-    }
-  }
-
   override lay(data: LayoutData) {
     super.lay(data);
     this.coords = undefined;
@@ -137,89 +115,142 @@ class ShapeGroup extends AbstractGroup {
     this.coords = [];
     this.textureOutline.forEach((item) => item?.release());
     const { children } = this;
+    if (!children.length) {
+      return;
+    }
+    const old = false;
     let res: number[][][] = [], first = true;
+    let polygon: Polygon | undefined;
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
       // 不可见的无效
       if (item.computedStyle.visibility === VISIBILITY.HIDDEN) {
         continue;
       }
-      let coords;
+      let coords: number[][][];
       // shapeGroup可以包含任意内容，非矢量视作矩形，TODO 文本矢量
-      if (item instanceof Polyline || item instanceof ShapeGroup) {
+      if (item instanceof Polyline) {
         item.buildPoints();
-        coords = item.coords;
+        coords = item.coords ? [item.coords] : [];
+      }
+      else if (item instanceof ShapeGroup) {
+        item.buildPoints();
+        coords = item.coords || [];
       }
       else {
         const { width, height } = item;
-        coords = [
+        coords = [[
           [0, 0],
           [width, 0],
           [width, height],
           [0, height],
           [0, 0],
-        ];
+        ]];
       }
       const { matrix } = item;
       if (coords && coords.length) {
         // 点要考虑matrix变换，因为是shapeGroup的直接子节点，位置可能不一样
-        let p: number[][][];
-        if (item instanceof ShapeGroup) {
-          p = coords.map((item) =>
-            scaleUp(applyMatrixPoints(item as number[][], matrix)),
-          );
-        }
-        else {
-          p = [scaleUp(applyMatrixPoints(coords as number[][], matrix))];
-        }
+        let p = coords.map((item) =>
+          scaleUp(applyMatrixPoints(item as number[][], matrix)),
+        );
         const booleanOperation = item.computedStyle.booleanOperation;
-        if (first || !booleanOperation) {
-          res = res.concat(p);
-          first = false;
-        }
-        else {
-          // TODO 连续多个bo运算中间产物优化
-          if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
-            const t = bo.intersect(res, p) as number[][][];
-            res = t || [];
+        if (old) {
+          // 老版
+          if (first || !booleanOperation) {
+            res = res.concat(p);
+            first = false;
           }
-          else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
-            // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
-            const pp: number[][][] = [],
-              pl: number[][][] = [];
-            p.forEach((item) => {
-              if (item.length <= 2) {
-                pl.push(item);
-              }
-              else {
-                pp.push(item);
-              }
-            });
-            if (pp.length) {
-              const t = bo.union(res, pp) as number[][][];
+          else {
+            if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
+              const t = bo.intersect(res, p) as number[][][];
               res = t || [];
             }
-            if (pl.length) {
-              res = res.concat(pl);
+            else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
+              // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
+              const pp: number[][][] = [],
+                pl: number[][][] = [];
+              p.forEach((item) => {
+                if (item.length <= 2) {
+                  pl.push(item);
+                }
+                else {
+                  pp.push(item);
+                }
+              });
+              if (pp.length) {
+                const t = bo.union(res, pp) as number[][][];
+                res = t || [];
+              }
+              if (pl.length) {
+                res = res.concat(pl);
+              }
+              // console.log(res);
+            }
+            else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
+              const t = bo.subtract(res, p) as number[][][];
+              res = t || [];
+            }
+            else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
+              const t = bo.xor(res, p) as number[][][];
+              res = t || [];
             }
           }
-          else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
-            const t = bo.subtract(res, p) as number[][][];
-            res = t || [];
+        }
+        else {
+          if (!polygon) {
+            polygon = new Polygon(p, 0);
           }
-          else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
-            const t = bo.xor(res, p) as number[][][];
-            res = t || [];
+          else {
+            if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
+              polygon = bo.intersect(polygon, p, true) as Polygon;
+            }
+            else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
+              // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
+              const pp: number[][][] = [],
+                pl: number[][][] = [];
+              p.forEach((item) => {
+                if (item.length <= 2) {
+                  pl.push(item);
+                }
+                else {
+                  pp.push(item);
+                }
+              });
+              polygon = bo.union(polygon, pp, true) as Polygon;
+              if (pl.length) {
+                pl.forEach(item => polygon!.addRegion(item));
+              }
+            }
+            else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
+              polygon = bo.subtract(polygon, p, true) as Polygon;
+            }
+            else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
+              polygon = bo.xor(polygon, p, true) as Polygon;
+            }
+            else {
+              p.forEach(item => polygon!.addRegion(item));
+            }
           }
         }
       }
     }
-    res.forEach(item => {
-      if (item.length > 1) {
-        const t = scaleDown(item);
-        this.coords!.push(t);
-      }
-    });
+    if (polygon && !old) {
+      const res = chains(polygon.segments);
+      res.forEach(item => {
+        if (item.length > 1) {
+          const t = scaleDown(item);
+          this.coords!.push(t);
+        }
+      });
+    }
+    else {
+      res.forEach(item => {
+        if (item.length > 1) {
+          const t = scaleDown(item);
+          this.coords!.push(t);
+        }
+      });
+    }
   }
 
   override renderCanvas(scale: number) {

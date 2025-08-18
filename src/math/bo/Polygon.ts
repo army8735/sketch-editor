@@ -19,212 +19,195 @@ const {
 class Polygon {
   segments: Segment[];
   index: number;
+  hasSelfIntersect: boolean;
+  hasSelfAnnotate: boolean;
 
   constructor(regions: number[][][], index: number) {
     this.index = index; // 属于source多边形还是clip多边形，0和1区别
-    const segments: Segment[] = (this.segments = []);
+    this.hasSelfIntersect = false;
+    this.hasSelfAnnotate = false;
+    this.segments = [];
     // 多边形有>=1个区域，一般是1个
     if (!Array.isArray(regions)) {
       return;
     }
     regions.forEach((vertices) => {
-      // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
-      if (!Array.isArray(vertices) || vertices.length < 2) {
-        return;
-      }
-      if (vertices.length === 2 && vertices[1].length <= 2) {
-        return;
-      }
-      let startPoint = new Point(vertices[0][0], vertices[0][1]),
-        firstPoint = startPoint;
-      // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点，如果翻转则记录个值标明
-      for (let i = 1, len = vertices.length; i < len; i++) {
-        const curr = vertices[i],
-          l = curr.length;
-        // 闭合区域，首尾顶点重复统一
-        const endPoint = new Point(curr[l - 2], curr[l - 1]);
-        let seg: Segment;
-        if (l === 2) {
-          // 长度为0的直线忽略
-          if (startPoint.equal(endPoint)) {
-            continue;
-          }
-          const coords = Point.compare(startPoint, endPoint)
-            ? [endPoint, startPoint]
-            : [startPoint, endPoint];
-          seg = new Segment(coords, index);
-          segments.push(seg);
+      this.addRegion(vertices);
+    });
+  }
+
+  addRegion(vertices: number[][]) {
+    // 添加新区域后自交自注释都清空重来
+    this.hasSelfIntersect = false;
+    this.hasSelfAnnotate = false;
+    const segments = this.segments;
+    const index = this.index;
+    // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
+    if (!Array.isArray(vertices) || vertices.length < 2) {
+      return;
+    }
+    if (vertices.length === 2 && vertices[1].length <= 2) {
+      return;
+    }
+    let startPoint = new Point(vertices[0][0], vertices[0][1]),
+      firstPoint = startPoint;
+    // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点，如果翻转则记录个值标明
+    for (let i = 1, len = vertices.length; i < len; i++) {
+      const curr = vertices[i],
+        l = curr.length;
+      // 闭合区域，首尾顶点重复统一
+      const endPoint = new Point(curr[l - 2], curr[l - 1]);
+      let seg: Segment;
+      if (l === 2) {
+        // 长度为0的直线忽略
+        if (startPoint.equal(endPoint)) {
+          continue;
         }
-        // 曲线需确保x单调性，如果非单调，则切割为单调的多条
-        else if (l === 4) {
-          // 长度为0的曲线忽略
-          if (
-            startPoint.equal(endPoint) &&
-            startPoint.x === curr[0] &&
-            startPoint.y === curr[1]
-          ) {
-            continue;
+        const coords = Point.compare(startPoint, endPoint)
+          ? [endPoint, startPoint]
+          : [startPoint, endPoint];
+        seg = new Segment(coords, index);
+        segments.push(seg);
+      }
+      // 曲线需确保x单调性，如果非单调，则切割为单调的多条
+      else if (l === 4) {
+        // 长度为0的曲线忽略
+        if (
+          startPoint.equal(endPoint) &&
+          startPoint.x === curr[0] &&
+          startPoint.y === curr[1]
+        ) {
+          continue;
+        }
+        const cPoint = new Point(curr[0], curr[1]);
+        const t = bezier.getBezierMonotonicityT([startPoint, cPoint, endPoint], true) || [];
+        const t2 = bezier.getBezierMonotonicityT([startPoint, cPoint, endPoint], false);
+        // const t3 = bezier.getBezierMonotonicityT2([startPoint, cPoint, endPoint], true);
+        // const t4 = bezier.getBezierMonotonicityT2([startPoint, cPoint, endPoint], false);
+        t2?.forEach(i => {
+          if (!t.includes(i)) {
+            t.push(i);
           }
-          const cPoint = new Point(curr[0], curr[1]);
-          const t = bezier.getBezierMonotonicityT([startPoint, cPoint, endPoint], true) || [];
-          const t2 = bezier.getBezierMonotonicityT([startPoint, cPoint, endPoint], false);
-          // const t3 = bezier.getBezierMonotonicityT2([startPoint, cPoint, endPoint], true);
-          // const t4 = bezier.getBezierMonotonicityT2([startPoint, cPoint, endPoint], false);
-          t2?.forEach(i => {
-            if (!t.includes(i)) {
-              t.push(i);
-            }
+        });
+        // t3?.forEach(i => {
+        //   if (!t.includes(i)) {
+        //     t.push(i);
+        //   }
+        // });
+        // t4?.forEach(i => {
+        //   if (!t.includes(i)) {
+        //     t.push(i);
+        //   }
+        // });
+        if (t.length) {
+          const points: [number, number][] = [
+            [startPoint.x, startPoint.y],
+            [curr[0], curr[1]],
+            [endPoint.x, endPoint.y],
+          ];
+          const curve1 = bezier.sliceBezier(
+            Point.toPoints(points), 0, t[0],
+          ).map(item => {
+            return {
+              x: Math.round(item.x),
+              y: Math.round(item.y),
+            };
           });
-          // t3?.forEach(i => {
-          //   if (!t.includes(i)) {
-          //     t.push(i);
-          //   }
-          // });
-          // t4?.forEach(i => {
-          //   if (!t.includes(i)) {
-          //     t.push(i);
-          //   }
-          // });
-          if (t.length) {
-            const points: [number, number][] = [
-              [startPoint.x, startPoint.y],
-              [curr[0], curr[1]],
-              [endPoint.x, endPoint.y],
-            ];
-            const curve1 = bezier.sliceBezier(
-              Point.toPoints(points), 0, t[0],
-            ).map(item => {
-              return {
-                x: Math.round(item.x),
-                y: Math.round(item.y),
-              };
-            });
-            const curve2 = bezier.sliceBezier(
-              Point.toPoints(points),
-              t[0],
-              1,
-            ).map(item => {
-              return {
-                x: Math.round(item.x),
-                y: Math.round(item.y),
-              };
-            });
-            const p1 = new Point(
-                curve1[1].x,
-                curve1[1].y,
-              ),
-              p2 = new Point(
-                curve1[2].x,
-                curve1[2].y,
-              ),
-              p3 = new Point(
-                curve2[1].x,
-                curve2[1].y,
-              );
-            let coords = Point.compare(startPoint, p2)
-              ? [p2, p1, startPoint]
-              : [startPoint, p1, p2];
-            if (!startPoint.equal(p2)) {
-              segments.push(new Segment(coords, index));
-            }
-            coords = Point.compare(p2, endPoint)
-              ? [endPoint, p3, p2]
-              : [p2, p3, endPoint];
-            if (!endPoint.equal(p2)) {
-              segments.push(new Segment(coords, index));
-            }
+          const curve2 = bezier.sliceBezier(
+            Point.toPoints(points),
+            t[0],
+            1,
+          ).map(item => {
+            return {
+              x: Math.round(item.x),
+              y: Math.round(item.y),
+            };
+          });
+          const p1 = new Point(
+              curve1[1].x,
+              curve1[1].y,
+            ),
+            p2 = new Point(
+              curve1[2].x,
+              curve1[2].y,
+            ),
+            p3 = new Point(
+              curve2[1].x,
+              curve2[1].y,
+            );
+          let coords = Point.compare(startPoint, p2)
+            ? [p2, p1, startPoint]
+            : [startPoint, p1, p2];
+          if (!startPoint.equal(p2)) {
+            segments.push(new Segment(coords, index));
           }
-          else {
-            const coords = Point.compare(startPoint, endPoint)
-              ? [endPoint, cPoint, startPoint]
-              : [startPoint, cPoint, endPoint];
+          coords = Point.compare(p2, endPoint)
+            ? [endPoint, p3, p2]
+            : [p2, p3, endPoint];
+          if (!endPoint.equal(p2)) {
             segments.push(new Segment(coords, index));
           }
         }
-        // 3阶可能有2个单调改变t点
-        else if (l === 6) {
-          // 降级为2阶曲线
-          if (curr[0] === curr[2] && curr[1] === curr[3]) {
-            curr.splice(2, 2);
-            i--;
-            continue;
+        else {
+          const coords = Point.compare(startPoint, endPoint)
+            ? [endPoint, cPoint, startPoint]
+            : [startPoint, cPoint, endPoint];
+          segments.push(new Segment(coords, index));
+        }
+      }
+      // 3阶可能有2个单调改变t点
+      else if (l === 6) {
+        // 降级为2阶曲线
+        if (curr[0] === curr[2] && curr[1] === curr[3]) {
+          curr.splice(2, 2);
+          i--;
+          continue;
+        }
+        // 长度为0的曲线忽略
+        if (
+          startPoint.equal(endPoint) &&
+          startPoint.x === curr[0] &&
+          startPoint.y === curr[1] &&
+          startPoint.x === curr[2] &&
+          startPoint.y === curr[3]
+        ) {
+          continue;
+        }
+        const cPoint1 = new Point(curr[0], curr[1]),
+          cPoint2 = new Point(curr[2], curr[3]);
+        const t = bezier.getBezierMonotonicityT([startPoint, cPoint1, cPoint2, endPoint], true) || [];
+        const t2 = bezier.getBezierMonotonicityT([startPoint, cPoint1, cPoint2, endPoint], false);
+        // const t3 = bezier.getBezierMonotonicityT2([startPoint, cPoint1, cPoint2, endPoint], true);
+        // const t4 = bezier.getBezierMonotonicityT2([startPoint, cPoint1, cPoint2, endPoint], false);
+        t2?.forEach(i => {
+          if (!t.includes(i)) {
+            t.push(i);
           }
-          // 长度为0的曲线忽略
-          if (
-            startPoint.equal(endPoint) &&
-            startPoint.x === curr[0] &&
-            startPoint.y === curr[1] &&
-            startPoint.x === curr[2] &&
-            startPoint.y === curr[3]
-          ) {
-            continue;
-          }
-          const cPoint1 = new Point(curr[0], curr[1]),
-            cPoint2 = new Point(curr[2], curr[3]);
-          const t = bezier.getBezierMonotonicityT([startPoint, cPoint1, cPoint2, endPoint], true) || [];
-          const t2 = bezier.getBezierMonotonicityT([startPoint, cPoint1, cPoint2, endPoint], false);
-          // const t3 = bezier.getBezierMonotonicityT2([startPoint, cPoint1, cPoint2, endPoint], true);
-          // const t4 = bezier.getBezierMonotonicityT2([startPoint, cPoint1, cPoint2, endPoint], false);
-          t2?.forEach(i => {
-            if (!t.includes(i)) {
-              t.push(i);
-            }
-          });
-          // t3?.forEach(i => {
-          //   if (!t.includes(i)) {
-          //     t.push(i);
-          //   }
-          // });
-          // t4?.forEach(i => {
-          //   if (!t.includes(i)) {
-          //     t.push(i);
-          //   }
-          // });
-          if (t.length) {
-            const points: Array<[number, number]> = [
-              [startPoint.x, startPoint.y],
-              [curr[0], curr[1]],
-              [curr[2], curr[3]],
-              [endPoint.x, endPoint.y],
-            ];
-            let lastPoint = startPoint,
-              lastT = 0;
-            t.forEach((t) => {
-              const curve = bezier.sliceBezier(
-                Point.toPoints(points),
-                lastT,
-                t,
-              ).map(item => {
-                return {
-                  x: Math.round(item.x),
-                  y: Math.round(item.y),
-                };
-              });
-              const p1 = new Point(
-                  curve[1].x,
-                  curve[1].y,
-                ),
-                p2 = new Point(
-                  curve[2].x,
-                  curve[2].y,
-                ),
-                p3 = new Point(
-                  curve[3].x,
-                  curve[3].y,
-                );
-              const coords = Point.compare(lastPoint, p3)
-                ? [p3, p2, p1, lastPoint]
-                : [lastPoint, p1, p2, p3];
-              if (!lastPoint.equal(p3)) {
-                segments.push(new Segment(coords, index));
-              }
-              lastT = t;
-              lastPoint = p3;
-            });
+        });
+        // t3?.forEach(i => {
+        //   if (!t.includes(i)) {
+        //     t.push(i);
+        //   }
+        // });
+        // t4?.forEach(i => {
+        //   if (!t.includes(i)) {
+        //     t.push(i);
+        //   }
+        // });
+        if (t.length) {
+          const points: Array<[number, number]> = [
+            [startPoint.x, startPoint.y],
+            [curr[0], curr[1]],
+            [curr[2], curr[3]],
+            [endPoint.x, endPoint.y],
+          ];
+          let lastPoint = startPoint,
+            lastT = 0;
+          t.forEach((t) => {
             const curve = bezier.sliceBezier(
               Point.toPoints(points),
               lastT,
-              1,
+              t,
             ).map(item => {
               return {
                 x: Math.round(item.x),
@@ -235,36 +218,70 @@ class Polygon {
                 curve[1].x,
                 curve[1].y,
               ),
-              p2 = new Point(curve[2].x, curve[2].y);
-            const coords = Point.compare(lastPoint, endPoint)
-              ? [endPoint, p2, p1, lastPoint]
-              : [lastPoint, p1, p2, endPoint];
-            if (!lastPoint.equal(endPoint)) {
+              p2 = new Point(
+                curve[2].x,
+                curve[2].y,
+              ),
+              p3 = new Point(
+                curve[3].x,
+                curve[3].y,
+              );
+            const coords = Point.compare(lastPoint, p3)
+              ? [p3, p2, p1, lastPoint]
+              : [lastPoint, p1, p2, p3];
+            if (!lastPoint.equal(p3)) {
               segments.push(new Segment(coords, index));
             }
-          }
-          else {
-            const coords = Point.compare(startPoint, endPoint)
-              ? [endPoint, cPoint2, cPoint1, startPoint]
-              : [startPoint, cPoint1, cPoint2, endPoint];
+            lastT = t;
+            lastPoint = p3;
+          });
+          const curve = bezier.sliceBezier(
+            Point.toPoints(points),
+            lastT,
+            1,
+          ).map(item => {
+            return {
+              x: Math.round(item.x),
+              y: Math.round(item.y),
+            };
+          });
+          const p1 = new Point(
+              curve[1].x,
+              curve[1].y,
+            ),
+            p2 = new Point(curve[2].x, curve[2].y);
+          const coords = Point.compare(lastPoint, endPoint)
+            ? [endPoint, p2, p1, lastPoint]
+            : [lastPoint, p1, p2, endPoint];
+          if (!lastPoint.equal(endPoint)) {
             segments.push(new Segment(coords, index));
           }
         }
-        // 终点是下条边的起点
-        startPoint = endPoint;
+        else {
+          const coords = Point.compare(startPoint, endPoint)
+            ? [endPoint, cPoint2, cPoint1, startPoint]
+            : [startPoint, cPoint1, cPoint2, endPoint];
+          segments.push(new Segment(coords, index));
+        }
       }
-      // 强制要求闭合，非闭合自动连直线到开始点闭合
-      if (!startPoint.equal(firstPoint)) {
-        const coords = Point.compare(startPoint, firstPoint)
-          ? [firstPoint, startPoint]
-          : [startPoint, firstPoint];
-        segments.push(new Segment(coords, index));
-      }
-    });
+      // 终点是下条边的起点
+      startPoint = endPoint;
+    }
+    // 强制要求闭合，非闭合自动连直线到开始点闭合
+    if (!startPoint.equal(firstPoint)) {
+      const coords = Point.compare(startPoint, firstPoint)
+        ? [firstPoint, startPoint]
+        : [startPoint, firstPoint];
+      segments.push(new Segment(coords, index));
+    }
   }
 
   // 根据y坐标排序，生成有序线段列表，再扫描求交
   selfIntersect() {
+    if (this.hasSelfIntersect) {
+      return;
+    }
+    this.hasSelfIntersect = true;
     const list = genHashXList(this.segments);
     this.segments = findIntersection(list, false, false, false);
   }
@@ -284,22 +301,16 @@ class Polygon {
   }
 
   // 2个非自交的多边形互相判断相交，依旧是扫描线算法，2个多边形统一y排序，但要分别出属于哪个多边形，因为只和对方测试相交
-  static intersect2(
-    polyA: Polygon,
-    polyB: Polygon,
-    isIntermediateA: boolean,
-    isIntermediateB: boolean,
-  ) {
+  static intersect2(polyA: Polygon, polyB: Polygon) {
     if (!polyA.segments.length || !polyB.segments.length) {
       return;
     }
-
     const list = genHashXList(polyA.segments.concat(polyB.segments));
     const segments = findIntersection(
       list,
       true,
-      isIntermediateA,
-      isIntermediateB,
+      polyA.hasSelfAnnotate,
+      polyB.hasSelfAnnotate,
     );
     polyA.segments = segments.filter((item) => item.belong === 0);
     polyB.segments = segments.filter((item) => item.belong === 1);
@@ -314,12 +325,7 @@ class Polygon {
    * 最下面的边（含第一条）可直接得知下方填充性（下面没有了一定是多边形外部），再推测出上方
    * 其余的边根据自己下方相邻即可确定填充性
    */
-  static annotate2(
-    polyA: Polygon,
-    polyB: Polygon,
-    isIntermediateA: boolean,
-    isIntermediateB: boolean,
-  ) {
+  static annotate2(polyA: Polygon, polyB: Polygon) {
     const list = genHashXYList(polyA.segments.concat(polyB.segments));
     const aelA: Segment[] = [],
       aelB: Segment[] = [],
@@ -332,8 +338,8 @@ class Polygon {
       const belong = seg.belong;
       // 连续操作时，已有的中间结果可以跳过
       if (
-        (belong === 0 && isIntermediateA) ||
-        (belong === 1 && isIntermediateB)
+        (belong === 0 && polyA.hasSelfAnnotate) ||
+        (belong === 1 && polyB.hasSelfAnnotate)
       ) {
         return;
       }
@@ -425,6 +431,8 @@ class Polygon {
         }
       }
     });
+    polyA.hasSelfAnnotate = true;
+    polyB.hasSelfAnnotate = true;
     // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
     // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
     const ael: Segment[] = [],
@@ -905,9 +913,9 @@ function findIntersection(
                   // console.log(pa.length === 1 ? pa[0] : pa);
                   const pb = sortIntersection(inters!, isSourceReverted);
                   // console.log(pb.length === 1 ? pb[0] : pb);
-                  let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
+                  let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0 || isIntermediateB && belong === 1);
                   // console.log('ra', ra.map(item => item.toString()));
-                  let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
+                  let rb = sliceSegment(item, pb, isIntermediateA && item.belong === 0 || isIntermediateB && item.belong === 1);
                   // console.log('rb', rb.map(item => item.toString()));
                   // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
                   if (ra.length) {

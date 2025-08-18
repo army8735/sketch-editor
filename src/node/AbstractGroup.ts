@@ -16,6 +16,13 @@ abstract class AbstractGroup extends Container {
     super(props, children);
     this.fixedPosAndSize = false;
   }
+
+  override didMount() {
+    super.didMount();
+    // 冒泡过程无需向下检测，直接向上
+    this.adjustPosAndSize();
+  }
+
   // 根据新的盒子尺寸调整自己和直接孩子的定位尺寸，有调整返回true
   override adjustPosAndSize(rectC?: {
     minX: number;

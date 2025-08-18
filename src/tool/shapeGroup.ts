@@ -21,7 +21,7 @@ export function boolGroup(nodes: Node[], booleanOperation: JStyle['booleanOperat
   if (!shapeGroup) {
     shapeGroup = new ShapeGroup({
       uuid: uuid.v4(),
-      name: '编组',
+      name: '形状结合',
       index: parent.index,
       style: {
         left: '0%',

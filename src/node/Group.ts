@@ -15,12 +15,6 @@ class Group extends AbstractGroup {
     this.isGroup = true;
   }
 
-  override didMount() {
-    super.didMount();
-    // 冒泡过程无需向下检测，直接向上
-    this.adjustPosAndSize();
-  }
-
   override updateFormatStyle(style: Partial<Style>, cb?: ((sync: boolean) => void), noRefresh = false) {
     const res = super.updateFormatStyle(style, cb, noRefresh);
     const keys = res.keys;
