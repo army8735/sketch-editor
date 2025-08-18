@@ -1305,7 +1305,7 @@ function genHashXYList(segments: Segment[]) {
   let list: Array<{ isStart: boolean; seg: Segment }> = [];
   listX.forEach((item) => {
     item.arr.forEach((item) => {
-      list = list.concat(item.arr);
+      list.push(...item.arr);
     });
   });
   return list;
