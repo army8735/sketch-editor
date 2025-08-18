@@ -20,12 +20,10 @@ class Polygon {
   segments: Segment[];
   index: number;
   hasSelfIntersect: boolean;
-  hasSelfAnnotate: boolean;
 
   constructor(regions: number[][][], index: number) {
     this.index = index; // 属于source多边形还是clip多边形，0和1区别
     this.hasSelfIntersect = false;
-    this.hasSelfAnnotate = false;
     this.segments = [];
     // 多边形有>=1个区域，一般是1个
     if (!Array.isArray(regions)) {
@@ -39,7 +37,6 @@ class Polygon {
   addRegion(vertices: number[][]) {
     // 添加新区域后自交自注释都清空重来
     this.hasSelfIntersect = false;
-    this.hasSelfAnnotate = false;
     const segments = this.segments;
     const index = this.index;
     // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
@@ -283,7 +280,7 @@ class Polygon {
     }
     this.hasSelfIntersect = true;
     const list = genHashXList(this.segments);
-    this.segments = findIntersection(list, false, false, false);
+    this.segments = findIntersection(list, false);
   }
 
   toString() {
@@ -295,6 +292,7 @@ class Polygon {
     this.segments.forEach((seg) => {
       seg.belong = index;
       seg.otherCoincide = 0;
+      seg.myFill[0] = seg.myFill[1] = false;
       seg.otherFill[0] = seg.otherFill[1] = false;
     });
     return this;
@@ -306,12 +304,7 @@ class Polygon {
       return;
     }
     const list = genHashXList(polyA.segments.concat(polyB.segments));
-    const segments = findIntersection(
-      list,
-      true,
-      polyA.hasSelfAnnotate,
-      polyB.hasSelfAnnotate,
-    );
+    const segments = findIntersection(list, true);
     polyA.segments = segments.filter((item) => item.belong === 0);
     polyB.segments = segments.filter((item) => item.belong === 1);
   }
@@ -336,13 +329,6 @@ class Polygon {
     list.forEach((item) => {
       const { isStart, seg } = item;
       const belong = seg.belong;
-      // 连续操作时，已有的中间结果可以跳过
-      if (
-        (belong === 0 && polyA.hasSelfAnnotate) ||
-        (belong === 1 && polyB.hasSelfAnnotate)
-      ) {
-        return;
-      }
       const ael: Segment[] = belong === 0 ? aelA : aelB,
         hash = belong === 0 ? hashA : hashB;
       if (isStart) {
@@ -431,8 +417,6 @@ class Polygon {
         }
       }
     });
-    polyA.hasSelfAnnotate = true;
-    polyB.hasSelfAnnotate = true;
     // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
     // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
     const ael: Segment[] = [],
@@ -516,12 +500,7 @@ class Polygon {
  * 这种情况一般出现在两条共点线段上，曲线尤甚，不能认为它们相交，此时eps误差可以传一个小精度数值如1e-9。
  * 2是互交，误差考虑要谨慎，如果还是1e-9，会被忽略然后在注释颜色那里出错，此时eps应该考虑0
  */
-function findIntersection(
-  list: any,
-  compareBelong: boolean,
-  isIntermediateA: boolean,
-  isIntermediateB: boolean,
-) {
+function findIntersection(list: any, compareBelong: boolean) {
   // 从左到右扫描，按x坐标排序，相等按y，边会进入和离开扫描线各1次，在扫描线中的边为活跃边，维护1个活跃边列表，新添加的和老的求交
   const ael: Segment[] = [],
     delList: Segment[] = [],
@@ -913,9 +892,9 @@ function findIntersection(
                   // console.log(pa.length === 1 ? pa[0] : pa);
                   const pb = sortIntersection(inters!, isSourceReverted);
                   // console.log(pb.length === 1 ? pb[0] : pb);
-                  let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0 || isIntermediateB && belong === 1);
+                  let ra = sliceSegment(seg, pa);
                   // console.log('ra', ra.map(item => item.toString()));
-                  let rb = sliceSegment(item, pb, isIntermediateA && item.belong === 0 || isIntermediateB && item.belong === 1);
+                  let rb = sliceSegment(item, pb);
                   // console.log('rb', rb.map(item => item.toString()));
                   // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
                   if (ra.length) {
@@ -961,7 +940,7 @@ function findIntersection(
 
 // 给定交点列表分割线段，ps切割点需排好顺序从头到尾，切割后的线段坐标需特别注意，
 // 因为精度的问题，可能切割点并不是十分严格的在线段上，从而造成不是按x增量排序的
-function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isIntermediate: boolean) {
+function sliceSegment(seg: Segment, ps: { point: Point, t: number }[]) {
   const res: Segment[] = [];
   if (!ps.length) {
     return res;
@@ -1046,11 +1025,6 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
         );
       }
     }
-    // 连续操作的中间结果已有自己内外性，截取时需继承
-    if (isIntermediate) {
-      ns!.myFill[0] = seg.myFill[0];
-      ns!.myFill[1] = seg.myFill[1];
-    }
     startPoint = point;
     res.push(ns!);
     lastT = t;
@@ -1123,10 +1097,6 @@ function sliceSegment(seg: Segment, ps: { point: Point, t: number }[], isInterme
           belong,
         );
       }
-    }
-    if (isIntermediate) {
-      ns!.myFill[0] = seg.myFill[0];
-      ns!.myFill[1] = seg.myFill[1];
     }
     res.push(ns!);
   }
