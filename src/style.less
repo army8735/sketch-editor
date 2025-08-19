@@ -2910,7 +2910,7 @@
     }
   }
 
-  .ok, .prev, .next, .un-bind {
+  .ok, .prev, .next, .un-bind, .scale-up, .scale-down, .select-all, .un-lock, .show {
     display: none;
   }
 
@@ -2951,10 +2951,6 @@
     display: block;
   }
 
-  .un-lock, .show {
-    display: none;
-  }
-
   &.locked {
     .un-lock {
       display: block;
@@ -2979,25 +2975,21 @@
     .group, .un-group, .lock, .un-lock, .hide, .show, .mask, .break-mask, .remove, .cut, .copy {
       display: none;
     }
+    .scale-up, .scale-down, .select-all {
+      display: block;
+    }
   }
 
   &.single {
-    .un-group, .scale-up, .scale-down, .select-all {
+    .un-group {
       display: none;
     }
   }
 
   &.single-group {
-    .scale-up, .scale-down, .select-all {
-      display: none;
-    }
   }
 
   &.multi {
-    .scale-up, .scale-down, .select-all {
-      display: none;
-    }
-
     .un-group {
       opacity: 0.3;
       pointer-events: none;
