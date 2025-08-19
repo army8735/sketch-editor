@@ -20,6 +20,7 @@ class Polygon {
   segments: Segment[];
   index: number;
   hasSelfIntersect: boolean;
+  hashXY?: HashXY;
 
   constructor(regions: number[][][], index: number) {
     this.index = index; // 属于source多边形还是clip多边形，0和1区别
@@ -37,6 +38,7 @@ class Polygon {
   addRegion(vertices: number[][]) {
     // 添加新区域后自交自注释都清空重来
     this.hasSelfIntersect = false;
+    this.hashXY = undefined;
     const segments = this.segments;
     const index = this.index;
     // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
@@ -319,7 +321,8 @@ class Polygon {
    * 其余的边根据自己下方相邻即可确定填充性
    */
   static annotate2(polyA: Polygon, polyB: Polygon) {
-    const list = genHashXYList(polyA.segments.concat(polyB.segments));
+    const hashXY = polyA.hashXY ? genHashXY(polyB.segments, polyA.hashXY) : genHashXY(polyA.segments.concat(polyB.segments));
+    const list = genHashXYList(hashXY);
     const aelA: Segment[] = [],
       aelB: Segment[] = [],
       hashA: any = {},
@@ -492,6 +495,7 @@ class Polygon {
         }
       }
     });
+    polyA.hashXY = polyB.hashXY = hashXY;
   }
 }
 
@@ -1243,9 +1247,11 @@ function putHashX(hashX: any, x: number, seg: Segment) {
   }
 }
 
-// 按x升序将所有线段组成一个垂直扫描线列表，y方向也需要判断
-function genHashXYList(segments: Segment[]) {
-  const hashXY: Record<string, Record<string, { isStart: boolean, seg: Segment }[]>> = {};
+type HashY = Record<string, { isStart: boolean, seg: Segment }[]>;
+type HashXY = Record<string, HashY>;
+
+function genHashXY(segments: Segment[], old?: HashXY) {
+  const hashXY: HashXY = old || {};
   segments.forEach((seg) => {
     const coords = seg.coords,
       l = coords.length;
@@ -1254,6 +1260,11 @@ function genHashXYList(segments: Segment[]) {
     putHashXY(hashXY, start.x, start.y, seg, true);
     putHashXY(hashXY, end.x, end.y, seg, false);
   });
+  return hashXY;
+}
+
+// 按x升序将所有线段组成一个垂直扫描线列表，y方向也需要判断
+function genHashXYList(hashXY: HashXY) {
   const listX: Array<{
     x: number;
     arr: Array<{ y: number; arr: Array<{ isStart: boolean; seg: Segment }> }>;
