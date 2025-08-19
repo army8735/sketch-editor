@@ -118,8 +118,6 @@ class ShapeGroup extends AbstractGroup {
     if (!children.length) {
       return;
     }
-    const old = false;
-    let res: number[][][] = [], first = true;
     let polygon: Polygon | undefined;
     for (let i = 0, len = children.length; i < len; i++) {
       const item = children[i];
@@ -154,96 +152,44 @@ class ShapeGroup extends AbstractGroup {
           scaleUp(applyMatrixPoints(item as number[][], matrix)),
         );
         const booleanOperation = item.computedStyle.booleanOperation;
-        if (old) {
-          // 老版
-          if (first || !booleanOperation) {
-            res = res.concat(p);
-            first = false;
-          }
-          else {
-            if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
-              const t = bo.intersect(res, p) as number[][][];
-              res = t || [];
-            }
-            else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
-              // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
-              const pp: number[][][] = [],
-                pl: number[][][] = [];
-              p.forEach((item) => {
-                if (item.length <= 2) {
-                  pl.push(item);
-                }
-                else {
-                  pp.push(item);
-                }
-              });
-              if (pp.length) {
-                const t = bo.union(res, pp) as number[][][];
-                res = t || [];
-              }
-              if (pl.length) {
-                res = res.concat(pl);
-              }
-              // console.log(res);
-            }
-            else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
-              const t = bo.subtract(res, p) as number[][][];
-              res = t || [];
-            }
-            else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
-              const t = bo.xor(res, p) as number[][][];
-              res = t || [];
-            }
-          }
+        if (!polygon) {
+          polygon = new Polygon(p, 0);
         }
         else {
-          if (!polygon) {
-            polygon = new Polygon(p, 0);
+          if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
+            polygon = bo.intersect(polygon, p, true) as Polygon;
+          }
+          else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
+            // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
+            const pp: number[][][] = [],
+              pl: number[][][] = [];
+            p.forEach((item) => {
+              if (item.length <= 2) {
+                pl.push(item);
+              }
+              else {
+                pp.push(item);
+              }
+            });
+            polygon = bo.union(polygon, pp, true) as Polygon;
+            if (pl.length) {
+              pl.forEach(item => polygon!.addRegion(item));
+            }
+          }
+          else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
+            polygon = bo.subtract(polygon, p, true) as Polygon;
+          }
+          else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
+            polygon = bo.xor(polygon, p, true) as Polygon;
           }
           else {
-            if (booleanOperation === BOOLEAN_OPERATION.INTERSECT) {
-              polygon = bo.intersect(polygon, p, true) as Polygon;
-            }
-            else if (booleanOperation === BOOLEAN_OPERATION.UNION) {
-              // p中可能是条直线，不能用多边形求，直接合并，将非直线提取出来进行求，直线则单独处理
-              const pp: number[][][] = [],
-                pl: number[][][] = [];
-              p.forEach((item) => {
-                if (item.length <= 2) {
-                  pl.push(item);
-                }
-                else {
-                  pp.push(item);
-                }
-              });
-              polygon = bo.union(polygon, pp, true) as Polygon;
-              if (pl.length) {
-                pl.forEach(item => polygon!.addRegion(item));
-              }
-            }
-            else if (booleanOperation === BOOLEAN_OPERATION.SUBTRACT) {
-              polygon = bo.subtract(polygon, p, true) as Polygon;
-            }
-            else if (booleanOperation === BOOLEAN_OPERATION.XOR) {
-              polygon = bo.xor(polygon, p, true) as Polygon;
-            }
-            else {
-              p.forEach(item => polygon!.addRegion(item));
-            }
+            p.forEach(item => polygon!.addRegion(item));
           }
         }
       }
     }
-    if (polygon && !old) {
+    if (polygon) {
       const res = chains(polygon.segments);
-      res.forEach(item => {
-        if (item.length > 1) {
-          const t = scaleDown(item);
-          this.coords!.push(t);
-        }
-      });
-    }
-    else {
       res.forEach(item => {
         if (item.length > 1) {
           const t = scaleDown(item);
