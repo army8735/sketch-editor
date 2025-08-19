@@ -70,9 +70,7 @@ const INTERSECT = [
   0, 1, 1, 0,
 ];
 
-function filter(polygonA: Polygon, polygonB: Polygon, matrix: number[]) {
-  const segments = polygonA.segments.concat(polygonB.segments);
-  const hashXY = polygonA.hashXY;
+function filter(segments: Segment[], matrix: number[]) {
   // console.log(segments.map(item => item.toString()))
   const res: Array<Segment> = [], hash: any = {};
   segments.forEach(seg => {
@@ -101,44 +99,13 @@ function filter(polygonA: Polygon, polygonB: Polygon, matrix: number[]) {
     if (matrix[i]) {
       res.push(seg);
     }
-    // 中间结果优化去除无效seg
-    else if (hashXY) {
-      const coords = seg.coords,
-        l = coords.length;
-      const start = coords[0],
-        end = coords[l - 1];
-      const hash1 = hashXY[start.x];
-      if (hash1) {
-        const list = hash1[start.y];
-        if (list) {
-          for (let i = 0, len = list.length; i < len; ++i) {
-            if (list[i].seg === seg) {
-              list.splice(i, 1);
-              break;
-            }
-          }
-        }
-      }
-      const hash2 = hashXY[end.x];
-      if (hash2) {
-        const list = hash2[end.y];
-        if (list) {
-          for (let i = 0, len = list.length; i < len; ++i) {
-            if (list[i].seg === seg) {
-              list.splice(i, 1);
-              break;
-            }
-          }
-        }
-      }
-    }
   });
   return res;
 }
 
-export function intersect(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][], intermediate = false) {
+export function intersect(polygonA: any, polygonB: any, intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
-  const list = filter(source, clip, INTERSECT);
+  const list = filter(source.segments.concat(clip.segments), INTERSECT);
   if (intermediate) {
     source.segments = list;
     return source;
@@ -146,9 +113,9 @@ export function intersect(polygonA: Polygon | number[][][], polygonB: Polygon | 
   return chains(list);
 }
 
-export function union(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][], intermediate = false) {
+export function union(polygonA: Polygon | number[][][], polygonB: any, intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
-  const list = filter(source, clip, UNION);
+  const list = filter(source.segments.concat(clip.segments), UNION);
   if (intermediate) {
     source.segments = list;
     return source;
@@ -159,7 +126,7 @@ export function union(polygonA: Polygon | number[][][], polygonB: Polygon | numb
 
 export function subtract(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][], intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
-  let list = filter(source, clip, SUBTRACT);
+  let list = filter(source.segments.concat(clip.segments), SUBTRACT);
   // 暂时这样解决反向的问题
   if (!list.length) {
     // list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
@@ -174,7 +141,7 @@ export function subtract(polygonA: Polygon | number[][][], polygonB: Polygon | n
 
 export function subtractRev(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][], intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
-  const list = filter(source, clip, SUBTRACT_REV);
+  const list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
   if (intermediate) {
     source.segments = list;
     return source;
@@ -184,7 +151,7 @@ export function subtractRev(polygonA: Polygon | number[][][], polygonB: Polygon 
 
 export function xor(polygonA: Polygon | number[][][], polygonB: Polygon | number[][][], intermediate = false) {
   const [source, clip] = trivial(polygonA, polygonB);
-  const list = filter(source, clip, XOR);
+  const list = filter(source.segments.concat(clip.segments), XOR);
   if (intermediate) {
     source.segments = list;
     return source;
