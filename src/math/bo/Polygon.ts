@@ -1245,7 +1245,7 @@ function putHashX(hashX: any, x: number, seg: Segment) {
 
 // 按x升序将所有线段组成一个垂直扫描线列表，y方向也需要判断
 function genHashXYList(segments: Segment[]) {
-  const hashXY: any = {};
+  const hashXY: Record<string, Record<string, { isStart: boolean, seg: Segment }[]>> = {};
   segments.forEach((seg) => {
     const coords = seg.coords,
       l = coords.length;
@@ -1312,7 +1312,7 @@ function genHashXYList(segments: Segment[]) {
 }
 
 function putHashXY(
-  hashXY: any,
+  hashXY: Record<string, Record<string, { isStart: boolean, seg: Segment }[]>>,
   x: number,
   y: number,
   seg: Segment,
