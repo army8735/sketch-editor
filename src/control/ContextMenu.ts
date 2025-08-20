@@ -287,11 +287,11 @@ class ContextMenu {
     else {
       this.dom.querySelector('.hide span')!.innerHTML = nodes.length.toString();
     }
-    const hasPrev = nodes.every(item => item.prev);
+    const hasPrev = nodes.length && nodes.every(item => item.prev);
     if (!hasPrev) {
       classList.add('no-prev');
     }
-    const hasNext = nodes.every(item => item.next);
+    const hasNext = nodes.length && nodes.every(item => item.next);
     if (!hasNext) {
       classList.add('no-next');
     }
