@@ -16,7 +16,7 @@ import StrokeCommand from '../history/StrokeCommand';
 import state from './state';
 
 const html = `
-  <h4 class="panel-title">描边</h4>
+  <h4 class="panel-title">描边<b class="btn add"></b></h4>
 `;
 
 function renderItem(
@@ -110,13 +110,12 @@ class StrokePanel extends Panel {
     let prevs: StrokeStyle[] = [];
     let nexts: StrokeStyle[] = [];
     let hasRefresh = true; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
-    let indexes: number[] = [];
     let index: number;
 
     const pickCallback = (independence = false) => {
       if (nodes.length && nexts.length) {
         listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
-          return { prev, next: nexts[i], index: indexes[i] };
+          return { prev, next: nexts[i] };
         })), independence);
         listener.emit(Listener.STROKE_NODE, nodes.slice(0));
         onBlur();
@@ -127,7 +126,6 @@ class StrokePanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
-      indexes = [];
     };
 
     const setPrev = () => {
@@ -183,7 +181,6 @@ class StrokePanel extends Panel {
             }
           }
           nexts = [];
-          indexes = [];
           nodes.forEach((node) => {
             const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
             const cssStroke = stroke.map((item, i) => {
@@ -201,7 +198,6 @@ class StrokePanel extends Panel {
               strokeWidth,
             };
             nexts.push(o);
-            indexes.push(index);
             node.updateStyle(o);
           });
           // 可能picker发生类型切换当前不是gradient了
@@ -238,6 +234,44 @@ class StrokePanel extends Panel {
           listener.state = state.EDIT_GRADIENT;
         }
       }
+      else if (classList.contains('add')) {
+        this.silence = true;
+        const nodes = this.nodes.slice(0);
+        const prevs: StrokeStyle[] = [];
+        const nexts: StrokeStyle[] = [];
+        nodes.forEach(node => {
+          const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
+          const cssStroke = stroke.map(item => getCssFillStroke(item, node.width, node.height));
+          prevs.push({
+            stroke: cssStroke,
+            strokeEnable,
+            strokePosition: strokePosition.map(item => getCssStrokePosition(item)),
+            strokeWidth,
+          });
+          const s = cssStroke.slice(0);
+          const se = strokeEnable.slice(0);
+          const sp = strokePosition.map(item => getCssStrokePosition(item));
+          const sw = strokeWidth.slice(0);
+          s.push('rgba(151,151,151,1)');
+          se.push(true);
+          sp.push('center');
+          sw.push(1);
+          const o = {
+            stroke: s,
+            strokeEnable: se,
+            strokePosition: sp,
+            strokeWidth: sw,
+          };
+          nexts.push(o);
+          node.updateStyle(o);
+        });
+        this.show(nodes);
+        listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
+          return { prev, next: nexts[i] };
+        })));
+        listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+        this.silence = false;
+      }
       else if (classList.contains('enabled')) {
         this.silence = true;
         const line = el.parentElement!;
@@ -245,7 +279,6 @@ class StrokePanel extends Panel {
         const nodes = this.nodes.slice(0);
         const prevs: StrokeStyle[] = [];
         const nexts: StrokeStyle[] = [];
-        const indexes: number[] = [];
         let value = false;
         if (classList.contains('multi-checked') || classList.contains('un-checked')) {
           value = true;
@@ -273,7 +306,6 @@ class StrokePanel extends Panel {
             strokeWidth: sw,
           };
           nexts.push(o);
-          indexes.push(index);
           node.updateStyle(o);
         });
         classList.remove('multi-checked');
@@ -294,12 +326,10 @@ class StrokePanel extends Panel {
           });
         }
         if (nodes.length) {
-          listener.emit(Listener.STROKE_NODE, nodes.slice(0), prevs.map((prev, i) => {
-            return { prev, next: nexts[i], index: indexes[i] };
-          }));
           listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
-            return { prev, next: nexts[i], index: indexes[i] };
+            return { prev, next: nexts[i] };
           })));
+          listener.emit(Listener.STROKE_NODE, nodes.slice(0));
         }
         this.silence = false;
       }
@@ -345,10 +375,10 @@ class StrokePanel extends Panel {
           node.updateStyle(o);
         });
         if (nodes.length) {
-          listener.emit(Listener.STROKE_NODE, nodes.slice(0));
           listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
-            return { prev, next: nexts[i], index: indexes[i] };
+            return { prev, next: nexts[i] };
           })));
+          listener.emit(Listener.STROKE_NODE, nodes.slice(0));
         }
         this.silence = false;
       }

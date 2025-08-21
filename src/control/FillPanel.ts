@@ -16,7 +16,7 @@ import FillCommand from '../history/FillCommand';
 import state from './state';
 
 const html = `
-  <h4 class="panel-title">填充</h4>
+  <h4 class="panel-title">填充<b class="btn add"></b></h4>
 `;
 
 function renderItem(
@@ -144,16 +144,15 @@ class FillPanel extends Panel {
     let prevs: FillStyle[] = [];
     let nexts: FillStyle[] = [];
     let hasRefresh = true; // onInput是否触发了刷新，onChange识别看是否需要兜底触发
-    let indexes: number[] = [];
     let index: number;
 
     const pickCallback = (independence = false) => {
       // 只有变更才会有next
       if (nodes.length && nexts.length) {
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
-          return { prev, next: nexts[i], index: indexes[i] };
+          return { prev, next: nexts[i] };
         })), independence);
-        listener.emit(Listener.FILL_NODE, nodes.slice(0), indexes.slice(0));
+        listener.emit(Listener.FILL_NODE, nodes.slice(0));
         onBlur();
       }
     };
@@ -162,7 +161,6 @@ class FillPanel extends Panel {
       nodes = [];
       prevs = [];
       nexts = [];
-      indexes = [];
     };
 
     const setPrev = () => {
@@ -225,7 +223,6 @@ class FillPanel extends Panel {
             }
           }
           nexts = [];
-          indexes = [];
           nodes.forEach(node => {
             const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
             const cssFill = fill.map((item, i) => {
@@ -242,7 +239,6 @@ class FillPanel extends Panel {
               fillEnable,
             };
             nexts.push(o);
-            indexes.push(index);
             node.updateStyle(o);
           });
           // 可能picker发生类型切换当前不是gradient了
@@ -276,6 +272,40 @@ class FillPanel extends Panel {
           listener.state = state.EDIT_GRADIENT;
         }
       }
+      else if (classList.contains('add')) {
+        this.silence = true;
+        const nodes = this.nodes.slice(0);
+        const prevs: FillStyle[] = [];
+        const nexts: FillStyle[] = [];
+        nodes.forEach(node => {
+          const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
+          const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
+          prevs.push({
+            fill: cssFill,
+            fillOpacity,
+            fillEnable,
+          });
+          const f = cssFill.slice(0);
+          const fe = fillEnable.slice(0);
+          const fo = fillOpacity.slice(0);
+          f.push('rgba(216,216,216,1)');
+          fe.push(true);
+          fo.push(1);
+          const o = {
+            fill: f,
+            fillEnable: fe,
+            fillOpacity: fo,
+          };
+          nexts.push(o);
+          node.updateStyle(o);
+        });
+        this.show(nodes);
+        listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
+          return { prev, next: nexts[i] };
+        })));
+        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+        this.silence = false;
+      }
       else if (classList.contains('enabled')) {
         this.silence = true;
         const line = el.parentElement!;
@@ -283,7 +313,6 @@ class FillPanel extends Panel {
         const nodes = this.nodes.slice(0);
         const prevs: FillStyle[] = [];
         const nexts: FillStyle[] = [];
-        const indexes: number[] = [];
         let value = false;
         if (classList.contains('multi-checked') || classList.contains('un-checked')) {
           value = true;
@@ -308,7 +337,6 @@ class FillPanel extends Panel {
             fillOpacity: fo,
           };
           nexts.push(o);
-          indexes.push(index);
           node.updateStyle(o);
         });
         classList.remove('multi-checked');
@@ -330,9 +358,9 @@ class FillPanel extends Panel {
         }
         if (nodes.length) {
           listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
-            return { prev, next: nexts[i], index: indexes[i] };
+            return { prev, next: nexts[i] };
           })));
-          listener.emit(Listener.FILL_NODE, nodes.slice(0), indexes.slice(0));
+          listener.emit(Listener.FILL_NODE, nodes.slice(0));
         }
         this.silence = false;
       }

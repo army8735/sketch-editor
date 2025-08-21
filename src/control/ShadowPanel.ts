@@ -178,13 +178,13 @@ class ShadowPanel extends Panel {
           node.updateStyle(o);
         });
         this.show(nodes);
-        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
           return {
             prev,
             next: nexts[i],
           };
         })));
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         this.silence = false;
       }
       else if (classList.contains('remove')) {
@@ -225,13 +225,13 @@ class ShadowPanel extends Panel {
           node.updateStyle(nexts[i]);
         });
         this.show(nodes);
-        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
           return {
             prev,
             next: nexts[i],
           };
         })));
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         this.silence = false;
       }
       else if (classList.contains('enabled')) {
@@ -282,10 +282,10 @@ class ShadowPanel extends Panel {
         }
         const un = panel.querySelector('.un-checked');
         (panel.querySelector('.remove') as HTMLElement).style.display = un ? 'block' : 'none';
-        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         listener.history.addCommand(new ShadowCommand(nodes.slice(0), prevs.map((prev, i) => {
           return { prev, next: nexts[i] };
         })));
+        listener.emit(Listener.SHADOW_NODE, nodes.slice(0));
         this.silence = false;
       }
     });
