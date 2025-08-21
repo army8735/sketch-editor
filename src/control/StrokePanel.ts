@@ -118,7 +118,7 @@ class StrokePanel extends Panel {
         listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
           return { prev, next: nexts[i], index: indexes[i] };
         })), independence);
-        listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+        listener.emit(Listener.STROKE_NODE, nodes.slice(0), indexes.slice(0));
         onBlur();
       }
     };
@@ -209,7 +209,7 @@ class StrokePanel extends Panel {
             listener.gradient.update(this.nodes[0], stroke);
           }
           if (nodes.length) {
-            listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+            listener.emit(Listener.STROKE_NODE, nodes.slice(0), indexes.slice(0));
           }
           this.silence = false;
         };
@@ -243,6 +243,7 @@ class StrokePanel extends Panel {
         const nodes = this.nodes.slice(0);
         const prevs: StrokeStyle[] = [];
         const nexts: StrokeStyle[] = [];
+        const indexes: number[] = [];
         nodes.forEach(node => {
           const { stroke, strokeEnable, strokePosition, strokeWidth } = node.getComputedStyle();
           const cssStroke = stroke.map(item => getCssFillStroke(item, node.width, node.height));
@@ -267,13 +268,14 @@ class StrokePanel extends Panel {
             strokeWidth: sw,
           };
           nexts.push(o);
+          indexes.push(prevs.length);
           node.updateStyle(o);
         });
         this.show(nodes);
         listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
-          return { prev, next: nexts[i], index: prevs.length };
+          return { prev, next: nexts[i], index: indexes[i] };
         })));
-        listener.emit(Listener.STROKE_NODE, nodes.slice(0));
+        listener.emit(Listener.STROKE_NODE, nodes.slice(0), indexes.slice(0));
         this.silence = false;
       }
       else if (classList.contains('enabled')) {
@@ -335,9 +337,7 @@ class StrokePanel extends Panel {
           listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
             return { prev, next: nexts[i], index: indexes[i] };
           })));
-          listener.emit(Listener.STROKE_NODE, nodes.slice(0), prevs.map((prev, i) => {
-            return { prev, next: nexts[i], index: indexes[i] };
-          }));
+          listener.emit(Listener.STROKE_NODE, nodes.slice(0), indexes.slice(0));
         }
         this.silence = false;
       }
@@ -350,6 +350,7 @@ class StrokePanel extends Panel {
         const nodes = this.nodes.slice(0);
         const prevs: StrokeStyle[] = [];
         const nexts: StrokeStyle[] = [];
+        const indexes: number[] = [];
         let value: 'inside' | 'center' | 'outside' = 'inside';
         if (classList.contains('center')) {
           value = 'center';
@@ -380,15 +381,14 @@ class StrokePanel extends Panel {
             strokeWidth: sw,
           };
           nexts.push(o);
+          indexes.push(index);
           node.updateStyle(o);
         });
         if (nodes.length) {
           listener.history.addCommand(new StrokeCommand(nodes.slice(0), prevs.map((prev, i) => {
             return { prev, next: nexts[i], index: indexes[i] };
           })));
-          listener.emit(Listener.STROKE_NODE, nodes.slice(0), prevs.map((prev, i) => {
-            return { prev, next: nexts[i], index: indexes[i] };
-          }));
+          listener.emit(Listener.STROKE_NODE, nodes.slice(0), indexes.slice(0));
         }
         this.silence = false;
       }
@@ -409,6 +409,7 @@ class StrokePanel extends Panel {
         prevs = [];
       }
       nexts = [];
+      indexes = [];
       const n = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
       const isInput = e instanceof InputEvent; // 上下键还是真正输入
       hasRefresh = !isInput;
@@ -431,6 +432,7 @@ class StrokePanel extends Panel {
           strokeWidth: prevs[i].strokeWidth.slice(0),
         };
         nexts.push(o);
+        indexes.push(index);
         const prev = prevs[i].strokeWidth[index];
         if (isInput) {
           o.strokeWidth[index] = n;

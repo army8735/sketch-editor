@@ -249,6 +249,9 @@ class FillPanel extends Panel {
           if (!fromGradient && !Array.isArray(nodes[0].computedStyle.fill[index])) {
             listener.gradient.update(this.nodes[0], fill, changeType);
           }
+          if (nodes.length) {
+            listener.emit(Listener.FILL_NODE, nodes.slice(0), indexes.slice(0));
+          }
           this.silence = false;
         };
         // 取消可能的其它编辑态
@@ -281,6 +284,7 @@ class FillPanel extends Panel {
         const nodes = this.nodes.slice(0);
         const prevs: FillStyle[] = [];
         const nexts: FillStyle[] = [];
+        const indexes: number[] = [];
         nodes.forEach(node => {
           const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
           const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
@@ -301,13 +305,14 @@ class FillPanel extends Panel {
             fillOpacity: fo,
           };
           nexts.push(o);
+          indexes.push(prevs.length);
           node.updateStyle(o);
         });
         this.show(nodes);
         listener.history.addCommand(new FillCommand(nodes, prevs.map((prev, i) => {
-          return { prev, next: nexts[i], index: prevs.length };
+          return { prev, next: nexts[i], index: indexes[i] };
         })));
-        listener.emit(Listener.FILL_NODE, nodes.slice(0));
+        listener.emit(Listener.FILL_NODE, nodes.slice(0), indexes.slice(0));
         this.silence = false;
       }
       else if (classList.contains('enabled')) {
@@ -489,6 +494,7 @@ class FillPanel extends Panel {
           nodes = this.nodes.slice(0);
           prevs = [];
           nexts = [];
+          indexes = [];
           nodes.forEach(node => {
             const { fill, fillEnable, fillOpacity } = node.getComputedStyle();
             const cssFill = fill.map(item => getCssFillStroke(item, node.width, node.height));
@@ -512,6 +518,7 @@ class FillPanel extends Panel {
               fillEnable,
             };
             nexts.push(o);
+            indexes.push(index);
             node.updateStyle(o);
           });
           pickCallback();
