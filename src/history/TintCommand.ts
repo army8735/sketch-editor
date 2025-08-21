@@ -5,6 +5,7 @@ import UpdateStyleCommand from './UpdateStyleCommand';
 export type TintData = {
   prev: FillStyle,
   next: FillStyle,
+  index: number,
 };
 
 class FillCommand extends UpdateStyleCommand {

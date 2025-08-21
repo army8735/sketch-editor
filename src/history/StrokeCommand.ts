@@ -5,6 +5,7 @@ import UpdateStyleCommand from './UpdateStyleCommand';
 export type StrokeData = {
   prev: StrokeStyle,
   next: StrokeStyle,
+  index: number,
 };
 
 class StrokeCommand extends UpdateStyleCommand {
