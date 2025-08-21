@@ -74,9 +74,9 @@ class TintPanel extends Panel {
       // 只有变更才会有next
       if (nodes.length && nexts.length) {
         listener.history.addCommand(new TintCommand(nodes, prevs.map((prev, i) => {
-          return { prev, next: nexts[i], index: 0 };
+          return { prev, next: nexts[i] };
         })), independence);
-        listener.emit(Listener.TINT_NODE, nodes.slice(0), nodes.map(() => 0));
+        listener.emit(Listener.TINT_NODE, nodes.slice(0));
         onBlur();
       }
     };
@@ -211,9 +211,9 @@ class TintPanel extends Panel {
         }
         if (nodes.length) {
           listener.history.addCommand(new TintCommand(nodes, prevs.map((prev, i) => {
-            return { prev, next: nexts[i], index: 0 };
+            return { prev, next: nexts[i] };
           })));
-          listener.emit(Listener.TINT_NODE, nodes.slice(0), nodes.map(() => 0));
+          listener.emit(Listener.TINT_NODE, nodes.slice(0));
         }
         this.silence = false;
       }

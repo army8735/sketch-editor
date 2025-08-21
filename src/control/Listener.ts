@@ -61,8 +61,8 @@ import ShadowCommand from '../history/ShadowCommand';
 import BlurCommand from '../history/BlurCommand';
 import ColorAdjustCommand from '../history/ColorAdjustCommand';
 import TextCommand from '../history/TextCommand';
-import FillCommand, { FillData } from '../history/FillCommand';
-import StrokeCommand, { StrokeData } from '../history/StrokeCommand';
+import FillCommand from '../history/FillCommand';
+import StrokeCommand from '../history/StrokeCommand';
 import MaskModeCommand from '../history/MaskModeCommand';
 import BreakMaskCommand from '../history/BreakMaskCommand';
 import GroupCommand from '../history/GroupCommand';
@@ -80,7 +80,7 @@ import FlattenCommand from '../history/FlattenCommand';
 import PrevCommand from '../history/PrevCommand';
 import NextCommand from '../history/NextCommand';
 import PositionCommand from '../history/PositionCommand';
-import TintCommand, { TintData } from '../history/TintCommand';
+import TintCommand from '../history/TintCommand';
 import ClosedCommand from '../history/ClosedCommand';
 import ExportCommand from '../history/ExportCommand';
 import SymbolInstance from '../node/SymbolInstance';
@@ -2505,13 +2505,13 @@ export default class Listener extends Event {
           this.emit(Listener.TEXT_VERTICAL_ALIGN_NODE, nodes.slice(0));
         }
         else if (c instanceof FillCommand) {
-          this.emit(Listener.FILL_NODE, nodes.slice(0), (c.data as FillData[]).map(item => item.index));
+          this.emit(Listener.FILL_NODE, nodes.slice(0));
         }
         else if (c instanceof TintCommand) {
-          this.emit(Listener.TINT_NODE, nodes.slice(0), (c.data as TintData[]).map(item => item.index));
+          this.emit(Listener.TINT_NODE, nodes.slice(0));
         }
         else if (c instanceof StrokeCommand) {
-          this.emit(Listener.STROKE_NODE, nodes.slice(0), (c.data as StrokeData[]).map(item => item.index));
+          this.emit(Listener.STROKE_NODE, nodes.slice(0));
         }
         else if (c instanceof OverflowCommand) {
           this.emit(Listener.OVERFLOW_NODE, nodes.slice(0));
