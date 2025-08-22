@@ -117,6 +117,7 @@ class Event {
   static REFRESH_COMPLETE = 'REFRESH_COMPLETE';
   static DID_ADD_DOM = 'DID_ADD_DOM';
   static WILL_REMOVE_DOM = 'WILL_REMOVE_DOM';
+  static STYLE_CHANGED = 'STYLE_CHANGED';
   static PAGE_CHANGED = 'PAGE_CHANGED';
 }
 

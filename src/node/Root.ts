@@ -389,9 +389,9 @@ class Root extends Container implements FrameCallback {
       if (addDom) {
         this.emit(Event.DID_ADD_DOM, node);
       }
-      // else if (!removeDom && keys.length) {
-      //   this.emit(Event.STYLE_CHANGED, node, keys);
-      // }
+      else if (!removeDom && keys.length) {
+        this.emit(Event.STYLE_CHANGED, node, keys, lv);
+      }
     }
     return lv;
   }

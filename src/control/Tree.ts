@@ -19,6 +19,7 @@ import config from '../util/config';
 import state from './state';
 import { MASK, VISIBILITY } from '../style/define';
 import PositionCommand, { position } from '../history/PositionCommand';
+import { RefreshLevel } from '../refresh/level';
 
 function genNodeTreeStr(node: Node, lv: number) {
   const type = getNodeType(node);
@@ -183,6 +184,10 @@ export default class Tree {
         }
       }
       // 更新父级的shapeGroup图标
+      updateParentShapeGroup(node);
+    }
+
+    const updateParentShapeGroup = (node: Node) => {
       if (node instanceof Polyline || node instanceof ShapeGroup) {
         let p = node.parent;
         while (p) {
@@ -199,10 +204,28 @@ export default class Tree {
           p = p.parent;
         }
       }
-    }
+    };
 
     root.on(Root.DID_ADD_DOM, (node) => {
       addNode(node);
+    });
+
+    root.on(Root.STYLE_CHANGED, (node, keys, lv) => {
+      const uuid = node.uuid;
+      if (node instanceof Polyline && lv & RefreshLevel.REFLOW) {
+        const span = dom.querySelector(`dl[uuid="${uuid}"] .type.geom`) as HTMLElement;
+        span.innerHTML = node.toSvg(12);
+      }
+      updateParentShapeGroup(node);
+    });
+
+    listener.on(Listener.POINT_NODE, (nodes: Polyline[]) => {
+      nodes.forEach(item => {
+        const uuid = item.uuid;
+        const span = dom.querySelector(`dl[uuid="${uuid}"] .type.geom`) as HTMLElement;
+        span.innerHTML = item.toSvg(12);
+        updateParentShapeGroup(item);
+      });
     });
 
     listener.on(Listener.MASK_NODE, (nodes: Node[]) => {
