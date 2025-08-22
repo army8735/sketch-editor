@@ -2319,6 +2319,10 @@ export default class Listener extends Event {
               getPointsAbsByDsp(node, pts);
               node.reflectPoints(pts);
               node.refresh();
+              let parent = node.parent;
+              if (parent instanceof ShapeGroup) {
+                parent.clearPointsUpward(); // ShapeGroup的子节点会递归向上检查
+              }
               geometry.updateVertex(node);
               data.push({
                 prev,
