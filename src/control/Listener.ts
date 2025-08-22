@@ -1390,7 +1390,7 @@ export default class Listener extends Event {
       }
     }
     // 抬起时点在矢量框外部取消矢量编辑，排除frame选框（已在move时设置了keep）
-    else if (this.state === state.EDIT_GEOM) {console.log(1,this.geometry.keep);
+    else if (this.state === state.EDIT_GEOM) {
       if (!this.geometry.keep) {
         this.cancelEditGeom();
       }
