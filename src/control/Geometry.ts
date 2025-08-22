@@ -18,7 +18,6 @@ export default class Geometry {
   listener: Listener;
   panel: HTMLElement;
   keep?: boolean; // 按下整体任意，后续外部冒泡侦听按下识别
-  keepVertPath?: boolean; // 按下顶点或边时特殊标识，后续外部冒泡侦听按下识别
   nodes: Polyline[];
   idxes: number[][]; // 当前激活点索引，多个编辑节点下的多个顶点，一维是node索引
   clonePoints: Point[][]; // 同上，编辑前的point数据
@@ -71,7 +70,6 @@ export default class Geometry {
       startY = e.clientY;
       // 点顶点开始拖拽
       if (tagName === 'DIV' && classList.contains('vt')) {
-        this.keepVertPath = true;
         nodeIdx = +target.parentElement!.getAttribute('idx')!;
         idx = parseInt(target.title);
         const idxes = this.idxes[nodeIdx];
@@ -119,7 +117,6 @@ export default class Geometry {
           const pts = getPolylineCoords(node, +target.getAttribute('idx')!, scale);
           const p = getPointWithDByApprox(pts, x, y);
           if (p && p.d <= 5) {
-            this.keepVertPath = true;
             const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
             const w = div.clientWidth;
             const h = div.clientHeight;
@@ -269,7 +266,6 @@ export default class Geometry {
       }
       // 点控制点开始拖拽，只能单选
       else if (tagName === 'SPAN') {
-        this.keepVertPath = true;
         const div = target.parentNode as HTMLElement;
         nodeIdx = +div.parentElement!.title;
         node = this.nodes[nodeIdx];
@@ -542,9 +538,8 @@ export default class Geometry {
     });
     // 自身点击设置keep，阻止document全局侦听关闭
     this.onClick = (e) => {
-      if (this.keep || this.keepVertPath) {
+      if (this.keep) {
         this.keep = false;
-        this.keepVertPath = false;
         return;
       }
     };
@@ -577,7 +572,6 @@ export default class Geometry {
     this.nodes.splice(0);
     this.idxes.splice(0);
     this.keep = false;
-    this.keepVertPath = false;
   }
 
   update(node: Polyline, init = false) {

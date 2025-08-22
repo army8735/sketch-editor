@@ -523,7 +523,7 @@ export default class Listener extends Event {
       }
       // 矢量编辑状态下按下非顶点为多选框选多个矢量顶点，按下顶点为移动，按下边是选择添加
       if (this.state === state.EDIT_GEOM) {
-        if (!this.geometry.keep || !this.geometry.keepVertPath) {
+        if (!this.geometry.keep) {
           this.isFrame = true;
         }
         return;
@@ -1390,7 +1390,7 @@ export default class Listener extends Event {
       }
     }
     // 抬起时点在矢量框外部取消矢量编辑，排除frame选框（已在move时设置了keep）
-    else if (this.state === state.EDIT_GEOM) {
+    else if (this.state === state.EDIT_GEOM) {console.log(1,this.geometry.keep);
       if (!this.geometry.keep) {
         this.cancelEditGeom();
       }
