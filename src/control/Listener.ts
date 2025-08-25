@@ -510,16 +510,11 @@ export default class Listener extends Event {
     }
     // 点到canvas上，也有可能在canvas外，逻辑一样
     else {
-      // 非按键多选情况下点击框内，视为移动，多选时选框一定是无旋转的
-      if (selected.length > 1 && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey) {
-        const x = e.clientX;
-        const y = e.clientY;
-        const rect = this.select.select.getBoundingClientRect();
-        if (x >= rect.left && y >= rect.top && x <= rect.right && y <= rect.bottom) {
-          this.prepare();
-          this.guides.initMove(this.select.select, selected);
-          return;
-        }
+      // 非按键已选情况下点击框内，视为移动，多选时选框一定是无旋转的，单选可能出现
+      if (selected.length && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey && e.target === this.select.select) {
+        this.prepare();
+        this.guides.initMove(this.select.select, selected);
+        return;
       }
       // 矢量编辑状态下按下非顶点为多选框选多个矢量顶点，按下顶点为移动，按下边是选择添加
       if (this.state === state.EDIT_GEOM) {

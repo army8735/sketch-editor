@@ -891,7 +891,7 @@ export default class Geometry {
 
   destroy() {
     document.removeEventListener('mousemove', this.onMouseMove);
-    document.removeEventListener('mouseup', this.onMouseMove);
+    document.removeEventListener('mouseup', this.onMouseUp);
     document.removeEventListener('click', this.onClick);
   }
 }
