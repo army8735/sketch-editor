@@ -21,9 +21,11 @@ export default class Geometry {
   nodes: Polyline[];
   idxes: number[][]; // 当前激活点索引，多个编辑节点下的多个顶点，一维是node索引
   clonePoints: Point[][]; // 同上，编辑前的point数据
-  onMouseMove: (e: MouseEvent) => void;
   onMouseUp: (e: MouseEvent) => void;
   onClick: (e: MouseEvent) => void;
+  newPoint?: Point;
+  isAddVt: boolean; // 选择最后一个顶点进入添加模式，实时显示虚拟顶点虚拟线，空时新增也以此判断
+  isFrame: boolean;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
     this.root = root;
@@ -32,6 +34,8 @@ export default class Geometry {
     this.nodes = [];
     this.idxes = [];
     this.clonePoints = [];
+    this.isAddVt = false;
+    this.isFrame = false;
 
     const panel = this.panel = document.createElement('div');
     panel.className = 'geometry';
@@ -47,8 +51,10 @@ export default class Geometry {
     let isSelected = false; // 多选点按下时无法判断意图，抬起时才能判断，另外按下未选要特殊标注
     let isShift = false; // 同上，shift以按下时为准，因为按下后可能松开
     let target: HTMLElement;
-    let startX = 0;
+    let startX = 0; // 鼠标点下时绝对坐标
     let startY = 0;
+    let offsetX = 0; // 鼠标点下时相对坐标
+    let offsetY = 0;
     const diff = {
       td: 0,
       fd: 0,
@@ -60,6 +66,7 @@ export default class Geometry {
       }
       let node: Polyline;
       this.keep = true;
+      this.isFrame = false;
       target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
@@ -68,6 +75,8 @@ export default class Geometry {
       isShift = false;
       startX = e.clientX;
       startY = e.clientY;
+      offsetX = e.offsetX;
+      offsetY = e.offsetY;
       // 点顶点开始拖拽
       if (tagName === 'DIV' && classList.contains('vt')) {
         nodeIdx = +target.parentElement!.getAttribute('idx')!;
@@ -289,14 +298,51 @@ export default class Geometry {
         diff.td = Math.sqrt(Math.pow(p.dspX - p.dspTx, 2) + Math.pow(p.dspY - p.dspTy, 2));
         diff.fd = Math.sqrt(Math.pow(p.dspX - p.dspFx, 2) + Math.pow(p.dspY - p.dspFy, 2));
       }
-      // 点panel自己清空顶点，保持编辑态
+      // 新增情况下点其它地方视作开始添加，此时x/y确定，再move则是调整tx/ty
+      else if (this.isAddVt && this.newPoint) {
+        const node = this.nodes[0];
+        idx = node.points.length;
+        node.points.push(this.newPoint);
+        node.refresh();
+        node.checkPointsChange();
+        if (node.parent instanceof ShapeGroup) {
+          node.parent.clearPointsUpward();
+        }
+        this.newPoint = undefined;
+        this.isAddVt = false;
+        this.clearCur();
+        this.update(node, true);
+        // 新添加的顶点触发命令和事件
+        listener.history.addCommand(new PointCommand([node], [{
+          prev: this.clonePoints[0],
+          next: node.points,
+        }]), true);
+        listener.emit(Listener.SELECT_POINT, [node], node.points.slice(-1));
+        this.idxes[0].push(idx);
+        // 视作已经按下了to控制点span
+        const div = panel.querySelector(`.item .vt[title="${idx}"]`) as HTMLElement;
+        div.classList.add('cur');
+        div.nextElementSibling?.classList.add('t');
+        div.previousElementSibling?.classList.add('f');
+        isControlT = true;
+        this.setClonePoints();
+        diff.td = diff.fd = 0;
+      }
+      // 普通情况点其它地方清空顶点，保持编辑态，是否要退出编辑态看点击的是不是panel自身（节点区域之外空白）
       else {
         this.clearCur();
         listener.emit(Listener.SELECT_POINT, [], []);
+        // 非顶点边情况，都开启frame框选，让listener在onDown时识别
+        this.isFrame = true;
+        // 空白的话不再keep，listener外部侦听mouseUp考虑取消，除非是frame（都是外部逻辑判断）
+        if (target === panel) {
+          this.keep = false;
+        }
       }
     });
+
     // 已选节点可能移出panel范围，所以侦听document
-    this.onMouseMove = (e) => {
+    panel.addEventListener('mousemove', (e) => {
       // 当前按下移动的那个point属于的node，用来算diff距离，多个其它node上的point会跟着这个点一起变
       const node = this.nodes[nodeIdx];
       if (!node) {
@@ -321,8 +367,32 @@ export default class Geometry {
           dx = dx2 = 0;
         }
       }
+      // 最后一个顶点模式，移动鼠标要显示即将添加的新点和连线，需要虚拟出一个新的point
+      if (this.isAddVt) {
+        const zoom2 = page.getZoom(true);
+        const vt = dom.querySelector('.vt.new') as HTMLElement;
+        const path = dom.querySelector('svg.new path') as SVGPathElement;
+        const last = this.clonePoints[nodeIdx][idx];
+        const p = this.newPoint = Object.assign({}, last);
+        // 由于点击vt顶点时可能不是在其中心有偏移，因此不能直接用last的坐标算要加上偏移
+        p.dspX = p.dspFx = p.dspTx = last.dspX + dx2 + offsetX * dpi / zoom;
+        p.dspY = p.dspFy = p.dspTy = last.dspY + dy2 + offsetY * dpi / zoom;
+        getPointsAbsByDsp(node, p);
+        node.reflectPoints(p);
+        const x = p.absX * zoom2;
+        const y = p.absY * zoom2;
+        vt.style.transform = `translate(${x}px, ${y}px)`;
+        let d = 'M' + last.absX * zoom2 + ',' + last.absY * zoom2;
+        if (last.hasCurveFrom) {
+          d += 'Q' + last.absFx * zoom2 + ',' + last.absFy * zoom2 + ',' + x + ',' + y;
+        }
+        else {
+          d += 'L' + x + ',' + y;
+        }
+        path.setAttribute('d', d);
+      }
       // 拖动顶点，多个顶点的话其它的也随之变动
-      if (isVt) {
+      else if (isVt) {
         const nodes: Polyline[] = [];
         this.nodes.forEach((item, i) => {
           const pts = this.idxes[i].map(j => {
@@ -348,7 +418,7 @@ export default class Geometry {
             nodes.push(item);
           }
         });
-        listener.emit(Listener.POINT_NODE, nodes);
+        listener.emit(Listener.POINT_NODE, nodes.slice(0));
       }
       // 拖控制点
       else if (isControlF || isControlT) {
@@ -394,15 +464,14 @@ export default class Geometry {
         listener.emit(Listener.POINT_NODE, [node]);
       }
       isMove = true;
-    };
-    document.addEventListener('mousemove', this.onMouseMove);
+    });
 
     this.onMouseUp = (e) => {
       const node = this.nodes[nodeIdx];
       if (!node) {
         return;
       }
-      // 顶点抬起时特殊判断，没有移动过的多选在已选时点击，shift视为取消选择，非是变为单选
+      // 顶点抬起时特殊判断，没有移动过的多选在已选时点击，shift视为取消选择，非shift变为单选
       if (isVt && !isMove && isSelected) {
         if (isShift) {
           panel.querySelector(`div.item[idx="${nodeIdx}"]`)!.querySelector(`div.vt[title="${idx}"]`)?.classList.remove('cur');
@@ -465,11 +534,21 @@ export default class Geometry {
           listener.history.addCommand(new PointCommand(nodes, data), true);
         }
       }
+      // 是否满足单点最后一个控制点显示新增
+      if (isVt && this.nodes.length === 1 && this.idxes[nodeIdx].length === 1 && idx === node.points.length - 1 && !node.isClosed) {
+        this.isAddVt = true;
+        listener.dom.classList.add('add-pen');
+      }
+      else {
+        this.isAddVt = false;
+        listener.dom.classList.remove('add-pen');
+      }
       isVt = isControlF = isControlT = isMove = false;
     };
     document.addEventListener('mouseup', this.onMouseUp);
 
     // 侦听在path上的移动，高亮当前path以及投影点，范围一定在panel内
+    // 另外在虚拟添加的情况下，鼠标hover在顶点、控制点、path时要隐藏虚拟点和虚拟线
     let pathIdx = -1;
     let pj: HTMLElement;
     panel.addEventListener('mouseover', (e) => {
@@ -479,6 +558,7 @@ export default class Geometry {
       }
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
+      const classList = target.classList;
       if (tagName === 'PATH') {
         nodeIdx = +target.parentElement!.parentElement!.getAttribute('idx')!;
         pathIdx = +target.getAttribute('title')!;
@@ -488,9 +568,16 @@ export default class Geometry {
         else {
           pathIdx = +target.getAttribute('idx')!;
         }
+        listener.dom.classList.remove('add-pen');
       }
       else {
         pathIdx = -1;
+        if (classList.contains('vt') || classList.contains('f') || classList.contains('t')) {
+          listener.dom.classList.remove('add-pen');
+        }
+        else if (this.isAddVt) {
+          listener.dom.classList.add('add-pen');
+        }
       }
       pj = panel.querySelector(`.item[idx="${nodeIdx}"] .pj`) as HTMLElement;
     });
@@ -512,9 +599,13 @@ export default class Geometry {
           pj!.style.left = p.x + 'px';
           pj!.style.top = p.y + 'px';
           pj!.classList.add('cur');
+          listener.dom.classList.remove('add-pen');
         }
         else {
           pj?.classList.remove('cur');
+          if (this.isAddVt) {
+            listener.dom.classList.add('add-pen');
+          }
         }
       }
     });
@@ -528,6 +619,9 @@ export default class Geometry {
       }
       pathIdx = -1;
       pj?.classList.remove('cur');
+      if (this.isAddVt) {
+        listener.dom.classList.add('add-pen');
+      }
     });
 
     // 操作过程阻止滚轮拖动
@@ -536,6 +630,8 @@ export default class Geometry {
         e.stopPropagation();
       }
     });
+
+    panel.addEventListener('click', (e) => {});
     // 自身点击设置keep，阻止document全局侦听关闭
     this.onClick = (e) => {
       if (this.keep) {
@@ -649,7 +745,7 @@ export default class Geometry {
     const panel = this.panel;
     const points = node.points;
     const div = panel.querySelector(`div.item[idx="${nodeIdx}"]`) as HTMLElement;
-    div.innerHTML = `<svg class="stroke"></svg><svg class="interactive"></svg>`;
+    div.innerHTML = `<svg class="stroke"></svg><svg class="new"><path d=""></path></svg><div class="vt new"></div><svg class="interactive"></svg>`;
     const svg1 = div.querySelector('svg.stroke') as SVGElement;
     const svg2 = div.querySelector('svg.interactive') as SVGElement;
     let s = '';
@@ -697,7 +793,7 @@ export default class Geometry {
     const zoom = node.root!.getCurPageZoom(true);
     const points = node.points;
     const coords = node.coords!;
-    const vts = div.querySelectorAll('.vt');
+    const vts = div.querySelectorAll('.vt[title]');
     const paths1 = div.querySelectorAll('svg.stroke path');
     const paths2 = div.querySelectorAll('svg.interactive path');
     points.forEach((item, i) => {
@@ -799,6 +895,9 @@ export default class Geometry {
         item.splice(0);
       }
     });
+    this.isAddVt = false;
+    this.listener.dom.classList.remove('add-pen');
+    this.dom.querySelector('svg.new path')?.setAttribute('d', '');
   }
 
   hasEditPoint() {
@@ -890,7 +989,6 @@ export default class Geometry {
   }
 
   destroy() {
-    document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.onMouseUp);
     document.removeEventListener('click', this.onClick);
   }

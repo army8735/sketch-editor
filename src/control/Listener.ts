@@ -522,10 +522,11 @@ export default class Listener extends Event {
           return;
         }
       }
-      // 矢量编辑状态下按下非顶点为多选框选多个矢量顶点，按下顶点为移动，按下边是选择添加
+      // 矢量编辑状态下按下非顶点边为多选框选多个矢量顶点，按下顶点为移动，按下边是选择添加
       if (this.state === state.EDIT_GEOM) {
-        if (!this.geometry.keep) {
+        if (this.geometry.isFrame) {
           this.isFrame = true;
+          this.geometry.isFrame = false;
         }
         return;
       }

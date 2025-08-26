@@ -527,7 +527,7 @@ class PointPanel extends Panel {
     nodes.forEach((node, i) => {
       const is = idxes[i];
       if (is.length) {
-        const points = is.map(i => node.points[i]);
+        const points = is.map(i => node.points[i]).filter(item => item);
         getPointsDspByAbs(node, points);
         points.forEach(item => {
           if (!xs.includes(item.dspX!)) {
@@ -569,7 +569,7 @@ class PointPanel extends Panel {
     nodes.forEach((node, i) => {
       const is = idxes[i];
       if (is.length) {
-        const points = is.map(i => node.points[i]);
+        const points = is.map(i => node.points[i]).filter(item => item);
         points.forEach(item => {
           let { curveMode } = item;
           if (curveMode === CURVE_MODE.NONE) {
@@ -611,7 +611,7 @@ class PointPanel extends Panel {
     nodes.forEach((node, i) => {
       const is = idxes[i];
       if (is.length) {
-        const points = is.map(i => node.points[i]);
+        const points = is.map(i => node.points[i]).filter(item => item);
         points.forEach(item => {
           if (item.curveMode === CURVE_MODE.NONE || item.curveMode === CURVE_MODE.STRAIGHT) {
             const r = item.cornerRadius;
