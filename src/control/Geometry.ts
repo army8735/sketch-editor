@@ -377,6 +377,9 @@ export default class Geometry {
         // 由于点击vt顶点时可能不是在其中心有偏移，因此不能直接用last的坐标算要加上偏移
         p.dspX = p.dspFx = p.dspTx = last.dspX + dx2 + offsetX * dpi / zoom;
         p.dspY = p.dspFy = p.dspTy = last.dspY + dy2 + offsetY * dpi / zoom;
+        // 强制新点有控制点
+        p.curveMode = CURVE_MODE.MIRRORED;
+        p.hasCurveFrom = p.hasCurveTo = true;
         getPointsAbsByDsp(node, p);
         node.reflectPoints(p);
         const x = p.absX * zoom2;
