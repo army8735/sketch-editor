@@ -362,7 +362,7 @@ export function getNodeByPoint(root: Root, x: number, y: number, metaKey = false
           return;
         }
         // 顶层非空frame不能选
-        if ((n instanceof Frame || n instanceof Graphic) && n.children.length && n.struct.lv <= 3) {
+        if ((n instanceof Frame || n instanceof Graphic) && n.children.length && n.struct.lv <= 3 && !selected.includes(n)) {
           return;
         }
         return n;
@@ -741,6 +741,18 @@ export function addNode(node: Node, root: Root, x: number, y: number, w = 0, h =
   }
 }
 
+export function isTopArtBoardOrFrame(node: Node, withChild = false) {
+  if (node instanceof ArtBoard || node instanceof AbstractFrame) {
+    if (node.struct.lv <= 3) {
+      if (withChild) {
+        return node.children.length > 0;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 export default {
   getNodeByPoint,
   getArtBoardByPoint,
@@ -754,4 +766,5 @@ export default {
   isAllInFrame,
   isContainFrame,
   isCrossFrame,
+  isTopArtBoardOrFrame,
 };

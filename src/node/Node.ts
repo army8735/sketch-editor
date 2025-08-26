@@ -57,6 +57,8 @@ import { calMatrixByOrigin, calRotateZ, calTransformByMatrixAndOrigin } from '..
 import Event from '../util/Event';
 import { clone, equal } from '../util/type';
 import ArtBoard from './ArtBoard';
+import Frame from './Frame';
+import Graphic from './Graphic';
 import { LayoutData } from './layout';
 import Page from './Page';
 import SymbolInstance from './SymbolInstance';
@@ -86,6 +88,8 @@ class Node extends Event {
   root?: Root;
   page?: Page;
   artBoard?: ArtBoard;
+  frame?: Frame;
+  graphic?: Graphic;
   symbolInstance?: SymbolInstance;
   prev?: Node;
   next?: Node;
@@ -228,6 +232,18 @@ class Node extends Event {
     }
     else {
       this.artBoard = parent.artBoard;
+    }
+    if (parent.isFrame) {
+      this.frame = parent as Frame;
+    }
+    else {
+      this.frame = parent.frame;
+    }
+    if (parent.isGraphic) {
+      this.graphic = parent as Graphic;
+    }
+    else {
+      this.graphic = parent.graphic;
     }
     if (parent.isSymbolInstance) {
       this.symbolInstance = parent as SymbolInstance;

@@ -5,6 +5,7 @@ import Root from '../node/Root';
 import Page from '../node/Page';
 import Text from '../node/Text';
 import ArtBoard from '../node/ArtBoard';
+import AbstractFrame from '../node/AbstractFrame';
 import Group from '../node/Group';
 import Slice from '../node/Slice';
 import Polyline from '../node/geom/Polyline';
@@ -25,12 +26,13 @@ import ContextMenu from './ContextMenu';
 import CustomGeom from './CustomGeom';
 import { clone } from '../util/type';
 import inject from '../util/inject';
-import { ArtBoardProps, BreakMaskStyle, Point, JStyle, MaskModeStyle } from '../format';
+import { ArtBoardProps, BreakMaskStyle, JStyle, MaskModeStyle } from '../format';
 import {
   addNode,
   getFrameNodes,
   getNodeByPoint,
   getOverlayArtBoardByPoint,
+  isTopArtBoardOrFrame,
 } from '../tool/root';
 import { appendWithIndex } from '../tool/container';
 import {
@@ -152,7 +154,7 @@ export default class Listener extends Event {
   gradient: Gradient; // 渐变编辑控制
   geometry: Geometry; // 矢量编辑
   addGeom: AddGeom; // 矢量添加
-  mouseDownArtBoard?: ArtBoard;
+  mouseDownArtBoard?: ArtBoard | AbstractFrame;
   mouseDown2ArtBoard?: Node;
   isWin = isWin;
   guides: Guides;
@@ -511,10 +513,14 @@ export default class Listener extends Event {
     // 点到canvas上，也有可能在canvas外，逻辑一样
     else {
       // 非按键已选情况下点击框内，视为移动，多选时选框一定是无旋转的，单选可能出现
-      if (selected.length && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey && e.target === this.select.select) {
-        this.prepare();
-        this.guides.initMove(this.select.select, selected);
-        return;
+      if (this.state === state.NORMAL && selected.length && !(this.metaKey || isWin && this.ctrlKey) && !this.shiftKey && e.target === this.select.select) {
+        // 多选无歧义，但单选画板或根Frame不一定是移动，需后续操作（移动或抬起）判断
+        if (selected.length > 1 || !isTopArtBoardOrFrame(selected[0], true)) {
+          this.select.hideHover();
+          this.prepare();
+          this.guides.initMove(this.select.select, selected);
+          return;
+        }
       }
       // 矢量编辑状态下按下非顶点为多选框选多个矢量顶点，按下顶点为移动，按下边是选择添加
       if (this.state === state.EDIT_GEOM) {
@@ -531,20 +537,20 @@ export default class Listener extends Event {
         meta = !meta;
       }
       let node = this.getNode(x, y);
-      // 特殊的选择非空画板逻辑，mouseDown时不选择防止影响框选，mouseUp时才选择
-      if (node instanceof ArtBoard && node.children.length && !selected.includes(node)) {
+      // 特殊的选择非空画板逻辑，mouseDown时不选择防止影响框选和移动，mouseUp时才选择
+      if (node && isTopArtBoardOrFrame(node, true) && !selected.includes(node)) {
         if (meta) {
           // 如果已选的里面有此画板或者属于此画板，要忽略
           let ignore = false;
           for (let i = 0, len = selected.length; i < len; i++) {
             const item = selected[i];
-            if (item === node || item.artBoard === node) {
+            if (item === node || item.artBoard === node || item.frame === node || item.graphic === node) {
               ignore = true;
               break;
             }
           }
           if (!ignore) {
-            this.mouseDownArtBoard = node;
+            this.mouseDownArtBoard = node as ArtBoard | AbstractFrame;
             node = undefined;
           }
         }
@@ -557,9 +563,11 @@ export default class Listener extends Event {
         node = getOverlayArtBoardByPoint(root, x, y);
       }
       // 已选画板的情况，如果点下其内元素，暂时视为选择画板看后续移动，如果不移动，则onUp时选择此节点
-      else if (node.artBoard && selected.includes(node.artBoard)) {
+      else if (node.artBoard && selected.includes(node.artBoard)
+        || node.frame && node.frame.struct.lv <= 3 && selected.includes(node.frame)
+        || node.graphic && node.graphic.struct.lv <= 3 && selected.includes(node.graphic)) {
         this.mouseDown2ArtBoard = node;
-        node = node.artBoard;
+        node = node.artBoard || node.frame || node.graphic;
       }
       // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;

@@ -61,7 +61,7 @@ class MoveCommand extends AbstractCommand {
       const children = page.children;
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i];
-        if (child !== oldAb && child instanceof ArtBoard) {
+        if (child !== oldAb && child instanceof ArtBoard && node !== child) {
           const r = child.getBoundingClientRect();
           if (isConvexPolygonOverlapRect(r.left, r.top, r.right, r.bottom, rect.points)) {
             moveAppend([node], child);
