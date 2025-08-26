@@ -219,7 +219,7 @@ export default class Tree {
       updateParentShapeGroup(node);
     });
 
-    listener.on(Listener.POINT_NODE, (nodes: Polyline[]) => {
+    listener.on([Listener.POINT_NODE, Listener.CLOSED_NODE], (nodes: Polyline[]) => {
       nodes.forEach(item => {
         const uuid = item.uuid;
         const span = dom.querySelector(`dl[uuid="${uuid}"] .type.geom`) as HTMLElement;
