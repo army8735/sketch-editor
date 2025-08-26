@@ -562,12 +562,14 @@ export default class Listener extends Event {
       else if (!node) {
         node = getOverlayArtBoardByPoint(root, x, y);
       }
-      // 已选画板的情况，如果点下其内元素，暂时视为选择画板看后续移动，如果不移动，则onUp时选择此节点
+      // 已选画板且非shift多选的情况，如果点下其内元素，暂时视为选择画板看后续移动，如果不移动，则onUp时选择此节点
       else if (node.artBoard && selected.includes(node.artBoard)
         || node.frame && node.frame.struct.lv <= 3 && selected.includes(node.frame)
         || node.graphic && node.graphic.struct.lv <= 3 && selected.includes(node.graphic)) {
-        this.mouseDown2ArtBoard = node;
-        node = node.artBoard || node.frame || node.graphic;
+        if (!this.shiftKey) {
+          this.mouseDown2ArtBoard = node;
+          node = node.artBoard || node.frame || node.graphic;
+        }
       }
       // 空选再拖拽则是框选行为，画一个长方形多选范围内的节点
       this.isFrame = !node;

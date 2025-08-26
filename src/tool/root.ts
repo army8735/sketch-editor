@@ -742,7 +742,7 @@ export function addNode(node: Node, root: Root, x: number, y: number, w = 0, h =
 }
 
 export function isTopArtBoardOrFrame(node: Node, withChild = false) {
-  if (node instanceof ArtBoard || node instanceof AbstractFrame) {
+  if (node instanceof ArtBoard || node instanceof Frame || node instanceof Graphic) {
     if (node.struct.lv <= 3) {
       if (withChild) {
         return node.children.length > 0;
