@@ -315,7 +315,7 @@ export default class Geometry {
         // 新添加的顶点触发命令和事件
         listener.history.addCommand(new PointCommand([node], [{
           prev: this.clonePoints[0],
-          next: node.points,
+          next: clone(node.points),
         }]), true);
         listener.emit(Listener.SELECT_POINT, [node], node.points.slice(-1));
         this.idxes[0].push(idx);
