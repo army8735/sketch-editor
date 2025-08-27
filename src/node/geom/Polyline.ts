@@ -268,6 +268,9 @@ class Polyline extends Geom {
   }
 
   static buildPoints(points: Point[], isClosed: boolean, width = 1, height = 1) {
+    if (!points.length) {
+      return [];
+    }
     const coords = [];
     let hasCorner = false;
     // 先算出真实尺寸，按w/h把[0,1]坐标转换
