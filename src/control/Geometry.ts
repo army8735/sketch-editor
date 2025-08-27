@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import Polyline from '../node/geom/Polyline';
 import Root from '../node/Root';
 import ShapeGroup from '../node/geom/ShapeGroup';
@@ -11,6 +12,8 @@ import PointCommand, { PointData } from '../history/PointCommand';
 import { getPointsAbsByDsp, getPointsDspByAbs } from '../tool/polyline';
 import { getFlipOnPage, getMatrixOnPage, getRotateOnPageByMF } from '../tool/node';
 import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix';
+import { addNode } from '../tool/root';
+import state from './state';
 
 export default class Geometry {
   root: Root;
@@ -24,7 +27,9 @@ export default class Geometry {
   onMouseUp: (e: MouseEvent) => void;
   onClick: (e: MouseEvent) => void;
   newPoint?: Point;
-  isAddVt: boolean; // 选择最后一个顶点进入添加模式，实时显示虚拟顶点虚拟线，空时新增也以此判断
+  isAddVt: boolean; // 选择最后一个顶点进入添加模式，实时显示虚拟顶点虚拟线
+  isAdding: boolean; // 最后一个顶点按下后标识，如果鼠标移动，将其从直线点改为镜像曲线点
+  isNewVt: boolean; // pen模式从0开始新增点，第一个点特殊要新增polyline
   isFrame: boolean;
 
   constructor(root: Root, dom: HTMLElement, listener: Listener) {
@@ -35,6 +40,8 @@ export default class Geometry {
     this.idxes = [];
     this.clonePoints = [];
     this.isAddVt = false;
+    this.isAdding = false;
+    this.isNewVt = false;
     this.isFrame = false;
 
     const panel = this.panel = document.createElement('div');
@@ -294,6 +301,39 @@ export default class Geometry {
         diff.td = Math.sqrt(Math.pow(p.dspX - p.dspTx, 2) + Math.pow(p.dspY - p.dspTy, 2));
         diff.fd = Math.sqrt(Math.pow(p.dspX - p.dspFx, 2) + Math.pow(p.dspY - p.dspFy, 2));
       }
+      // pen模式第一个新增点特殊逻辑，先把新node满屏尺寸添加到dom上，再把此点添加上
+      else if (this.isNewVt && this.newPoint) {
+        const node = this.nodes[0];
+        node.fixedPosAndSize = true;
+        addNode(node, root, 0, 0, root.width * root.dpi, root.height * root.dpi, listener.selected[0]);
+        node.fixedPosAndSize = false;
+        node.reflectPoints(this.newPoint);
+        node.points.push(this.newPoint);
+        getPointsDspByAbs(node, this.newPoint);
+        this.newPoint = undefined;
+        this.isNewVt = false;
+        this.isAdding = true;
+        this.genVertex(node);
+        this.updateVertex(node);
+        nodeIdx = 0;
+        idx = 0;
+        this.idxes[0].push(idx);
+        // 视作已经按下了to控制点span
+        const div = panel.querySelector(`.item .vt[title="${idx}"]`) as HTMLElement;
+        div.classList.add('cur');
+        isControlT = true;
+        this.setClonePoints();
+        diff.td = diff.fd = 0;
+        // 新node变成已选点，通知其它panel展示
+        listener.selected.splice(0);
+        listener.selected.push(node);
+        listener.emit(Listener.SELECT_NODE, [node]);
+        const prev = listener.state;
+        listener.state = state.EDIT_GEOM;
+        listener.emit(Listener.STATE_CHANGE, prev, listener.state);
+        listener.emit(Listener.SELECT_POINT, [node], node.points.slice(-1));
+        this.setClonePoints();
+      }
       // 新增情况下点其它地方视作开始添加，此时x/y确定，再move则是调整tx/ty
       else if (this.isAddVt && this.newPoint) {
         const node = this.nodes[0];
@@ -306,23 +346,23 @@ export default class Geometry {
         }
         this.newPoint = undefined;
         this.isAddVt = false;
+        this.isAdding = true;
         this.clearCur();
         this.update(node, true);
+        this.idxes[0].push(idx);
+        // 视作已经按下了to控制点span
+        const div = panel.querySelector(`.item .vt[title="${idx}"]`) as HTMLElement;
+        div.classList.add('cur');
+        div.previousElementSibling?.classList.add('f');
+        isControlT = true;
+        diff.td = diff.fd = 0;
         // 新添加的顶点触发命令和事件
         listener.history.addCommand(new PointCommand([node], [{
           prev: this.clonePoints[0],
           next: clone(node.points),
         }]), true);
         listener.emit(Listener.SELECT_POINT, [node], node.points.slice(-1));
-        this.idxes[0].push(idx);
-        // 视作已经按下了to控制点span
-        const div = panel.querySelector(`.item .vt[title="${idx}"]`) as HTMLElement;
-        div.classList.add('cur');
-        div.nextElementSibling?.classList.add('t');
-        div.previousElementSibling?.classList.add('f');
-        isControlT = true;
         this.setClonePoints();
-        diff.td = diff.fd = 0;
       }
       // 普通情况点其它地方清空顶点，保持编辑态，是否要退出编辑态看点击的是不是panel自身（节点区域之外空白）
       else {
@@ -341,7 +381,7 @@ export default class Geometry {
     panel.addEventListener('mousemove', (e) => {
       // 当前按下移动的那个point属于的node，用来算diff距离，多个其它node上的point会跟着这个点一起变
       const node = this.nodes[nodeIdx];
-      if (!node) {
+      if (!node && !this.isNewVt) {
         return;
       }
       const page = root.getCurPage();
@@ -350,6 +390,7 @@ export default class Geometry {
       }
       const dpi = root.dpi;
       const zoom = page.getZoom();
+      const zoom2 = page.getZoom(true);
       let dx = Math.round(e.clientX - startX);
       let dy = Math.round(e.clientY - startY);
       let dx2 = Math.round(dx * dpi / zoom);
@@ -363,18 +404,30 @@ export default class Geometry {
           dx = dx2 = 0;
         }
       }
+      // pen模式准备添加第一个顶点时，没有node没有points，用鼠标位置显示辅助点
+      if (this.isNewVt) {
+        const vt = dom.querySelector('.vt.new') as HTMLElement;
+        const x = e.offsetX;
+        const y = e.offsetY;
+        this.newPoint = {
+          x: 0, y: 0, cornerRadius: 0, curveMode: CURVE_MODE.STRAIGHT,
+          fx: 0, fy: 0, tx: 0, ty: 0, hasCurveFrom: false, hasCurveTo: false,
+          absX: x, absY: y, absFx: x, absFy: y, absTx: x, absTy: y,
+          dspX: 0, dspY: 0, dspFx: 0, dspFy: 0, dspTx: 0, dspTy: 0,
+        };
+        vt.style.transform = `translate(${x}px, ${y}px)`;
+      }
       // 最后一个顶点模式，移动鼠标要显示即将添加的新点和连线，需要虚拟出一个新的point
-      if (this.isAddVt) {
-        const zoom2 = page.getZoom(true);
+      else if (this.isAddVt) {
         const vt = dom.querySelector('.vt.new') as HTMLElement;
         const path = dom.querySelector('svg.new path') as SVGPathElement;
         const last = this.clonePoints[nodeIdx][idx];
         const p = this.newPoint = Object.assign({}, last);
         p.dspX = p.dspFx = p.dspTx = last.dspX + dx2;
         p.dspY = p.dspFy = p.dspTy = last.dspY + dy2;
-        // 强制新点有控制点
-        p.curveMode = CURVE_MODE.MIRRORED;
-        p.hasCurveFrom = p.hasCurveTo = true;
+        // 强制新点是直线点，有mousemove时变更为镜像
+        p.curveMode = CURVE_MODE.STRAIGHT;
+        p.hasCurveFrom = p.hasCurveTo = false;
         getPointsAbsByDsp(node, p);
         node.reflectPoints(p);
         const x = p.absX * zoom2;
@@ -428,6 +481,12 @@ export default class Geometry {
         else {
           p.dspTx = this.clonePoints[nodeIdx][idx].dspTx + dx2;
           p.dspTy = this.clonePoints[nodeIdx][idx].dspTy + dy2;
+        }
+        // 新增的最后一个点按下拖动时由直线点变为镜像曲线点
+        if (this.isAdding) {
+          this.isAdding = false;
+          p.curveMode = CURVE_MODE.MIRRORED;
+          p.hasCurveTo = p.hasCurveFrom = true;
         }
         // 镜像和非对称需更改对称点，MIRRORED距离角度对称相等，ASYMMETRIC距离不对称角度对称
         if (p.curveMode === CURVE_MODE.MIRRORED || p.curveMode === CURVE_MODE.ASYMMETRIC) {
@@ -540,7 +599,8 @@ export default class Geometry {
         const r = div.getBoundingClientRect();
         startX = r.left;
         startY = r.top;
-        listener.dom.classList.add('add-pen');
+        // 这里还在顶点上就不显示虚拟点了，move会触发over事件显示
+        listener.dom.classList.remove('add-pen');
       }
       else {
         this.isAddVt = false;
@@ -562,7 +622,14 @@ export default class Geometry {
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toUpperCase();
       const classList = target.classList;
-      if (tagName === 'PATH') {
+      // 特殊情况，进入pen模式时尚未mousemove，恰好鼠标在区域内，需要更新辅助点
+      if (this.isNewVt) {
+        const vt = dom.querySelector('.vt.new') as HTMLElement;
+        const x = e.offsetX;
+        const y = e.offsetY;
+        vt.style.transform = `translate(${x}px, ${y}px)`;
+      }
+      else if (tagName === 'PATH') {
         nodeIdx = +target.parentElement!.parentElement!.getAttribute('idx')!;
         pathIdx = +target.getAttribute('title')!;
         if (isNaN(pathIdx)) {
@@ -682,6 +749,34 @@ export default class Geometry {
     this.listener.dom.classList.remove('add-pen');
   }
 
+  // pen模式特殊新增，一开始没有polyline和point，第一个点下后才append新polyline
+  showNew() {
+    const root = this.root;
+    const page = root.getCurPage();
+    if (!page) {
+      return;
+    }
+    this.isNewVt = true;
+    const node = new Polyline({
+      uuid: uuid.v4(),
+      name: '路径',
+      points: [],
+      style: {
+        fill: ['#D8D8D8'],
+        fillEnable: [true],
+        fillOpacity: [1],
+        fillMode: ['normal'],
+        stroke: ['#979797'],
+        strokeEnable: [true],
+        strokeWidth: [1],
+        strokePosition: ['center'],
+      },
+      isClosed: false,
+    });
+    this.show([node]);
+    this.listener.dom.classList.add('add-pen');
+  }
+
   hide() {
     this.panel.style.display = 'none';
     this.panel.innerHTML = '';
@@ -723,12 +818,21 @@ export default class Geometry {
       div.setAttribute('idx', nodeIdx.toString());
       panel.appendChild(div);
     }
-    const res = this.calRect(node);
-    div.style.left = res.left + 'px';
-    div.style.top = res.top + 'px';
-    div.style.width = res.width + 'px';
-    div.style.height = res.height + 'px';
-    div.style.transform = res.transform;
+    // pen模式第一个新点时node尚未添加mount也无points，无尺寸，用满屏替代
+    if (this.isNewVt) {
+      div.style.left = '0px';
+      div.style.top = '0px';
+      div.style.width = '100%';
+      div.style.height = '100%';
+    }
+    else {
+      const res = this.calRect(node);
+      div.style.left = res.left + 'px';
+      div.style.top = res.top + 'px';
+      div.style.width = res.width + 'px';
+      div.style.height = res.height + 'px';
+      div.style.transform = res.transform;
+    }
   }
 
   calRect(node: Polyline) {
@@ -801,6 +905,10 @@ export default class Geometry {
   }
 
   updateVertex(node: Polyline) {
+    // 此时都是空
+    if (this.isNewVt) {
+      return;
+    }
     const nodeIdx = this.nodes.indexOf(node);
     // 一般不可能，防范一下
     if (nodeIdx === -1) {

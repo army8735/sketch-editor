@@ -28,8 +28,8 @@ const geomHtml = `
 <!--  <li title="arrow"><b class="arrow"></b><span class="name">箭头</span></li>-->
   <li title="triangle"><b class="triangle"></b><span class="name">三角形</span></li>
 <!--  <li title="star"><b class="star"></b><span class="name">星形</span></li>-->
-<!--  <li class="split"></li>-->
-<!--  <li title="pen"><b class="pen"></b><span class="name">矢量</span><span class="key">P</span></li>-->
+  <li class="split"></li>
+  <li title="pen"><b class="pen"></b><span class="name">矢量</span><span class="key">P</span></li>
 </ul>
 `;
 
@@ -242,9 +242,9 @@ class Toolbar {
       }
       else if (title === 'arrow') {}
       else if (title === 'pen') {
-        listener.state = state.ADD_PEN;
-        listener.dom.classList.add('add-pen');
+        // listener.state = state.EDIT_GEOM;
         listener.select.hideSelect();
+        listener.geometry.showNew();
       }
 
       if (prev !== listener.state) {

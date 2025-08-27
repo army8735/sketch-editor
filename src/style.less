@@ -345,14 +345,6 @@
       overflow: hidden;
       cursor: -webkit-image-set(url(@select) 2x, url(@select) 1x) 2 2, auto;
 
-      &.hand {
-        cursor: grab;
-      }
-
-      &.handing {
-        cursor: grabbing;
-      }
-
       &.add-rect {
         cursor: -webkit-image-set(url(@addRect) 2x, url(@addRect) 1x) 4 11, auto;
       }
@@ -387,6 +379,14 @@
         .geometry .vt.new, .geometry svg.new {
           display: block;
         }
+      }
+
+      &.hand {
+        cursor: grab;
+      }
+
+      &.handing {
+        cursor: grabbing;
       }
     }
 

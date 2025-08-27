@@ -12,12 +12,14 @@ class Geom extends Node {
   coords?: number[][];
   points: Point[];
   isClosed: boolean;
+  fixedPosAndSize: boolean;
 
   constructor(props: GeomProps) {
     super(props);
     this.isGeom = true;
     this.points = [];
     this.isClosed = props.isClosed || false;
+    this.fixedPosAndSize = false;
   }
 
   override lay(data: LayoutData) {
