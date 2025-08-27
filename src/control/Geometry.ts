@@ -645,20 +645,39 @@ export default class Geometry {
     document.addEventListener('click', this.onClick);
   }
 
-  show(nodes: Polyline[]) {
+  show(nodes: Polyline[], idx?: number[][]) {
     this.nodes.splice(0);
     this.nodes.push(...nodes);
     this.idxes.splice(0);
-    nodes.forEach(() => {
-      this.idxes.push([]);
-    });
+    // 编辑中undo/redo，要保证之前已选的索引，但可能是添加删除导致索引对不上，此时清空
+    if (idx) {
+      outer:
+      for (let i = 0, len = idx.length; i < len; i++) {
+        const item = idx[i];
+        const node = nodes[i];
+        for (let j = 0, len2 = item.length; j < len2; j++) {
+          if (item[j] >= node.points.length) {
+            idx = undefined;
+            break outer;
+          }
+        }
+      }
+    }
+    if (idx) {
+      this.idxes.push(...idx);
+    }
+    else {
+      nodes.forEach(() => {
+        this.idxes.push([]);
+      });
+    }
     this.panel.innerHTML = '';
     this.nodes.forEach((node) => {
       getPointsDspByAbs(node);
       this.update(node, true);
     });
     this.panel.style.display = 'block';
-    // undo/redo时可能在最后一个顶点，要重置取消
+    // undo/redo时可能在最后一个顶点，要重置取消，索引一定会对不上
     this.isAddVt = false;
     this.listener.dom.classList.remove('add-pen');
   }

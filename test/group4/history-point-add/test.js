@@ -28,9 +28,9 @@ module.exports = {
       .mouseButtonDown(0)
       .moveToElement('#main .geometry .vt[title="3"]', 100, 100)
       .mouseButtonUp(0)
-      .assert.cssProperty('#main .geometry svg.new', 'display', 'none')
-      .assert.cssProperty('#main .geometry .vt.new', 'display', 'none')
-      .assert.not.cssClassPresent('#main .canvas-c', 'add-pen')
+      .assert.cssProperty('#main .geometry svg.new', 'display', 'block')
+      .assert.cssProperty('#main .geometry .vt.new', 'display', 'block')
+      .assert.cssClassPresent('#main .canvas-c', 'add-pen')
       .click('#button6')
       .assert.value('#base64', '[1,[{"x":0,"y":0,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0,"tx":0,"ty":0,"absX":0,"absY":0,"absTx":0,"absTy":0,"absFx":0,"absFy":0},{"x":1,"y":0,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":1,"fy":0,"tx":1,"ty":0,"absX":150,"absY":0,"absTx":150,"absTy":0,"absFx":150,"absFy":0},{"x":1,"y":0.5,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":1,"fy":0.5,"tx":1,"ty":0.5,"absX":150,"absY":100,"absTx":150,"absTy":100,"absFx":150,"absFy":100},{"x":0,"y":0.5,"cornerRadius":0,"curveMode":1,"hasCurveFrom":false,"hasCurveTo":false,"fx":0,"fy":0.5,"tx":0,"ty":0.5,"absX":0,"absY":100,"absTx":0,"absTy":100,"absFx":0,"absFy":100},{"x":0,"y":1,"cornerRadius":0,"curveMode":2,"hasCurveFrom":true,"hasCurveTo":true,"fx":-0.6666666666666666,"fy":1,"tx":0.6666666666666666,"ty":1,"absX":0,"absY":200,"absTx":100,"absTy":200,"absFx":-100,"absFy":200}]]')
 
