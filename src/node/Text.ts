@@ -504,7 +504,7 @@ class Text extends Node {
       const min = ctx.measureText(content.charAt(i)).width;
       if (min > W - x + 1e-10 && x) {
         x = 0;
-        y += lineBox.height + paragraphSpacing;
+        y += lineBox.height;
         if (i < length) {
           lineBox.verticalAlign();
           lineBox = new LineBox(y, lineHeight, i, false);
@@ -518,21 +518,6 @@ class Text extends Node {
         rw,
         newLine,
       } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
-      // if (content === '意外保障金') {
-      //   if (W - x === 139) {
-      //     if (i) {
-      //       rw = 30;
-      //     }
-      //     else {
-      //       num = 4;
-      //       rw = 120;
-      //       newLine = true;
-      //     }
-      //   }
-      //   else {
-      //     rw = 150;
-      //   }
-      // }
       // console.log(i, len, content, W - x, perW, letterSpacing, ';', num, rw, newLine);
       const textBox = new TextBox(
         x,
@@ -557,7 +542,7 @@ class Text extends Node {
       // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
       if (newLine) {
         x = 0;
-        y += lineBox.height + paragraphSpacing;
+        y += lineBox.height;
         // 最后一行对齐外面做
         if (i < length) {
           lineBox.verticalAlign();
