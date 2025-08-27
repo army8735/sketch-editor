@@ -83,17 +83,15 @@ class Polyline extends Geom {
     // 特殊情况如3个点形成的近似水平线或垂线，rect水平/垂直方向特别小，修正不要变为0，宽高为0会导致point数据NaN
     const w = rect[2] - rect[0];
     if (w < 0.5) {
-      const mid = rect[0] + w * 0.5;
-      const r0 = rect[0] = mid - 0.25;
-      const r1 = rect[2] = mid + 0.25;
+      const r0 = rect[0];
+      const r1 = rect[2] = rect[0] + 0.5;
       dx1 = r0;
       dx2 = r1 - this.width;
     }
     const h = rect[3] - rect[1];
     if (h < 0.5) {
-      const mid = rect[1] + h * 0.5;
-      const r0 = rect[1] = mid - 0.25;
-      const r1 = rect[3] = mid + 0.25;
+      const r0 = rect[1];
+      const r1 = rect[3] = rect[1] + 0.5;
       dy1 = r0;
       dy2 = r1 - this.height;
     }

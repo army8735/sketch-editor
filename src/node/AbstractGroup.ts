@@ -44,17 +44,15 @@ abstract class AbstractGroup extends Container {
       dy2 = rectC.maxY - height;
     const w = rectC.maxX - rectC.minX;
     if (w < 0.5) {
-      const mid = rectC.minX + w * 0.5;
-      const r0 = rectC.minX = mid - 0.25;
-      const r1 = rectC.maxX = mid + 0.25;
+      const r0 = rectC.minX;
+      const r1 = rectC.maxX = rectC.minX + 0.5;
       dx1 = r0;
       dx2 = r1 - width;
     }
     const h = rectC.maxY - rectC.minY;
     if (h < 0.5) {
-      const mid = rectC.minY + h * 0.5;
-      const r0 = rectC.minY = mid - 0.25;
-      const r1 = rectC.maxY = mid + 0.25;
+      const r0 = rectC.minY;
+      const r1 = rectC.minY = rectC.minY + 0.5;
       dy1 = r0;
       dy2 = r1 - height;
     }
