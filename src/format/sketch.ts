@@ -1123,7 +1123,7 @@ async function convertItem(
     layer._class === SketchFormat.ClassValue.Polygon ||
     layer._class === SketchFormat.ClassValue.ShapePath
   ) {
-    const points: JPoint[] = layer.points.map((item: any) => {
+    const points: JPoint[] = (layer.points || []).map((item: any) => {
       const point = parseStrPoint(item.point);
       const curveFrom = parseStrPoint(item.curveFrom);
       const curveTo = parseStrPoint(item.curveTo);
