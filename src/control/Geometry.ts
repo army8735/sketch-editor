@@ -53,8 +53,6 @@ export default class Geometry {
     let target: HTMLElement;
     let startX = 0; // 鼠标点下时绝对坐标
     let startY = 0;
-    let offsetX = 0; // 鼠标点下时相对坐标
-    let offsetY = 0;
     const diff = {
       td: 0,
       fd: 0,
@@ -75,8 +73,6 @@ export default class Geometry {
       isShift = false;
       startX = e.clientX;
       startY = e.clientY;
-      offsetX = e.offsetX;
-      offsetY = e.offsetY;
       // 点顶点开始拖拽
       if (tagName === 'DIV' && classList.contains('vt')) {
         nodeIdx = +target.parentElement!.getAttribute('idx')!;
@@ -374,9 +370,8 @@ export default class Geometry {
         const path = dom.querySelector('svg.new path') as SVGPathElement;
         const last = this.clonePoints[nodeIdx][idx];
         const p = this.newPoint = Object.assign({}, last);
-        // 由于点击vt顶点时可能不是在其中心有偏移，因此不能直接用last的坐标算要加上偏移
-        p.dspX = p.dspFx = p.dspTx = last.dspX + dx2 + offsetX * dpi / zoom;
-        p.dspY = p.dspFy = p.dspTy = last.dspY + dy2 + offsetY * dpi / zoom;
+        p.dspX = p.dspFx = p.dspTx = last.dspX + dx2;
+        p.dspY = p.dspFy = p.dspTy = last.dspY + dy2;
         // 强制新点有控制点
         p.curveMode = CURVE_MODE.MIRRORED;
         p.hasCurveFrom = p.hasCurveTo = true;
@@ -537,9 +532,14 @@ export default class Geometry {
           listener.history.addCommand(new PointCommand(nodes, data), true);
         }
       }
-      // 是否满足单点最后一个控制点显示新增
-      if (isVt && this.nodes.length === 1 && this.idxes[nodeIdx].length === 1 && idx === node.points.length - 1 && !node.isClosed) {
+      // 是否满足单点最后一个顶点/控制点显示新增
+      if ((isVt || isControlF || isControlT) && this.nodes.length === 1 && this.idxes[nodeIdx].length === 1 && idx === node.points.length - 1 && !node.isClosed) {
         this.isAddVt = true;
+        const div = panel.querySelector(`.item .vt[title="${idx}"]`) as HTMLElement;
+        // 可能会点击到顶点的控制点，此时还是要以顶点为start计算偏移，因此直接获取它的屏幕坐标，等同于按下它的client坐标
+        const r = div.getBoundingClientRect();
+        startX = r.left;
+        startY = r.top;
         listener.dom.classList.add('add-pen');
       }
       else {
@@ -645,24 +645,22 @@ export default class Geometry {
     document.addEventListener('click', this.onClick);
   }
 
-  show(nodes: Polyline[], idx?: number[][]) {
+  show(nodes: Polyline[]) {
     this.nodes.splice(0);
     this.nodes.push(...nodes);
     this.idxes.splice(0);
-    if (idx) {
-      this.idxes.push(...idx);
-    }
-    else {
-      nodes.forEach(() => {
-        this.idxes.push([]);
-      });
-    }
+    nodes.forEach(() => {
+      this.idxes.push([]);
+    });
     this.panel.innerHTML = '';
     this.nodes.forEach((node) => {
       getPointsDspByAbs(node);
       this.update(node, true);
     });
     this.panel.style.display = 'block';
+    // undo/redo时可能在最后一个顶点，要重置取消
+    this.isAddVt = false;
+    this.listener.dom.classList.remove('add-pen');
   }
 
   hide() {
