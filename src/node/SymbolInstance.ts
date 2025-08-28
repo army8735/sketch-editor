@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { SymbolInstanceProps, SymbolMasterProps, TAG_NAME } from '../format';
+import { Override, SymbolInstanceProps, SymbolMasterProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
 import AbstractFrame from './AbstractFrame';
 import Node from './Node';
@@ -22,6 +22,12 @@ class SymbolInstance extends AbstractFrame {
 
   // 特殊，使用同一个sm，没法filter，因为禁止修改
   override clone(filter?: (node: Node) => boolean) {
+    const props = this.cloneProps() as SymbolInstanceProps;
+    const res = new SymbolInstance(props, this.symbolMaster);
+    return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
     const props = this.cloneProps() as SymbolInstanceProps;
     const res = new SymbolInstance(props, this.symbolMaster);
     return res;
