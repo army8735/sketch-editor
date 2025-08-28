@@ -3442,7 +3442,7 @@ class Text extends Node {
       });
     }
     if (props.rich) {
-      //
+      props.rich.splice(1);
     }
     const res = new Text(props);
     return res;
