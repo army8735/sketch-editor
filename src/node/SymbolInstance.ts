@@ -29,8 +29,18 @@ class SymbolInstance extends AbstractFrame {
 
   override cloneAndLink(overrides?: Record<string, Override[]>) {
     const props = this.cloneProps() as SymbolInstanceProps;
+    props.overrideValues = overrides;
     const res = new SymbolInstance(props, this.symbolMaster);
     return res;
+  }
+
+  // 背景色渲染使用sm的
+  override calContent() {
+    return this.hasContent = this.symbolMaster.hasContent;
+  }
+
+  override renderCanvas(scale: number) {
+    super.renderCanvas(scale, this.symbolMaster.computedStyle);
   }
 
   override toJson() {

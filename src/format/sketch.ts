@@ -1701,6 +1701,7 @@ export function toSketchColor(color: number[], obj?: SketchFormat.Color): Sketch
 
 async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[], opt: Opt) {
   const hash: Record<string, Override[]> = {};
+  // console.log(overrideValues)
   for (let i = 0, len = overrideValues.length; i < len; i++) {
     const item = overrideValues[i];
     const [uuid, property] = item.overrideName.split('_');
@@ -1761,11 +1762,23 @@ async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[
       key[0] = 'textAlign';
       value = item.value as string;
     }
-    const o = hash[uuid] = hash[uuid] || [];
-    o.push({
-      key, // 默认开头props.style可省略
-      value,
-    });
+    // 递归symbolInstance
+    if (uuid.indexOf('/') > -1) {
+      uuid.split('/').forEach(id => {
+        const o = hash[id] = hash[id] || [];
+        o.push({
+          key, // 默认开头props.style可省略
+          value,
+        });
+      });
+    }
+    else {
+      const o = hash[uuid] = hash[uuid] || [];
+      o.push({
+        key, // 默认开头props.style可省略
+        value,
+      });
+    }
   }
   return hash;
 }

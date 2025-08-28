@@ -23,7 +23,7 @@ abstract class AbstractFrame extends Container {
     return this.hasContent = false;
   }
 
-  override renderCanvas(scale: number) {
+  override renderCanvas(scale: number, computedStyle = this.computedStyle) {
     const { borderTopLeftRadius, borderTopRightRadius, borderBottomLeftRadius, borderBottomRightRadius } = this.computedStyle;
     // 限制圆角半径，不能超过宽高一半
     const min = Math.min(this.width * 0.5, this.height * 0.5);
@@ -54,7 +54,7 @@ abstract class AbstractFrame extends Container {
         [0, tl - tl * H, tl - tl * H, 0, tl, 0],
       ];
     }
-    this.renderFillStroke(scale, [coords], true);
+    this.renderFillStroke(scale, [coords], true, computedStyle);
   }
 }
 
