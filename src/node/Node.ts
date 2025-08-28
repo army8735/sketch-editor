@@ -1708,7 +1708,7 @@ class Node extends Event {
     res.color = color2rgbaStr(style.color.v);
     res.backgroundColor = color2rgbaStr(style.backgroundColor.v);
     res.fontStyle = ['normal', 'italic', 'oblique'][style.fontStyle.v];
-    res.textAlign = ['left', 'center', 'right', 'justify'][style.textAlign.v];
+    res.textAlign = ['left', 'right', 'center', 'justify'][style.textAlign.v];
     res.textVerticalAlign = ['top', 'middle', 'bottom'][style.textVerticalAlign.v];
     res.mixBlendMode = getCssMbm(style.mixBlendMode.v);
     ['shadowEnable', 'strokeEnable', 'fillEnable', 'fillOpacity', 'strokeWidth'].forEach((k) => {
