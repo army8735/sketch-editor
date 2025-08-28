@@ -924,10 +924,6 @@ export default class Listener extends Event {
         if (this.options.disabled?.move) {
           return;
         }
-        // symbolInstance子节点禁止修改
-        if (selected.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
-          return;
-        }
         let meta = this.metaKey || isWin && this.ctrlKey;
         if (this.options.enabled?.selectWithMeta) {
           meta = !meta;
@@ -994,6 +990,10 @@ export default class Listener extends Event {
         }
         else {
           if (this.state === state.EDIT_GEOM) {
+            return;
+          }
+          // symbolInstance子节点禁止修改
+          if (selected.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
             return;
           }
           this.select.select.classList.add('move');
