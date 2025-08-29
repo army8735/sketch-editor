@@ -83,15 +83,12 @@ type Opt = {
 };
 
 export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> {
-  // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
+  // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，但以sketch为准，因为可能会修改
   const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
       return false;
     }
     const postscriptName = item.postscriptNames[0];
-    if (postscriptName && font.hasRegister(postscriptName)) {
-      return false;
-    }
     return !!postscriptName;
   });
   if (fontReferences.length) {
