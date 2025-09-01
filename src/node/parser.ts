@@ -50,6 +50,7 @@ export function parse(json: JLayer, root: Root): Node | undefined {
     return root.symbolMasters[symbolId];
   }
   else if (tagName === TAG_NAME.ART_BOARD
+    || tagName === TAG_NAME.GROUP
     || tagName === TAG_NAME.SHAPE_GROUP
     || tagName === TAG_NAME.FRAME
     || tagName === TAG_NAME.GRAPHIC) {
@@ -63,6 +64,9 @@ export function parse(json: JLayer, root: Root): Node | undefined {
     }
     if (tagName === TAG_NAME.ART_BOARD) {
       return new ArtBoard(json.props as ArtBoardProps, children);
+    }
+    else if (tagName === TAG_NAME.GROUP) {
+      return new Group(json.props, children);
     }
     else if (tagName === TAG_NAME.SHAPE_GROUP) {
       return new ShapeGroup(json.props as ShapeGroupProps, children);
@@ -82,17 +86,6 @@ export function parse(json: JLayer, root: Root): Node | undefined {
     if (sm) {
       return new SymbolInstance(props, sm);
     }
-  }
-  else if (tagName === TAG_NAME.GROUP) {
-    const children = [];
-    const cd = (json as JContainer).children || [];
-    for (let i = 0, len = cd.length; i < len; i++) {
-      const res = parse(cd[i], root);
-      if (res) {
-        children.push(res);
-      }
-    }
-    return new Group(json.props, children);
   }
   else if (tagName === TAG_NAME.BITMAP) {
     return new Bitmap(json.props as BitmapProps);
