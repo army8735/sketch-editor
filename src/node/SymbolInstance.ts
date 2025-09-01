@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import { SymbolInstanceProps, SymbolMasterProps, TAG_NAME } from '../format';
+import { Override, SymbolInstanceProps, SymbolMasterProps, TAG_NAME } from '../format';
 import SymbolMaster from './SymbolMaster';
 import AbstractFrame from './AbstractFrame';
 import Node from './Node';
@@ -25,6 +25,31 @@ class SymbolInstance extends AbstractFrame {
     const props = this.cloneProps() as SymbolInstanceProps;
     const res = new SymbolInstance(props, this.symbolMaster);
     return res;
+  }
+
+  override cloneAndLink(overrides?: Record<string, Override[]>) {
+    const props = this.cloneProps() as SymbolInstanceProps;
+    const oldUUid = this.uuid;
+    if (overrides && overrides.hasOwnProperty(oldUUid)) {
+      overrides[oldUUid].forEach(item => {
+        const { key, value } = item;
+        if (key[0] === 'fill') {
+          props.style!.fill = [value];
+        }
+      });
+    }
+    props.overrideValues = overrides;
+    const res = new SymbolInstance(props, this.symbolMaster);
+    return res;
+  }
+
+  // 背景色渲染使用sm的
+  override calContent() {
+    return this.hasContent = this.symbolMaster.hasContent;
+  }
+
+  override renderCanvas(scale: number) {
+    super.renderCanvas(scale, this.symbolMaster.computedStyle);
   }
 
   override toJson() {

@@ -83,15 +83,12 @@ type Opt = {
 };
 
 export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> {
-  // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，可以跳过
+  // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，但以sketch为准，因为可能会修改
   const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
       return false;
     }
     const postscriptName = item.postscriptNames[0];
-    if (postscriptName && font.hasRegister(postscriptName)) {
-      return false;
-    }
     return !!postscriptName;
   });
   if (fontReferences.length) {
@@ -1711,8 +1708,10 @@ async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[
       key[0] = 'content';
       value = item.value as string;
     }
-    else if (key[0] === 'fill') {
-      if (type === 'color') {
+    else if (key[0] === 'fill' || key[0] === 'fillColor') {
+      if (type === 'color' || type === 'fillColor') {
+        key[0] = 'fill';
+        key[1] = key[1] || '0';
         // @ts-ignore
         const v = item.value as SketchFormat.Color;
         const c = clampColor([
@@ -1761,11 +1760,23 @@ async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[
       key[0] = 'textAlign';
       value = item.value as string;
     }
-    const o = hash[uuid] = hash[uuid] || [];
-    o.push({
-      key, // 默认开头props.style可省略
-      value,
-    });
+    // 递归symbolInstance
+    if (uuid.indexOf('/') > -1) {
+      uuid.split('/').forEach(id => {
+        const o = hash[id] = hash[id] || [];
+        o.push({
+          key, // 默认开头props.style可省略
+          value,
+        });
+      });
+    }
+    else {
+      const o = hash[uuid] = hash[uuid] || [];
+      o.push({
+        key, // 默认开头props.style可省略
+        value,
+      });
+    }
   }
   return hash;
 }

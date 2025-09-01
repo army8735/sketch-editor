@@ -754,7 +754,7 @@ class Node extends Event {
     }
   }
 
-  renderFillStroke(scale: number, coords: number[][][], isClosed = true) {
+  renderFillStroke(scale: number, coords: number[][][], isClosed = true, computedStyle = this.computedStyle) {
     if (!coords.length) {
       return;
     }
@@ -782,7 +782,7 @@ class Node extends Event {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = this.computedStyle;
+    } = computedStyle;
 
     const canvasCache = (this.canvasCache = CanvasCache.getInstance(w, h, dx, dy));
     canvasCache.available = true;
@@ -1020,7 +1020,7 @@ class Node extends Event {
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
       // 内阴影使用canvas的能力
-      const { innerShadow, innerShadowEnable } = this.computedStyle;
+      const { innerShadow, innerShadowEnable } = computedStyle;
       if (innerShadow && innerShadow.length) {
         let hasInnerShadow = false;
         // 计算取偏移+spread最大值后再加上blur半径，这个尺寸扩展用以生成shadow的必要宽度
@@ -1708,7 +1708,7 @@ class Node extends Event {
     res.color = color2rgbaStr(style.color.v);
     res.backgroundColor = color2rgbaStr(style.backgroundColor.v);
     res.fontStyle = ['normal', 'italic', 'oblique'][style.fontStyle.v];
-    res.textAlign = ['left', 'center', 'right', 'justify'][style.textAlign.v];
+    res.textAlign = ['left', 'right', 'center', 'justify'][style.textAlign.v];
     res.textVerticalAlign = ['top', 'middle', 'bottom'][style.textVerticalAlign.v];
     res.mixBlendMode = getCssMbm(style.mixBlendMode.v);
     ['shadowEnable', 'strokeEnable', 'fillEnable', 'fillOpacity', 'strokeWidth'].forEach((k) => {

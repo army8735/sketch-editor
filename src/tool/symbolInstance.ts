@@ -1,7 +1,9 @@
 import * as uuid from 'uuid';
 import Frame from '../node/Frame';
+import Node from '../node/Node';
 import SymbolInstance from '../node/SymbolInstance';
 import AbstractGroup from '../node/AbstractGroup';
+import Container from '../node/Container';
 
 export function unBind(node: SymbolInstance) {
   const frame = new Frame({
@@ -40,6 +42,24 @@ export function unBind(node: SymbolInstance) {
   return frame;
 }
 
+function recursion(node: Node) {
+  if (node instanceof Container) {
+    node.children.forEach(item => {
+      recursion(item);
+      if (item instanceof SymbolInstance) {
+        unBind(item);
+      }
+    });
+  }
+}
+
+export function unBindAll(node: SymbolInstance) {
+  const frame = unBind(node);
+  recursion(node);
+  return frame;
+}
+
 export default {
   unBind,
+  unBindAll,
 };

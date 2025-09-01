@@ -30,26 +30,53 @@ import Root from './Root';
 import Frame from './Frame';
 import Graphic from './Graphic';
 
-export function parse(json: JLayer, root?: Root): Node | undefined {
+export function parse(json: JLayer, root: Root): Node | undefined {
   const tagName = json.tagName;
-  if (tagName === TAG_NAME.ART_BOARD || tagName === TAG_NAME.SYMBOL_MASTER) {
+  if (tagName === TAG_NAME.SYMBOL_MASTER) {
+    const props = json.props as SymbolMasterProps;
+    const symbolId = props.symbolId;
+    // 解析page前第一次收集所有page上的sm初始化
+    if (!root.symbolMasters[symbolId]) {
+      const children = [];
+      const cd = (json as JContainer).children || [];
+      for (let i = 0, len = cd.length; i < len; i++) {
+        const res = parse(cd[i], root);
+        if (res) {
+          children.push(res);
+        }
+      }
+      root.symbolMasters[symbolId] = new SymbolMaster(props, children);
+    }
+    return root.symbolMasters[symbolId];
+  }
+  else if (tagName === TAG_NAME.ART_BOARD
+    || tagName === TAG_NAME.GROUP
+    || tagName === TAG_NAME.SHAPE_GROUP
+    || tagName === TAG_NAME.FRAME
+    || tagName === TAG_NAME.GRAPHIC) {
     const children = [];
-    for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i], root);
+    const cd = (json as JContainer).children || [];
+    for (let i = 0, len = cd.length; i < len; i++) {
+      const res = parse(cd[i], root);
       if (res) {
         children.push(res);
       }
     }
-    if (tagName === TAG_NAME.SYMBOL_MASTER) {
-      const props = json.props as SymbolMasterProps;
-      const symbolId = props.symbolId;
-      /**
-       * 初始化前会先生成所有SymbolMaster的实例，包含内部和外部的，并存到root的symbolMasters下
-       * 后续进入控件页面时，页面是延迟初始化的，从json生成Node实例时，直接取缓存即可
-       */
-      return root?.symbolMasters[symbolId] || new SymbolMaster(props, children);
+    if (tagName === TAG_NAME.ART_BOARD) {
+      return new ArtBoard(json.props as ArtBoardProps, children);
     }
-    return new ArtBoard(json.props as ArtBoardProps, children);
+    else if (tagName === TAG_NAME.GROUP) {
+      return new Group(json.props, children);
+    }
+    else if (tagName === TAG_NAME.SHAPE_GROUP) {
+      return new ShapeGroup(json.props as ShapeGroupProps, children);
+    }
+    else if (tagName === TAG_NAME.FRAME) {
+      return new Frame(json.props, children);
+    }
+    else if (tagName === TAG_NAME.GRAPHIC) {
+      return new Graphic(json.props, children);
+    }
   }
   else if (tagName === TAG_NAME.SYMBOL_INSTANCE) {
     const props = json.props as SymbolInstanceProps;
@@ -60,17 +87,6 @@ export function parse(json: JLayer, root?: Root): Node | undefined {
       return new SymbolInstance(props, sm);
     }
   }
-  else if (tagName === TAG_NAME.GROUP) {
-    const children = [];
-    const cd = (json as JContainer).children || [];
-    for (let i = 0, len = cd.length; i < len; i++) {
-      const res = parse(cd[i], root);
-      if (res) {
-        children.push(res);
-      }
-    }
-    return new Group(json.props, children);
-  }
   else if (tagName === TAG_NAME.BITMAP) {
     return new Bitmap(json.props as BitmapProps);
   }
@@ -80,40 +96,8 @@ export function parse(json: JLayer, root?: Root): Node | undefined {
   else if (tagName === TAG_NAME.POLYLINE) {
     return new Polyline(json.props as PolylineProps);
   }
-  else if (tagName === TAG_NAME.SHAPE_GROUP) {
-    const children = [];
-    for (let i = 0, len = (json as JContainer).children.length; i < len; i++) {
-      const res = parse((json as JContainer).children[i], root);
-      if (res) {
-        children.push(res);
-      }
-    }
-    return new ShapeGroup(json.props as ShapeGroupProps, children);
-  }
   else if (tagName === TAG_NAME.SLICE) {
     return new Slice(json.props);
-  }
-  else if (tagName === TAG_NAME.FRAME) {
-    const children = [];
-    const cd = (json as JContainer).children || [];
-    for (let i = 0, len = cd.length; i < len; i++) {
-      const res = parse(cd[i], root);
-      if (res) {
-        children.push(res);
-      }
-    }
-    return new Frame(json.props, children);
-  }
-  else if (tagName === TAG_NAME.GRAPHIC) {
-    const children = [];
-    const cd = (json as JContainer).children || [];
-    for (let i = 0, len = cd.length; i < len; i++) {
-      const res = parse(cd[i], root);
-      if (res) {
-        children.push(res);
-      }
-    }
-    return new Graphic(json.props, children);
   }
 }
 

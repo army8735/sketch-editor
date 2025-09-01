@@ -504,7 +504,7 @@ class Text extends Node {
       const min = ctx.measureText(content.charAt(i)).width;
       if (min > W - x + 1e-10 && x) {
         x = 0;
-        y += lineBox.height + paragraphSpacing;
+        y += lineBox.height;
         if (i < length) {
           lineBox.verticalAlign();
           lineBox = new LineBox(y, lineHeight, i, false);
@@ -518,21 +518,6 @@ class Text extends Node {
         rw,
         newLine,
       } = measure(ctx, i, len, content, W - x, perW, letterSpacing);
-      // if (content === '意外保障金') {
-      //   if (W - x === 139) {
-      //     if (i) {
-      //       rw = 30;
-      //     }
-      //     else {
-      //       num = 4;
-      //       rw = 120;
-      //       newLine = true;
-      //     }
-      //   }
-      //   else {
-      //     rw = 150;
-      //   }
-      // }
       // console.log(i, len, content, W - x, perW, letterSpacing, ';', num, rw, newLine);
       const textBox = new TextBox(
         x,
@@ -557,7 +542,7 @@ class Text extends Node {
       // 换行则x重置、y增加、新建LineBox，否则继续水平增加x
       if (newLine) {
         x = 0;
-        y += lineBox.height + paragraphSpacing;
+        y += lineBox.height;
         // 最后一行对齐外面做
         if (i < length) {
           lineBox.verticalAlign();
@@ -3136,7 +3121,12 @@ class Text extends Node {
     if (!rich.length) {
       return;
     }
-    this.rich = rich = rich.filter(item => item.location > -1 && item.length > 0);
+    for (let i = rich.length - 1; i >= 0; i--) {
+      const item = rich[i];
+      if (item.location < 0 || item.length <= 0) {
+        rich.splice(i, 1);
+      }
+    }
     rich.sort((a, b) => {
       if (a.location === b.location) {
         return a.length - b.length;
@@ -3156,15 +3146,11 @@ class Text extends Node {
       paragraphSpacing: style.paragraphSpacing.v,
       color: style.color.v.slice(0),
     };
-    // 首尾索引不合法
+    // 首尾索引不合法，自动修正
     if (content.length) {
       let last = rich[rich.length - 1];
       if (!rich.length || last.location + last.length < content.length) {
-        rich.push({
-          location: last ? last.location + last.length : 0,
-          length: last ? content.length - last.location - last.length : content.length,
-          ...dft,
-        });
+        last.length += content.length - last.location - last.length;
         hasMerge = true;
       }
       last = rich[rich.length - 1];
@@ -3174,11 +3160,8 @@ class Text extends Node {
       }
       const first = rich[0];
       if (first.location > 0) {
-        rich.unshift({
-          location: 0,
-          length: first.location,
-          ...dft,
-        });
+        first.length += first.location;
+        first.location = 0;
         hasMerge = true;
       }
     }
@@ -3402,14 +3385,16 @@ class Text extends Node {
   override cloneProps() {
     const props = super.cloneProps() as TextProps;
     props.rich = this.rich.map(item => getPropsRich(item));
-    const textBehaviour = props.textBehaviour = this.getTextBehaviour();
-    const style = props.style!;
-    if (textBehaviour === 'auto') {
-      style.width = this.width;
-      style.height = this.height;
-    }
-    else if (textBehaviour === 'autoH') {
-      style.height = this.height;
+    if (this.isMounted) {
+      const textBehaviour = props.textBehaviour = this.getTextBehaviour();
+      const style = props.style!;
+      if (textBehaviour === 'auto') {
+        style.width = this.width;
+        style.height = this.height;
+      }
+      else if (textBehaviour === 'autoH') {
+        style.height = this.height;
+      }
     }
     props.content = this._content;
     return props;
@@ -3455,6 +3440,9 @@ class Text extends Node {
           });
         }
       });
+    }
+    if (props.rich) {
+      props.rich.splice(1);
     }
     const res = new Text(props);
     return res;
