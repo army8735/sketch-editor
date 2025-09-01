@@ -194,6 +194,9 @@ class ContextMenu {
         listener.unBind();
       }
     });
+    this.dom.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
     document.body.appendChild(this.dom);
     document.addEventListener('click', this.onClick);
     document.addEventListener('visibilitychange', this.onVisibleChange);
@@ -301,6 +304,11 @@ class ContextMenu {
     this.dom.style.left = x + 'px';
     this.dom.style.top = y + 'px';
     this.dom.style.display = 'block';
+    const h1 = document.documentElement.clientHeight;
+    const h2 = this.dom.clientHeight;
+    if (y + h2 > h1) {
+      this.dom.style.top = Math.max(0, h1 - h2) + 'px';
+    }
     listener.emit(Listener.CONTEXT_MENU, true, this.dom);
   }
 
