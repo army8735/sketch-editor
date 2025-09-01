@@ -1698,7 +1698,6 @@ export function toSketchColor(color: number[], obj?: SketchFormat.Color): Sketch
 
 async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[], opt: Opt) {
   const hash: Record<string, Override[]> = {};
-  // console.log(overrideValues)
   for (let i = 0, len = overrideValues.length; i < len; i++) {
     const item = overrideValues[i];
     const [uuid, property] = item.overrideName.split('_');
@@ -1709,8 +1708,10 @@ async function convertOverrideValues(overrideValues: SketchFormat.OverrideValue[
       key[0] = 'content';
       value = item.value as string;
     }
-    else if (key[0] === 'fill') {
-      if (type === 'color') {
+    else if (key[0] === 'fill' || key[0] === 'fillColor') {
+      if (type === 'color' || type === 'fillColor') {
+        key[0] = 'fill';
+        key[1] = key[1] || '0';
         // @ts-ignore
         const v = item.value as SketchFormat.Color;
         const c = clampColor([

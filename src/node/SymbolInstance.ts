@@ -29,6 +29,15 @@ class SymbolInstance extends AbstractFrame {
 
   override cloneAndLink(overrides?: Record<string, Override[]>) {
     const props = this.cloneProps() as SymbolInstanceProps;
+    const oldUUid = this.uuid;
+    if (overrides && overrides.hasOwnProperty(oldUUid)) {
+      overrides[oldUUid].forEach(item => {
+        const { key, value } = item;
+        if (key[0] === 'fill') {
+          props.style!.fill = [value];
+        }
+      });
+    }
     props.overrideValues = overrides;
     const res = new SymbolInstance(props, this.symbolMaster);
     return res;
