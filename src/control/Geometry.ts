@@ -87,8 +87,8 @@ export default class Geometry {
         nodeIdx = +target.parentElement!.getAttribute('idx')!;
         idx = parseInt(target.title);
         node = this.nodes[nodeIdx];
-        // 特殊逻辑，闭合当前节点，这种情况只可能出现唯一节点编辑下
-        if (this.isAddVt && target.title === '0') {
+        // 特殊逻辑，闭合当前节点，这种情况只可能出现唯一节点编辑下，要排除只有1个point的时候（新增pen）
+        if (this.isAddVt && target.title === '0' && node.points.length > 1) {
           this.isAddVt = false;
           node.isClosed = true;
           node.refresh();
