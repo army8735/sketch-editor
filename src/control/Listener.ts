@@ -2775,7 +2775,7 @@ export default class Listener extends Event {
       || keyCode === 85 || code === 'KeyU'
       || keyCode === 76 || code === 'KeyL'
       || keyCode === 84 || code === 'KeyT'
-      // || keyCode === 80 || code === 'KeyP'
+      || keyCode === 80 || code === 'KeyP'
     )
       && this.state !== state.EDIT_TEXT && !this.metaKey && !isInput) {
       this.emit(Listener.SHORTCUT_KEY, keyCode, code);

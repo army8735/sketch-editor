@@ -14,6 +14,7 @@ import { getFlipOnPage, getMatrixOnPage, getRotateOnPageByMF } from '../tool/nod
 import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix';
 import { addNode } from '../tool/root';
 import state from './state';
+import AddCommand from '../history/AddCommand';
 
 export default class Geometry {
   root: Root;
@@ -114,6 +115,7 @@ export default class Geometry {
         isVt = true;
         this.setClonePoints();
         this.emitSelectPoint();
+        this.isAddVt = false;
       }
       // 点矢量边添加顶点，点后只剩这一个已选
       else if (tagName === 'PATH') {
@@ -300,6 +302,7 @@ export default class Geometry {
         this.setClonePoints();
         diff.td = Math.sqrt(Math.pow(p.dspX - p.dspTx, 2) + Math.pow(p.dspY - p.dspTy, 2));
         diff.fd = Math.sqrt(Math.pow(p.dspX - p.dspFx, 2) + Math.pow(p.dspY - p.dspFy, 2));
+        this.isAddVt = false;
       }
       // pen模式第一个新增点特殊逻辑，先把新node满屏尺寸添加到dom上，再把此点添加上
       else if (this.isNewVt && this.newPoint) {
@@ -310,6 +313,11 @@ export default class Geometry {
         node.reflectPoints(this.newPoint);
         node.points.push(this.newPoint);
         getPointsDspByAbs(node, this.newPoint);
+        listener.history.addCommand(new AddCommand([node], [{
+          x: node.computedStyle.left,
+          y: node.computedStyle.top,
+          parent: node.parent!,
+        }]));
         this.newPoint = undefined;
         this.isNewVt = false;
         this.isAdding = true;
@@ -421,7 +429,7 @@ export default class Geometry {
       else if (this.isAddVt) {
         const vt = dom.querySelector('.vt.new') as HTMLElement;
         const path = dom.querySelector('svg.new path') as SVGPathElement;
-        const last = this.clonePoints[nodeIdx][idx];
+        const last = node.points[idx];
         const p = this.newPoint = Object.assign({}, last);
         p.dspX = p.dspFx = p.dspTx = last.dspX + dx2;
         p.dspY = p.dspFy = p.dspTy = last.dspY + dy2;
@@ -585,7 +593,10 @@ export default class Geometry {
             if (!data[i]) {
               return;
             }
-            item.checkPointsChange();
+            // 单顶点不更新尺寸
+            if (node.points.length > 1) {
+              item.checkPointsChange();
+            }
             this.update(item, false);
           });
           listener.history.addCommand(new PointCommand(nodes, data), true);
@@ -639,14 +650,27 @@ export default class Geometry {
           pathIdx = +target.getAttribute('idx')!;
         }
         listener.dom.classList.remove('add-pen');
+        listener.dom.classList.remove('fin-pen');
       }
       else {
         pathIdx = -1;
-        if (classList.contains('vt') || classList.contains('f') || classList.contains('t')) {
+        // add-pen情况下，hover第0个是关闭路径
+        if (classList.contains('vt')) {
           listener.dom.classList.remove('add-pen');
+          if (target.title === '0' && this.nodes[0].points.length > 1) {
+            listener.dom.classList.add('fin-pen');
+          }
+          else {
+            listener.dom.classList.remove('fin-pen');
+          }
+        }
+        else if (classList.contains('f') || classList.contains('t')) {
+          listener.dom.classList.remove('add-pen');
+          listener.dom.classList.remove('fin-pen');
         }
         else if (this.isAddVt) {
           listener.dom.classList.add('add-pen');
+          listener.dom.classList.remove('fin-pen');
         }
       }
       pj = panel.querySelector(`.item[idx="${nodeIdx}"] .pj`) as HTMLElement;
@@ -838,14 +862,13 @@ export default class Geometry {
   calRect(node: Polyline) {
     const root = this.root;
     const dpi = root.dpi;
-    let rect = node._rect || node.rect;
     let matrix = node.matrixWorld;
     if (dpi !== 1) {
       const t = identity();
       multiplyScale(t, 1 / dpi);
       matrix = multiply(t, matrix);
     }
-    let { x1, y1, x2, y2, x3, y3 } = calRectPoints(rect[0], rect[1], rect[2], rect[3], matrix);
+    const { x1, y1, x2, y2, x3, y3 } = calRectPoints(0, 0, node.width, node.height, matrix);
     const flip = getFlipOnPage(node);
     const r = getRotateOnPageByMF(getMatrixOnPage(node), flip);
     const width = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));

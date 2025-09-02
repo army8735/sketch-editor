@@ -242,7 +242,6 @@ class Toolbar {
       }
       else if (title === 'arrow') {}
       else if (title === 'pen') {
-        // listener.state = state.EDIT_GEOM;
         listener.select.hideSelect();
         listener.geometry.showNew();
       }
@@ -456,6 +455,8 @@ class Toolbar {
         div.title = 'pen';
         (div.querySelector('b') as HTMLElement).className = 'pen';
         geom.querySelector('.sub [title="pen"]')?.classList.add('cur');
+        listener.select.hideSelect();
+        listener.geometry.showNew();
       }
       else if (keyCode === 84 || code === 'KeyT') {
         listener.state = state.ADD_TEXT;
