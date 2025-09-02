@@ -422,6 +422,8 @@ export default class Geometry {
       if (!page) {
         return;
       }
+      const target = e.target as HTMLElement;
+      const tagName = target.tagName.toUpperCase();
       const dpi = root.dpi;
       const zoom = page.getZoom();
       const zoom2 = page.getZoom(true);
@@ -476,7 +478,9 @@ export default class Geometry {
         }
         path.setAttribute('d', d);
         // 滚动会隐藏去除，再次移动加上
-        listener.dom.classList.add('add-pen');
+        if (target === panel || tagName === 'SVG') {
+          listener.dom.classList.add('add-pen');
+        }
       }
       // 拖动顶点，多个顶点的话其它的也随之变动
       else if (isVt) {
@@ -740,13 +744,6 @@ export default class Geometry {
       pj?.classList.remove('cur');
       if (this.isAddVt) {
         listener.dom.classList.add('add-pen');
-      }
-    });
-
-    // 操作过程阻止滚轮拖动
-    panel.addEventListener('wheel', (e) => {
-      if (isVt || isControlF || isControlT) {
-        e.stopPropagation();
       }
     });
 
