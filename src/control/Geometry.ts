@@ -15,6 +15,7 @@ import { calRectPoints, identity, multiply, multiplyScale } from '../math/matrix
 import { addNode } from '../tool/root';
 import state from './state';
 import AddCommand from '../history/AddCommand';
+import ClosedCommand from '../history/ClosedCommand';
 
 export default class Geometry {
   root: Root;
@@ -85,6 +86,22 @@ export default class Geometry {
       if (tagName === 'DIV' && classList.contains('vt')) {
         nodeIdx = +target.parentElement!.getAttribute('idx')!;
         idx = parseInt(target.title);
+        node = this.nodes[nodeIdx];
+        // 特殊逻辑，闭合当前节点，这种情况只可能出现唯一节点编辑下
+        if (this.isAddVt) {
+          this.isAddVt = false;
+          node.isClosed = true;
+          node.refresh();
+          this.update(node, true);
+          listener.dom.classList.remove('fin-pen');
+          listener.history.addCommand(new ClosedCommand([node], [{
+            prev: false,
+            next: true,
+          }]));
+          listener.emit(Listener.CLOSED_NODE, [node]);
+          // 由于更新了vt定带你和svg边等，target发生了变化，需要更新
+          target = panel.querySelector('.vt[title="0"]') as HTMLElement;
+        }
         const idxes = this.idxes[nodeIdx];
         // shift按下时未选择的加入已选，已选的无法判断意图先记录等抬起
         if (listener.shiftKey || listener.metaKey) {
