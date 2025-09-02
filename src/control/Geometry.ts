@@ -656,7 +656,7 @@ export default class Geometry {
     let pj: HTMLElement;
     panel.addEventListener('mouseover', (e) => {
       // 框选不侦听hover
-      if (listener.isMouseDown) {
+      if (listener.isMouseDown || listener.spaceKey) {
         return;
       }
       const target = e.target as HTMLElement;
@@ -707,7 +707,7 @@ export default class Geometry {
 
     panel.addEventListener('mousemove', (e) => {
       const node = this.nodes[nodeIdx];
-      if (pathIdx > -1 && node) {
+      if (pathIdx > -1 && node && !listener.spaceKey) {
         const x = e.offsetX;
         const y = e.offsetY;
         const scale = root.getCurPageZoom(true);
@@ -742,7 +742,7 @@ export default class Geometry {
       }
       pathIdx = -1;
       pj?.classList.remove('cur');
-      if (this.isAddVt) {
+      if (this.isAddVt && !listener.spaceKey) {
         listener.dom.classList.add('add-pen');
       }
     });
