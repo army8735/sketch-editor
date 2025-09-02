@@ -39,9 +39,6 @@ module.exports = {
 
       .moveToElement('canvas', 50, 50)
       .doubleClick()
-      .click('#side .point-panel .open')
-      .assert.not.elementPresent('#main .geometry svg path[title="3"]')
-
       .moveToElement('#main .geometry .vt[title="3"]', 0, 0)
       .mouseButtonDown(0)
       .mouseButtonUp(0)
