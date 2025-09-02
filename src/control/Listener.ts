@@ -2151,9 +2151,9 @@ export default class Listener extends Event {
         if (this.state === state.EDIT_GRADIENT) {
           this.cancelEditGradient();
         }
-        else if (this.state === state.EDIT_GEOM) {
-          this.cancelEditGeom();
-        }
+        // else if (this.state === state.EDIT_GEOM) {
+        //   this.cancelEditGeom();
+        // }
         else if (this.state === state.EDIT_TEXT) {
           picker.hide();
           this.input.focus();

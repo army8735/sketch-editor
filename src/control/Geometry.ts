@@ -1069,6 +1069,7 @@ export default class Geometry {
     });
     this.isAddVt = false;
     this.listener.dom.classList.remove('add-pen');
+    this.listener.dom.classList.remove('fin-pen');
     this.dom.querySelector('svg.new path')?.setAttribute('d', '');
   }
 
