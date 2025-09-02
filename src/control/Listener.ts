@@ -763,6 +763,7 @@ export default class Listener extends Event {
     // 空格或中间移动画布
     else if (e.button === 0 && this.spaceKey || this.middleKey || this.state === state.HAND) {
       this.dom.classList.add('handing');
+      this.dom.classList.remove('add-pen');
     }
     // 普通按下是选择节点或者编辑文本
     else if (!this.spaceKey) {
@@ -2124,8 +2125,9 @@ export default class Listener extends Event {
       this.spaceKey = true;
       if (!this.options.disabled?.drag) {
         // 拖拽矢量点特殊icon不变手
-        if (!this.isFrame && (this.state !== state.EDIT_GEOM || !this.geometry.hasEditPoint())) {
+        if (!this.isFrame) {
           this.dom.classList.add('hand');
+          this.dom.classList.remove('add-pen');
         }
       }
     }
