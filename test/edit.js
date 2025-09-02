@@ -270,6 +270,7 @@ fetch('./sketch.sketch')
         const tree = document.querySelector('#tree');
         const side = document.querySelector('#side .panel');
         const toolbar = document.querySelector('#toolbar');
+        const zoom = document.querySelector('#zoom');
         if (page) {
           sketchEditor.control.initPageList(root, page, listener);
         }
@@ -281,6 +282,9 @@ fetch('./sketch.sketch')
         }
         if (toolbar) {
           sketchEditor.control.initToolbar(root, toolbar, listener);
+        }
+        if (zoom) {
+          sketchEditor.control.initZoom(root, zoom, listener);
         }
 
         const button1 = document.querySelector('#button1');

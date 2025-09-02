@@ -477,7 +477,7 @@ export default class Geometry {
           d += 'L' + x + ',' + y;
         }
         path.setAttribute('d', d);
-        // 滚动会隐藏去除，再次移动加上
+        // 滚轮拖拽会隐藏去除，再次移动加上
         if (target === panel || tagName === 'SVG') {
           listener.dom.classList.add('add-pen');
         }
