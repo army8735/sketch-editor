@@ -1122,9 +1122,6 @@ export default class Tree {
     if (page) {
       dl.setAttribute('uuid', page.uuid);
       const children = page.children;
-      if (!children.length) {
-        return;
-      }
       let s = '';
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i];

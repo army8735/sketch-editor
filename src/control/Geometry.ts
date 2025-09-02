@@ -335,6 +335,7 @@ export default class Geometry {
           y: node.computedStyle.top,
           parent: node.parent!,
         }]));
+        listener.emit(Listener.ADD_NODE, [node]);
         this.newPoint = undefined;
         this.isNewVt = false;
         this.isAdding = true;
@@ -349,6 +350,7 @@ export default class Geometry {
         isControlT = true;
         this.setClonePoints();
         diff.td = diff.fd = 0;
+        listener.dom.classList.remove('add-pen');
         // 新node变成已选点，通知其它panel展示
         listener.selected.splice(0);
         listener.selected.push(node);
@@ -386,6 +388,7 @@ export default class Geometry {
           prev: this.clonePoints[0],
           next: clone(node.points),
         }]), true);
+        listener.emit(Listener.POINT_NODE, [node]);
         listener.emit(Listener.SELECT_POINT, [node], node.points.slice(-1));
         this.setClonePoints();
       }
@@ -617,6 +620,7 @@ export default class Geometry {
             this.update(item, false);
           });
           listener.history.addCommand(new PointCommand(nodes, data), true);
+          listener.emit(Listener.POINT_NODE, nodes.slice(0));
         }
       }
       // 是否满足单点最后一个顶点/控制点显示新增
@@ -1103,6 +1107,7 @@ export default class Geometry {
     });
     if (nodes.length) {
       this.listener.history.addCommand(new PointCommand(nodes, data), true);
+      this.listener.emit(Listener.POINT_NODE, nodes.slice(0));
     }
   }
 
