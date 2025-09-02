@@ -88,7 +88,7 @@ export default class Geometry {
         idx = parseInt(target.title);
         node = this.nodes[nodeIdx];
         // 特殊逻辑，闭合当前节点，这种情况只可能出现唯一节点编辑下
-        if (this.isAddVt) {
+        if (this.isAddVt && target.title === '0') {
           this.isAddVt = false;
           node.isClosed = true;
           node.refresh();
