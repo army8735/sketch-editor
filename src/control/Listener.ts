@@ -742,6 +742,8 @@ export default class Listener extends Event {
           picker.keep = true;
         }
         else {
+          this.dom.classList.add('handing');
+          this.dom.classList.remove('add-pen');
           this.geometry.keep = true;
         }
       }

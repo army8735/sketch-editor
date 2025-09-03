@@ -478,7 +478,7 @@ export default class Geometry {
         }
         path.setAttribute('d', d);
         // 滚轮拖拽会隐藏去除，再次移动加上
-        if (target === panel || tagName === 'SVG') {
+        if ((target === panel || tagName === 'SVG') && !listener.dom.classList.contains('hand') && !listener.dom.classList.contains('handing')) {
           listener.dom.classList.add('add-pen');
         }
       }
@@ -665,9 +665,18 @@ export default class Geometry {
       // 特殊情况，进入pen模式时尚未mousemove，恰好鼠标在区域内，需要更新辅助点
       if (this.isNewVt) {
         const vt = dom.querySelector('.vt.new') as HTMLElement;
-        const x = e.offsetX;
-        const y = e.offsetY;
-        vt.style.transform = `translate(${x}px, ${y}px)`;
+        const dpi = root.dpi;
+        const page = root.getCurPage()!;
+        const zoom = page.getZoom();
+        const x = e.offsetX * dpi / zoom;
+        const y = e.offsetY * dpi / zoom;
+        this.newPoint = {
+          x: 0, y: 0, cornerRadius: 0, curveMode: CURVE_MODE.STRAIGHT,
+          fx: 0, fy: 0, tx: 0, ty: 0, hasCurveFrom: false, hasCurveTo: false,
+          absX: x, absY: y, absFx: x, absFy: y, absTx: x, absTy: y,
+          dspX: 0, dspY: 0, dspFx: 0, dspFy: 0, dspTx: 0, dspTy: 0,
+        };
+        vt.style.transform = `translate(${e.offsetX}px, ${e.offsetY}px)`;
       }
       else if (tagName === 'PATH') {
         nodeIdx = +target.parentElement!.parentElement!.getAttribute('idx')!;
@@ -697,7 +706,7 @@ export default class Geometry {
           listener.dom.classList.remove('add-pen');
           listener.dom.classList.remove('fin-pen');
         }
-        else if (this.isAddVt) {
+        else if (this.isAddVt && !listener.spaceKey && !listener.dom.classList.contains('hand') && !listener.dom.classList.contains('handing')) {
           listener.dom.classList.add('add-pen');
           listener.dom.classList.remove('fin-pen');
         }
@@ -726,7 +735,7 @@ export default class Geometry {
         }
         else {
           pj?.classList.remove('cur');
-          if (this.isAddVt) {
+          if (this.isAddVt && !listener.spaceKey && !listener.dom.classList.contains('hand') && !listener.dom.classList.contains('handing')) {
             listener.dom.classList.add('add-pen');
           }
         }
@@ -742,7 +751,7 @@ export default class Geometry {
       }
       pathIdx = -1;
       pj?.classList.remove('cur');
-      if (this.isAddVt && !listener.spaceKey) {
+      if (this.isAddVt && !listener.spaceKey && !listener.dom.classList.contains('hand') && !listener.dom.classList.contains('handing')) {
         listener.dom.classList.add('add-pen');
       }
     });
