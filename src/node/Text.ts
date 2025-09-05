@@ -38,6 +38,8 @@ import TextBox from './TextBox';
 import { getConic, getLinear, getRadial } from '../style/gradient';
 import { getCanvasGCO } from '../style/mbm';
 
+const EPS = 1e-4;
+
 export type EditStyle = {
   isLeft: boolean;
   isCenter: boolean;
@@ -239,7 +241,6 @@ class Text extends Node {
       if (textBehaviour === 'auto'
         && width.u !== StyleUnit.AUTO
         && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO)) {
-        this.style.width = { v: 0, u: StyleUnit.AUTO };
         let d = 0;
         if (width.u === StyleUnit.PX) {
           d = this.width - width.v;
@@ -247,7 +248,7 @@ class Text extends Node {
         else if (width.u === StyleUnit.PERCENT) {
           d = this.width - width.v * 0.01 * parent!.width;
         }
-        if (d && transformOrigin[0].u === StyleUnit.PERCENT) {
+        if (Math.abs(d) > EPS && transformOrigin[0].u === StyleUnit.PERCENT) {
           if (computedStyle.textAlign === TEXT_ALIGN.LEFT) {
             const v = d * transformOrigin[0].v * 0.01;
             this.adjustPosAndSizeSelf(v, 0, v, 0);
@@ -267,7 +268,6 @@ class Text extends Node {
       if ((textBehaviour === 'auto' || textBehaviour === 'autoH')
         && height.u !== StyleUnit.AUTO
         && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO)) {
-        this.style.height = { v: 0, u: StyleUnit.AUTO };
         let d = 0;
         if (height.u === StyleUnit.PX) {
           d = this.height - height.v;
@@ -275,7 +275,7 @@ class Text extends Node {
         else if (height.u === StyleUnit.PERCENT) {
           d = this.height - height.v * 0.01 * parent!.height;
         }
-        if (d && transformOrigin[1].u === StyleUnit.PERCENT) {
+        if (Math.abs(d) > EPS && transformOrigin[1].u === StyleUnit.PERCENT) {
           if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.TOP) {
             const v = d * transformOrigin[1].v * 0.01;
             this.adjustPosAndSizeSelf(0, v, 0, v);
