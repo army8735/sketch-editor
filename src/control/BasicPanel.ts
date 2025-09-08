@@ -768,8 +768,12 @@ class BasicPanel extends Panel {
     else {
       ov.parentElement!.style.display = 'none';
     }
-    // symbolInstance子节点禁止修改
-    if (nodes.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
+    // symbolInstance和子节点禁止修改
+    if (nodes.filter(item => item instanceof SymbolInstance).length > 0) {
+      ov.parentElement!.style.display = 'none';
+    }
+    if (nodes.filter(item => item.symbolInstance).length > 0) {
+      ov.parentElement!.style.display = 'none';
       panel.querySelectorAll('.input-unit,.cp,.fh,.fv').forEach(item => {
         item.classList.add('disabled');
       });
