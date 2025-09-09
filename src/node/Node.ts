@@ -2034,13 +2034,6 @@ class Node extends Event {
       else if (left.u === StyleUnit.PERCENT) {
         left.v += (dx1 * 100) / pw;
       }
-      // left为auto调整width
-      // else if (width.u === StyleUnit.PX) {
-      //   width.v = dx2 + this.width - dx1;
-      // }
-      // else if (width.u === StyleUnit.PERCENT) {
-      //   width.v = (dx2 + this.width - dx1) * 100 / parent.width;
-      // }
       computedStyle.left += dx1;
     }
     if (dx2) {
@@ -2050,13 +2043,6 @@ class Node extends Event {
       else if (right.u === StyleUnit.PERCENT) {
         right.v -= (dx2 * 100) / pw;
       }
-      // right为auto调整width
-      // else if (width.u === StyleUnit.PX) {
-      //   width.v = dx2 + this.width - dx1;
-      // }
-      // else if (width.u === StyleUnit.PERCENT) {
-      //   width.v = (dx2 + this.width - dx1) * 100 / parent.width;
-      // }
       computedStyle.right -= dx2;
     }
     // 上面如果调整无论如何都会影响width
@@ -2069,6 +2055,26 @@ class Node extends Event {
       }
     }
     this.width = computedStyle.width = parent.width - computedStyle.left - computedStyle.right;
+    // 可能调整right到了left的左边形成负值，此时交换它们
+    if (this.width < 0) {
+      this.width = computedStyle.width = -this.width;
+      const oldLeft = computedStyle.left;
+      const oldRight = computedStyle.right;
+      computedStyle.left = pw - oldRight;
+      if (left.u === StyleUnit.PX) {
+        left.v = computedStyle.left;
+      }
+      else if (left.u === StyleUnit.PERCENT) {
+        left.v = computedStyle.left * 100 / pw;
+      }
+      computedStyle.right = pw - oldLeft;
+      if (right.u === StyleUnit.PX) {
+        right.v = computedStyle.right;
+      }
+      else if (right.u === StyleUnit.PERCENT) {
+        right.v = computedStyle.right * 100 / pw;
+      }
+    }
     // 垂直和水平一样
     if (dy1) {
       if (top.u === StyleUnit.PX) {
@@ -2077,12 +2083,6 @@ class Node extends Event {
       else if (top.u === StyleUnit.PERCENT) {
         top.v += (dy1 * 100) / ph;
       }
-      // else if (height.u === StyleUnit.PX) {
-      //   height.v = dy2 + this.height - dy1;
-      // }
-      // else if (height.u === StyleUnit.PERCENT) {
-      //   height.v = (dy2 + this.height - dy1) * 100 / parent.height;
-      // }
       computedStyle.top += dy1;
     }
     if (dy2) {
@@ -2092,12 +2092,6 @@ class Node extends Event {
       else if (bottom.u === StyleUnit.PERCENT) {
         bottom.v -= (dy2 * 100) / ph;
       }
-      // else if (height.u === StyleUnit.PX) {
-      //   height.v = dy2 + this.height - dy1;
-      // }
-      // else if (height.u === StyleUnit.PERCENT) {
-      //   height.v = (dy2 + this.height - dy1) * 100 / parent.height;
-      // }
       computedStyle.bottom -= dy2;
     }
     if (dy2 - dy1) {
@@ -2109,6 +2103,25 @@ class Node extends Event {
       }
     }
     this.height = computedStyle.height = parent.height - computedStyle.top - computedStyle.bottom;
+    if (this.height < 0) {
+      this.height = computedStyle.height = -this.height;
+      const oldTop = computedStyle.top;
+      const oldBottom = computedStyle.bottom;
+      computedStyle.top = ph - oldTop;
+      if (top.u === StyleUnit.PX) {
+        top.v = computedStyle.top;
+      }
+      else if (top.u === StyleUnit.PERCENT) {
+        top.v = computedStyle.top * 100 / ph;
+      }
+      computedStyle.bottom = ph - oldBottom;
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v = computedStyle.bottom;
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v = computedStyle.bottom * 100 / ph;
+      }
+    }
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     this.refreshLevel |= RefreshLevel.TRANSFORM;
     root.rl |= RefreshLevel.TRANSFORM;
