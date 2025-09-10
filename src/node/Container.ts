@@ -7,6 +7,7 @@ import inject from '../util/inject';
 import { isNil } from '../util/type';
 import { LayoutData } from './layout';
 import { calRectPoints } from '../math/matrix';
+import { StyleUnit } from '../style/define';
 
 class Container<T extends Node = Node> extends Node {
   children: T[];
@@ -109,6 +110,79 @@ class Container<T extends Node = Node> extends Node {
     //     child.minHeight,
     //   );
     // }
+  }
+
+  // 父级组调整完后，直接子节点需跟着变更调整，之前数据都是相对于没调之前组的老的，位置和尺寸可能会同时发生变更
+  adjustPosAndSizeChild(
+    dx1: number,
+    dy1: number,
+    dx2: number,
+    dy2: number,
+  ) {
+    const { children, root } = this;
+    if (!root || (!dx1 && !dy1 && !dx2 && !dy2)) {
+      return;
+    }
+    const gw = this.width;
+    const gh = this.height;
+    children.forEach(child => {
+      const {
+        style: {
+          top,
+          right,
+          bottom,
+          left,
+        },
+        computedStyle,
+      } = child;
+      // 如果向左拖发生了group的x变更，则dx为负数，子节点的left值增加，
+      // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
+      // 2个只要有发生，都会影响左右，因为干扰尺寸
+      if (dx1 || dx2) {
+        computedStyle.left -= dx1;
+        if (left.u === StyleUnit.PX) {
+          left.v = computedStyle.left;
+        }
+        else if (left.u === StyleUnit.PERCENT && gw) {
+          left.v = (computedStyle.left * 100) / gw;
+        }
+        computedStyle.right += dx2;
+        if (right.u === StyleUnit.PX) {
+          right.v = computedStyle.right;
+        }
+        else if (right.u === StyleUnit.PERCENT && gw) {
+          right.v = (computedStyle.right * 100) / gw;
+        }
+      }
+      // 类似水平情况
+      if (dy1 || dy2) {
+        computedStyle.top -= dy1;
+        if (top.u === StyleUnit.PX) {
+          top.v = computedStyle.top;
+        }
+        else if (top.u === StyleUnit.PERCENT && gh) {
+          top.v = (computedStyle.top * 100) / gh;
+        }
+        computedStyle.bottom += dy2;
+        if (bottom.u === StyleUnit.PX) {
+          bottom.v = computedStyle.bottom;
+        }
+        else if (bottom.u === StyleUnit.PERCENT && gh) {
+          bottom.v = (computedStyle.bottom * 100) / gh;
+        }
+      }
+      // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
+      child.refreshLevel |= RefreshLevel.TRANSFORM;
+      root.rl |= RefreshLevel.TRANSFORM;
+      child.calMatrix(RefreshLevel.TRANSFORM);
+      // 记得重置
+      child._rect = undefined;
+      child._bbox = undefined;
+      child._bbox2 = undefined;
+      child._filterBbox = undefined;
+      child._filterBbox2 = undefined;
+      child.tempBbox = undefined;
+    });
   }
 
   // 获取所有孩子相对于本父元素的盒子尺寸，再全集的极值
