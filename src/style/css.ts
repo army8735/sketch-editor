@@ -1,4 +1,4 @@
-import { JPoint, JRich, JStyle, Rich, Point } from '../format';
+import { JPoint, JRich, JStyle, Point, Rich } from '../format';
 import inject from '../util/inject';
 import { isNil, isString } from '../util/type';
 import {
@@ -10,10 +10,14 @@ import {
   ComputedShadow,
   ComputedStyle,
   CURVE_MODE,
+  DISPLAY,
   FILL_RULE,
+  FLEX_DIRECTION,
   FONT_STYLE,
+  JUSTIFY_CONTENT,
   MASK,
-  MIX_BLEND_MODE, OVERFLOW,
+  MIX_BLEND_MODE,
+  OVERFLOW,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
   STROKE_LINE_JOIN,
@@ -49,6 +53,36 @@ function compatibleTransform(k: string, v: StyleNumValue) {
 
 export function normalize(style: any): Style {
   const res: any = {};
+  if (style.hasOwnProperty('display')) {
+    const display = style.display;
+    let v = DISPLAY.BLOCK;
+    if (display === 'box') {
+      v = DISPLAY.BOX;
+    }
+    else if (display === 'flex') {
+      v = DISPLAY.FLEX;
+    }
+    res.display = { v, u: StyleUnit.NUMBER };
+  }
+  if (style.hasOwnProperty('flexDirection')) {
+    const flexDirection = style.flexDirection;
+    let v = FLEX_DIRECTION.ROW;
+    if (flexDirection === 'column') {
+      v = FLEX_DIRECTION.COLUMN;
+    }
+    res.flexDirection = { v, u: StyleUnit.NUMBER };
+  }
+  if (style.hasOwnProperty('justifyContent')) {
+    const justifyContent = style.justifyContent;
+    let v = JUSTIFY_CONTENT.FLEX_START;
+    if (justifyContent === 'center') {
+      v = JUSTIFY_CONTENT.CENTER;
+    }
+    else if (justifyContent === 'flex-end') {
+      v = JUSTIFY_CONTENT.FLEX_END;
+    }
+    res.justifyContent = { v, u: StyleUnit.NUMBER };
+  }
   [
     'left', 'top', 'right', 'bottom', 'width', 'height',
     'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius',

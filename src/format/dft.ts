@@ -2,6 +2,9 @@ export const PAGE_W = 100;
 export const PAGE_H = 100;
 
 export const DEFAULT_STYLE = {
+  display: 'block',
+  flexDirection: 'row',
+  justifyContent: 'flex-start',
   left: 0,
   top: 0,
   right: 'auto',

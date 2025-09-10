@@ -100,6 +100,9 @@ export type JLayer = JNode
   | JPolyline;
 
 export type JStyle = {
+  display: 'block' | 'box' | 'flex';
+  flexDirection: 'row' | 'column';
+  justifyContent: 'flex-start' | 'center' | 'flex-end';
   top: number | string;
   right: number | string;
   bottom: number | string;

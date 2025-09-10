@@ -225,6 +225,9 @@ export type StyleMatrixValue = {
 export type ComputedMatrix = Float64Array;
 
 export type Style = {
+  display: StyleDisplayValue;
+  flexDirection: StyleFlexDirectionValue;
+  justifyContent: StyleJustifyContentValue;
   top: StyleNumValue;
   right: StyleNumValue;
   bottom: StyleNumValue;
@@ -288,6 +291,9 @@ export type Style = {
 };
 
 export type ComputedStyle = {
+  display: DISPLAY;
+  flexDirection: FLEX_DIRECTION;
+  justifyContent: JUSTIFY_CONTENT;
   top: number;
   right: number;
   bottom: number;
@@ -480,6 +486,38 @@ export type StyleOverflowValue = {
   u: number;
 }
 
+export enum DISPLAY {
+  BLOCK = 0,
+  BOX = 1,
+  FLEX = 2,
+}
+
+export type StyleDisplayValue = {
+  v: DISPLAY;
+  u: number;
+}
+
+export enum FLEX_DIRECTION {
+  ROW = 0,
+  COLUMN = 1,
+}
+
+export type StyleFlexDirectionValue = {
+  v: FLEX_DIRECTION;
+  u: number;
+}
+
+export enum JUSTIFY_CONTENT {
+  FLEX_START = 0,
+  CENTER = 1,
+  FLEX_END = 2,
+}
+
+export type StyleJustifyContentValue = {
+  v: JUSTIFY_CONTENT,
+  u: number,
+}
+
 export default {
   StyleUnit,
   calUnit,
@@ -500,4 +538,7 @@ export default {
   VISIBILITY,
   TEXT_DECORATION,
   OVERFLOW,
+  DISPLAY,
+  FLEX_DIRECTION,
+  JUSTIFY_CONTENT,
 };

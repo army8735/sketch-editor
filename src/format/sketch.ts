@@ -203,6 +203,31 @@ async function convertItem(
   dy = 0,
   inGraphic = false,
 ): Promise<JNode | undefined> {
+  // 智能布局（旧版）
+  let display = 'block';
+  let flexDirection = 'row';
+  let justifyContent = 'flex-start';
+  if ((layer._class === SketchFormat.ClassValue.Group
+    || layer._class === SketchFormat.ClassValue.ShapeGroup
+    || layer._class === SketchFormat.ClassValue.SymbolMaster
+    || layer._class === SketchFormat.ClassValue.Artboard)
+    && layer.groupLayout
+  ) {
+    if (layer.groupLayout._class === SketchFormat.ClassValue.MSImmutableInferredGroupLayout) {
+      display = 'box';
+      const { axis, layoutAnchor } = layer.groupLayout;
+      if (axis === SketchFormat.InferredLayoutAxis.Vertical) {
+        flexDirection = 'column';
+      }
+      if (layoutAnchor === SketchFormat.InferredLayoutAnchor.Middle) {
+        justifyContent = 'center';
+      }
+      else if (layoutAnchor === SketchFormat.InferredLayoutAnchor.Max) {
+        justifyContent = 'flex-end';
+      }
+    }
+  }
+  // 尺寸位置
   let width: number | string = layer.frame.width || 0.5;
   let height: number | string = layer.frame.height || 0.5;
   let translateX: number | string = layer.frame.x || 0;
@@ -307,6 +332,9 @@ async function convertItem(
           includeBackgroundColorInInstance,
           exportOptions,
           style: {
+            display,
+            flexDirection,
+            justifyContent,
             width, // 画板始终相对于page的原点，没有百分比单位
             height,
             visibility,
@@ -350,6 +378,9 @@ async function convertItem(
         includeBackgroundColorInExport,
         exportOptions,
         style: {
+          display,
+          flexDirection,
+          justifyContent,
           width, // 画板始终相对于page的原点，没有百分比单位
           height,
           visibility,
@@ -716,6 +747,9 @@ async function convertItem(
           includeBackgroundColorInExport,
           exportOptions,
           style: {
+            display,
+            flexDirection,
+            justifyContent,
             left,
             top,
             right,
@@ -772,6 +806,9 @@ async function convertItem(
         constrainProportions,
         exportOptions,
         style: {
+          display,
+          flexDirection,
+          justifyContent,
           left,
           top,
           right,
@@ -1262,6 +1299,9 @@ async function convertItem(
         styleId,
         exportOptions,
         style: {
+          display,
+          flexDirection,
+          justifyContent,
           left,
           top,
           right,

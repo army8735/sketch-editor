@@ -429,6 +429,9 @@ class Node extends Event {
   // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值
   calReflowStyle() {
     const { style, computedStyle, parent } = this;
+    computedStyle.display = style.display.v;
+    computedStyle.flexDirection = style.flexDirection.v;
+    computedStyle.justifyContent = style.justifyContent.v;
     computedStyle.fontFamily = style.fontFamily.v;
     computedStyle.fontSize = style.fontSize.v;
     computedStyle.fontWeight = style.fontWeight.v;
@@ -1686,6 +1689,9 @@ class Node extends Event {
   getCssStyle(standard = false) {
     const { style, computedStyle } = this;
     const res: any = {};
+    res.display = ['block', 'box', 'flex'][style.display.v];
+    res.flexDirection = ['row', 'column'][style.flexDirection.v];
+    res.justifyContent = ['flex-start', 'center', 'flex-end'][style.justifyContent.v];
     // %单位转换
     [
       'top', 'right', 'bottom', 'left', 'width', 'height',
@@ -1811,6 +1817,19 @@ class Node extends Event {
           y: y4,
         },
       ],
+    };
+  }
+
+  // 相对parent不考虑旋转rect只考虑自身width/height
+  getOffsetRect() {
+    const computedStyle = this.computedStyle;
+    const left = computedStyle.left + computedStyle.translateX;
+    const top = computedStyle.top + computedStyle.translateY;
+    return {
+      left,
+      top,
+      right: left + this.width,
+      bottom: top + this.height,
     };
   }
 
@@ -2007,7 +2026,7 @@ class Node extends Event {
   }
 
   // 子节点变更导致的父组适配，无视固定尺寸设置调整，调整后的数据才是新固定尺寸
-  protected adjustPosAndSizeSelf(
+  adjustPosAndSizeSelf(
     dx1: number,
     dy1: number,
     dx2: number,
