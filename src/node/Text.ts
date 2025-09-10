@@ -273,6 +273,7 @@ class Text extends Node {
         }
         if (isInferredLayout) {
           const newRect = this.getOffsetRect();
+          // console.log(oldRect, newRect);
           parent!.children.forEach(child => {
             // 跳过自己，以及固定尺寸的
             if (child === this) {
@@ -298,7 +299,17 @@ class Text extends Node {
               // 都在text左侧的不调整
             }
             else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {}
-            else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {}
+            else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
+              // 整个在text左侧的兄弟需保持间距移动
+              if (r.right <= oldRect.left) {
+                dx1 = dx2 = newRect.left - oldRect.left;
+              }
+              // 部分在text左侧的只调整left，right不变
+              else if (r.left <= oldRect.left) {
+                dx1 = newRect.left - oldRect.left;
+              }
+              // 都在text右侧的不调整
+            }
             if (dx1 || dx2) {
               child.adjustPosAndSizeSelf(dx1, 0, dx2, 0);
               // 部分重叠时要考虑递归，比如shapeGroup，用reflow触发重新布局，完全重叠不用管
@@ -315,6 +326,11 @@ class Text extends Node {
               const n = newRect.right - oldRect.right;
               parent.adjustPosAndSizeSelf(0, 0, n, 0);
               parent.adjustPosAndSizeChild(0, 0, n, 0);
+            }
+            else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
+              const n = newRect.left - oldRect.left;
+              parent.adjustPosAndSizeSelf(n, 0, 0, 0);
+              parent.adjustPosAndSizeChild(n, 0, 0, 0);
             }
           }
         }

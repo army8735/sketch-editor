@@ -8,6 +8,7 @@ import { color2gl } from '../style/color';
 import { DISPLAY, StyleUnit } from '../style/define';
 import { LayoutData } from './layout';
 import { normalize } from '../style/css';
+import { RefreshLevel } from '../refresh/level';
 
 class SymbolInstance extends AbstractFrame {
   symbolMaster: SymbolMaster;
@@ -64,10 +65,7 @@ class SymbolInstance extends AbstractFrame {
         height: style.height,
       });
       Object.assign(this.style, source);
-      this.lay({
-        w: this.parent!.width,
-        h: this.parent!.height,
-      });
+      this.refresh(RefreshLevel.REFLOW);
     }
   }
 
