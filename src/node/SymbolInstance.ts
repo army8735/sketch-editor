@@ -5,6 +5,9 @@ import SymbolMaster from './SymbolMaster';
 import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import { color2gl } from '../style/color';
+import { DISPLAY, StyleUnit } from '../style/define';
+import { LayoutData } from './layout';
+import { normalize } from '../style/css';
 
 class SymbolInstance extends AbstractFrame {
   symbolMaster: SymbolMaster;
@@ -14,10 +17,58 @@ class SymbolInstance extends AbstractFrame {
     const overrideValues = props.overrideValues || {};
     const children = symbolMaster.children.map(item => item.cloneAndLink(overrideValues));
     super(props, children);
+    // 复用sm的布局样式
+    const style = this.style;
+    style.display = Object.assign({}, symbolMaster.style.display);
+    style.flexDirection = Object.assign({}, symbolMaster.style.flexDirection);
+    style.justifyContent = Object.assign({}, symbolMaster.style.justifyContent);
+    style.overflow = Object.assign({}, symbolMaster.style.overflow);
     this.isSymbolInstance = true;
     this.symbolMaster = symbolMaster;
     this.scale = props.scale || 1;
     symbolMaster.addSymbolInstance(this);
+  }
+
+  override lay(data: LayoutData) {
+    const style = this.style;
+    const { display } = style;
+    // 第一次添加时如果是flex，使用sm的尺寸，sm一定都在page上，可以计算获得尺寸
+    if (!this.isMounted && display.v === DISPLAY.BOX) {
+      this.symbolMaster.calReflowStyle();
+      if (style.left.u !== StyleUnit.AUTO) {
+        style.right = { v: 0, u : StyleUnit.AUTO };
+      }
+      else if (style.right.u !== StyleUnit.AUTO) {
+        style.left = { v: 0, u : StyleUnit.AUTO };
+      }
+      style.width = {
+        v: this.symbolMaster.width,
+        u: StyleUnit.PX,
+      };
+    }
+    super.lay(data);
+  }
+
+  override didMount() {
+    super.didMount();
+    const { display } = this.style;
+    const style = this.props.style;
+    // 老版智能布局如果尺寸不一致再重新布局一次，一般是字体原因导致，直接child文字内容引发排版调整后再触发这里
+    if (display.v === DISPLAY.BOX && style) {
+      const source = normalize({
+        left: style.left,
+        right: style.right,
+        width: style.width,
+        top: style.top,
+        bottom: style.bottom,
+        height: style.height,
+      });
+      Object.assign(this.style, source);
+      this.lay({
+        w: this.parent!.width,
+        h: this.parent!.height,
+      });
+    }
   }
 
   // 特殊，使用同一个sm，没法filter，因为禁止修改
@@ -45,7 +96,7 @@ class SymbolInstance extends AbstractFrame {
 
   // 背景色渲染使用sm的
   override calContent() {
-    return this.hasContent = this.symbolMaster.hasContent;
+    return this.hasContent = this.symbolMaster.includeBackgroundColorInInstance && this.symbolMaster.hasContent;
   }
 
   override renderCanvas(scale: number) {

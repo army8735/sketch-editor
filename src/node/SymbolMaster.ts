@@ -4,6 +4,7 @@ import { SymbolMasterProps, TAG_NAME } from '../format';
 import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import SymbolInstance from './SymbolInstance';
+import { RefreshLevel } from '../refresh/level';
 
 class SymbolMaster extends AbstractFrame {
   includeBackgroundColorInInstance: boolean;
@@ -14,6 +15,9 @@ class SymbolMaster extends AbstractFrame {
     this.includeBackgroundColorInInstance = !!props.includeBackgroundColorInInstance;
     this.isSymbolMaster = true;
     this.symbolInstances = [];
+    // 会首先作为依赖出现，先计算自己是否有内容，这样symbolInstance里渲染时才有背景色
+    this.calRepaintStyle(RefreshLevel.NONE);
+    this.calContent();
   }
 
   addSymbolInstance(item: SymbolInstance) {

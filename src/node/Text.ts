@@ -6,6 +6,7 @@ import CanvasCache from '../refresh/CanvasCache';
 import { RefreshLevel } from '../refresh/level';
 import {
   calNormalLineHeight,
+  calSize,
   getBaseline,
   getContentArea,
   getPropsRich,
@@ -16,7 +17,10 @@ import { color2rgbaInt, color2rgbaStr } from '../style/color';
 import {
   ComputedGradient,
   ComputedPattern,
+  DISPLAY,
+  FLEX_DIRECTION,
   GRADIENT,
+  JUSTIFY_CONTENT,
   MIX_BLEND_MODE,
   PATTERN_FILL_TYPE,
   STROKE_LINE_CAP,
@@ -33,6 +37,7 @@ import inject, { OffScreen } from '../util/inject';
 import { clone, equal } from '../util/type';
 import { LayoutData } from './layout';
 import LineBox from './LineBox';
+import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import TextBox from './TextBox';
 import { getConic, getLinear, getRadial } from '../style/gradient';
@@ -221,80 +226,133 @@ class Text extends Node {
   }
 
   override didMount() {
-    const isMounted = this.isMounted;
     super.didMount();
     // 首次布局特殊逻辑，由于字体的不确定性，自动尺寸的文本框在其它环境下中心点对齐可能会偏差，因此最初先按自动布局，
     // 完成后这里和css的width/height对比进行差值计算偏移，并还原对应的w/h为auto。
-    if (!isMounted) {
-      const textBehaviour = (this.props as TextProps).textBehaviour;
-      const { style, computedStyle, parent } = this;
-      const {
-        left,
-        right,
-        top,
-        bottom,
-        width,
-        height,
-        transformOrigin,
-      } = style;
-      let reset = false;
-      if (textBehaviour === 'auto'
-        && width.u !== StyleUnit.AUTO
-        && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO)) {
-        let d = 0;
-        if (width.u === StyleUnit.PX) {
-          d = this.width - width.v;
-        }
-        else if (width.u === StyleUnit.PERCENT) {
-          d = this.width - width.v * 0.01 * parent!.width;
-        }
-        if (Math.abs(d) > EPS && transformOrigin[0].u === StyleUnit.PERCENT) {
-          if (computedStyle.textAlign === TEXT_ALIGN.LEFT) {
-            const v = d * transformOrigin[0].v * 0.01;
-            this.adjustPosAndSizeSelf(v, 0, v, 0);
-            reset = true;
-          }
-          else if (computedStyle.textAlign === TEXT_ALIGN.RIGHT) {
-            const v = d * transformOrigin[0].v * 0.01;
-            this.adjustPosAndSizeSelf(-v, 0, -v, 0);
-            reset = true;
-          }
-        }
-        style.width = {
-          v: 0,
-          u: StyleUnit.AUTO,
-        };
+    const textBehaviour = (this.props as TextProps).textBehaviour;
+    const { style, computedStyle, parent } = this;
+    const {
+      left,
+      right,
+      top,
+      bottom,
+      width,
+      height,
+      transformOrigin,
+    } = style;
+    let reset = false;
+    if (textBehaviour === 'auto'
+      && width.u !== StyleUnit.AUTO
+      && (left.u === StyleUnit.AUTO || right.u === StyleUnit.AUTO)) {
+      let d = this.width;
+      if (width.u === StyleUnit.PX) {
+        d = this.width - width.v;
       }
-      if ((textBehaviour === 'auto' || textBehaviour === 'autoH')
-        && height.u !== StyleUnit.AUTO
-        && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO)) {
-        let d = 0;
-        if (height.u === StyleUnit.PX) {
-          d = this.height - height.v;
-        }
-        else if (height.u === StyleUnit.PERCENT) {
-          d = this.height - height.v * 0.01 * parent!.height;
-        }
-        if (Math.abs(d) > EPS && transformOrigin[1].u === StyleUnit.PERCENT) {
-          if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.TOP) {
-            const v = d * transformOrigin[1].v * 0.01;
-            this.adjustPosAndSizeSelf(0, v, 0, v);
-            reset = true;
-          }
-          else if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
-            const v = d * transformOrigin[1].v * 0.01;
-            this.adjustPosAndSizeSelf(0, -v, 0, -v);
-            reset = true;
-          }
-        }
-        style.height = {
-          v: 0,
-          u: StyleUnit.AUTO,
-        };
+      else if (width.u === StyleUnit.PERCENT) {
+        d = this.width - width.v * 0.01 * parent!.width;
       }
-      if (reset) {
-        this.checkPosSizeUpward();
+      if (Math.abs(d) > EPS && transformOrigin[0].u === StyleUnit.PERCENT) {
+        // 父有智能布局（旧版）还需调整兄弟节点，常见symbol的智能布局，先记录下来留待和兄弟对比
+        const isInferredLayout = parent!.style.display.v === DISPLAY.BOX && parent!.style.flexDirection.v === FLEX_DIRECTION.ROW;
+        const justifyContent = parent!.style.justifyContent;
+        const oldRect = this.getOffsetRect();
+        // 由于内容字体变更，rect也会变更，想获取原始的需手动计算，getOffsetRect()里computedStyle上尺寸和translate已经是新的了不对
+        const oldWidth = calSize(width, parent!.width);
+        oldRect.left = computedStyle.left + calSize(style.translateX, oldWidth);
+        oldRect.right = oldRect.left + oldWidth;
+        // 智能布局情况下对齐优先度高于本身
+        if (computedStyle.textAlign === TEXT_ALIGN.LEFT || isInferredLayout && justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
+          const v = d * transformOrigin[0].v * 0.01;
+          this.adjustPosAndSizeSelf(v, 0, v, 0);
+          reset = true;
+        }
+        else if (computedStyle.textAlign === TEXT_ALIGN.RIGHT || isInferredLayout && justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
+          const v = d * transformOrigin[0].v * 0.01;
+          this.adjustPosAndSizeSelf(-v, 0, -v, 0);
+          reset = true;
+        }
+        if (isInferredLayout) {
+          const newRect = this.getOffsetRect();
+          parent!.children.forEach(child => {
+            // 跳过自己，以及固定尺寸的
+            if (child === this) {
+              return;
+            }
+            const style = child.style;
+            if (style.width.u === StyleUnit.PX || style.left.u === StyleUnit.PX && style.right.u === StyleUnit.PX) {
+              return;
+            }
+            // 兄弟和调整前text对比，有包含、部分重叠、不重叠3种情况，还根据justifyContent对齐分别看左右调整
+            const r = child.getOffsetRect();
+            let dx1 = 0;
+            let dx2 = 0;
+            if (justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
+              // 整个在text右侧的兄弟需保持间距移动
+              if (r.left >= oldRect.right) {
+                dx1 = dx2 = newRect.right - oldRect.right;
+              }
+              // 部分在text右侧的只调整right，left不变
+              else if (r.right >= oldRect.right) {
+                dx2 = newRect.right - oldRect.right;
+              }
+              // 都在text左侧的不调整
+            }
+            else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {}
+            else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {}
+            if (dx1 || dx2) {
+              child.adjustPosAndSizeSelf(dx1, 0, dx2, 0);
+              // 部分重叠时要考虑递归，比如shapeGroup，用reflow触发重新布局，完全重叠不用管
+              if (dx1 && dx2) {
+              }
+              else {
+                child.refresh(RefreshLevel.REFLOW);
+              }
+            }
+          });
+          // 父级frame的话也要根据收缩情况调整尺寸，但这会影响children，所以二次调整children保持外观
+          if (parent instanceof AbstractFrame) {
+            if (justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
+              const n = newRect.right - oldRect.right;
+              parent.adjustPosAndSizeSelf(0, 0, n, 0);
+              parent.adjustPosAndSizeChild(0, 0, n, 0);
+            }
+          }
+        }
       }
+      style.width = {
+        v: 0,
+        u: StyleUnit.AUTO,
+      };
+    }
+    if ((textBehaviour === 'auto' || textBehaviour === 'autoH')
+      && height.u !== StyleUnit.AUTO
+      && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO)) {
+      let d = 0;
+      if (height.u === StyleUnit.PX) {
+        d = this.height - height.v;
+      }
+      else if (height.u === StyleUnit.PERCENT) {
+        d = this.height - height.v * 0.01 * parent!.height;
+      }
+      if (Math.abs(d) > EPS && transformOrigin[1].u === StyleUnit.PERCENT) {
+        if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.TOP) {
+          const v = d * transformOrigin[1].v * 0.01;
+          this.adjustPosAndSizeSelf(0, v, 0, v);
+          reset = true;
+        }
+        else if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
+          const v = d * transformOrigin[1].v * 0.01;
+          this.adjustPosAndSizeSelf(0, -v, 0, -v);
+          reset = true;
+        }
+      }
+      style.height = {
+        v: 0,
+        u: StyleUnit.AUTO,
+      };
+    }
+    if (reset) {
+      this.checkPosSizeUpward();
     }
   }
 
