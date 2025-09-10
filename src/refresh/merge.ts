@@ -108,7 +108,7 @@ export function genMerge(
       contrast,
       overflow,
     } = computedStyle;
-    // 特殊的group可以指定唯一的fill用作tint色调功能
+    // 特殊的group/si可以指定唯一的fill用作tint色调功能
     if (!tint && (node instanceof Group || node instanceof SymbolInstance)) {
       if (fillEnable[0] && fill[0] && Array.isArray(fill[0])) {
         tint = fill[0].slice(0);
@@ -188,7 +188,7 @@ export function genMerge(
         subList: [],
         isNew: false,
         isTop: true, // 后续遍历检查时子的置false
-        tint,
+        tint: needTint ? tint : undefined, // si本身不能使用tint渲染背景色
       };
       mergeList.push(t);
       mergeHash[i] = t;
