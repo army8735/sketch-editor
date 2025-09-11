@@ -95,8 +95,8 @@ abstract class AbstractGroup extends Container {
       else {
         this.adjustPosAndSizeSelf(dx1, dy1, dx2, dy2);
       }
-      // 再改孩子的，后面孩子计算要根据新的值，无需递归向下
-      this.adjustPosAndSizeChild(dx1, dy1, dx2, dy2);
+      // 再改孩子的，和自身恰好反向，后面孩子计算要根据新的值，无需递归向下
+      this.adjustPosAndSizeChild(-dx1, -dy1, -dx2, -dy2);
       return true;
     }
     return false;

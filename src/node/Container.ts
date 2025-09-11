@@ -7,7 +7,7 @@ import inject from '../util/inject';
 import { isNil } from '../util/type';
 import { LayoutData } from './layout';
 import { calRectPoints } from '../math/matrix';
-import { StyleUnit } from '../style/define';
+import { DISPLAY, StyleUnit } from '../style/define';
 
 class Container<T extends Node = Node> extends Node {
   children: T[];
@@ -87,6 +87,21 @@ class Container<T extends Node = Node> extends Node {
     }
   }
 
+  hasChildBox() {
+    const { children } = this;
+    const len = children.length;
+    for (let i = 0; i < len; i++) {
+      const child = children[i];
+      if (child.style.display.v === DISPLAY.BOX) {
+        return true;
+      }
+      if (child instanceof Container && child.hasChildBox()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   override lay(data: LayoutData) {
     super.lay(data);
     const { children } = this;
@@ -139,14 +154,14 @@ class Container<T extends Node = Node> extends Node {
       // 如果向右拖发生了group的width变更，则maxX比原本的width大，子节点的right值增加
       // 2个只要有发生，都会影响左右，因为干扰尺寸
       if (dx1 || dx2) {
-        computedStyle.left -= dx1;
+        computedStyle.left += dx1;
         if (left.u === StyleUnit.PX) {
           left.v = computedStyle.left;
         }
         else if (left.u === StyleUnit.PERCENT && gw) {
           left.v = (computedStyle.left * 100) / gw;
         }
-        computedStyle.right += dx2;
+        computedStyle.right -= dx2;
         if (right.u === StyleUnit.PX) {
           right.v = computedStyle.right;
         }
@@ -156,14 +171,14 @@ class Container<T extends Node = Node> extends Node {
       }
       // 类似水平情况
       if (dy1 || dy2) {
-        computedStyle.top -= dy1;
+        computedStyle.top += dy1;
         if (top.u === StyleUnit.PX) {
           top.v = computedStyle.top;
         }
         else if (top.u === StyleUnit.PERCENT && gh) {
           top.v = (computedStyle.top * 100) / gh;
         }
-        computedStyle.bottom += dy2;
+        computedStyle.bottom -= dy2;
         if (bottom.u === StyleUnit.PX) {
           bottom.v = computedStyle.bottom;
         }

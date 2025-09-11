@@ -253,7 +253,9 @@ class Text extends Node {
       }
       if (Math.abs(d) > EPS && transformOrigin[0].u === StyleUnit.PERCENT) {
         // 父有智能布局（旧版）还需调整兄弟节点，常见symbol的智能布局，先记录下来留待和兄弟对比
-        const isInferredLayout = parent!.style.display.v === DISPLAY.BOX && parent!.style.flexDirection.v === FLEX_DIRECTION.ROW;
+        const isInferredLayout = this.symbolInstance
+          && parent!.style.display.v === DISPLAY.BOX
+          && parent!.style.flexDirection.v === FLEX_DIRECTION.ROW;
         const justifyContent = parent!.style.justifyContent;
         const oldRect = this.getOffsetRect();
         // 由于内容字体变更，rect也会变更，想获取原始的需手动计算，getOffsetRect()里computedStyle上尺寸和translate已经是新的了不对
@@ -391,24 +393,29 @@ class Text extends Node {
               }
             }
           });
-          // 父级frame的话也要根据收缩情况调整尺寸，但这会影响children，所以二次调整children保持外观
-          if (parent instanceof AbstractFrame) {
+          // 父级si的话也要根据收缩情况调整尺寸，但这会影响children，所以二次调整children保持外观
+          let p = parent;
+          while (p && p.style.display.v === DISPLAY.BOX && p.style.flexDirection.v === FLEX_DIRECTION.ROW) {
             if (justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
               const n = newRect.right - oldRect.right;
-              parent.adjustPosAndSizeSelf(0, 0, n, 0);
-              parent.adjustPosAndSizeChild(0, 0, n, 0);
+              p.adjustPosAndSizeSelf(0, 0, n, 0);
+              p.adjustPosAndSizeChild(0, 0, -n, 0);
             }
             else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
               const n = newRect.left - oldRect.left;
-              parent.adjustPosAndSizeSelf(n, 0, 0, 0);
-              parent.adjustPosAndSizeChild(n, 0, 0, 0);
+              p.adjustPosAndSizeSelf(n, 0, 0, 0);
+              p.adjustPosAndSizeChild(-n, 0, 0, 0);
             }
             else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
               const n1 = newRect.left - oldRect.left;
               const n2 = newRect.right - oldRect.right;
-              parent.adjustPosAndSizeSelf(n1, 0, n2, 0);
-              parent.adjustPosAndSizeChild(n1, 0, n2, 0);
+              p.adjustPosAndSizeSelf(n1, 0, n2, 0);
+              p.adjustPosAndSizeChild(-n1, 0, -n2, 0);
             }
+            if (p === this.symbolInstance) {
+              break;
+            }
+            p = p.parent;
           }
         }
       }
@@ -430,7 +437,9 @@ class Text extends Node {
       }
       if (Math.abs(d) > EPS && transformOrigin[1].u === StyleUnit.PERCENT) {
         // 父有智能布局（旧版）还需调整兄弟节点，常见symbol的智能布局，先记录下来留待和兄弟对比
-        const isInferredLayout = parent!.style.display.v === DISPLAY.BOX && parent!.style.flexDirection.v === FLEX_DIRECTION.COLUMN;
+        const isInferredLayout = this.symbolInstance
+          && parent!.style.display.v === DISPLAY.BOX
+          && parent!.style.flexDirection.v === FLEX_DIRECTION.COLUMN;
         const justifyContent = parent!.style.justifyContent;
         const oldRect = this.getOffsetRect();
         // 由于内容字体变更，rect也会变更，想获取原始的需手动计算，getOffsetRect()里computedStyle上尺寸和translate已经是新的了不对
@@ -569,23 +578,28 @@ class Text extends Node {
               }
             }
             // 父级frame的话也要根据收缩情况调整尺寸，但这会影响children，所以二次调整children保持外观
-            if (parent instanceof AbstractFrame) {
+            let p = parent;
+            while (p && p.style.display.v === DISPLAY.BOX && p.style.flexDirection.v === FLEX_DIRECTION.ROW) {
               if (justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
                 const n = newRect.bottom - oldRect.bottom;
-                parent.adjustPosAndSizeSelf(0, 0, 0, n);
-                parent.adjustPosAndSizeChild(0, 0, 0, n);
+                p.adjustPosAndSizeSelf(0, 0, 0, n);
+                p.adjustPosAndSizeChild(0, 0, 0, -n);
               }
               else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
                 const n = newRect.top - oldRect.top;
-                parent.adjustPosAndSizeSelf(0, n, 0, 0);
-                parent.adjustPosAndSizeChild(0, n, 0, 0);
+                p.adjustPosAndSizeSelf(0, n, 0, 0);
+                p.adjustPosAndSizeChild(0, -n, 0, 0);
               }
               else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
                 const n1 = newRect.top - oldRect.top;
                 const n2 = newRect.bottom - oldRect.bottom;
-                parent.adjustPosAndSizeSelf(0, n1, 0, n2);
-                parent.adjustPosAndSizeChild(0, n2, 0, n2);
+                p.adjustPosAndSizeSelf(0, n1, 0, n2);
+                p.adjustPosAndSizeChild(0, -n2, 0, -n2);
               }
+              if (p === this.symbolInstance) {
+                break;
+              }
+              p = p.parent;
             }
           });
         }
