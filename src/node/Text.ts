@@ -283,14 +283,11 @@ class Text extends Node {
         if (isInferredLayout) {
           const newRect = this.getOffsetRect();
           parent!.children.forEach(child => {
-            // 跳过自己，以及固定尺寸的
+            // 跳过自己
             if (child === this) {
               return;
             }
             const style = child.style;
-            if (style.width.u === StyleUnit.PX || style.left.u === StyleUnit.PX && style.right.u === StyleUnit.PX) {
-              return;
-            }
             // 兄弟和调整前text对比，有包含、部分重叠、不重叠3种情况，还根据justifyContent对齐分别看左右调整
             const r = child.getOffsetRect();
             let dx1 = 0;
@@ -300,9 +297,19 @@ class Text extends Node {
               if (r.left >= oldRect.right) {
                 dx1 = dx2 = newRect.right - oldRect.right;
               }
-              // 部分在text右侧的只调整right，left不变
+              // 部分在text右侧的只调整right，left不变，需特殊处理固定尺寸位置
               else if (r.right >= oldRect.right) {
-                dx2 = newRect.right - oldRect.right;
+                if (style.left.u === StyleUnit.PX && style.right.u === StyleUnit.PX) {
+                  dx2 = newRect.right - oldRect.right;
+                }
+                else if (style.left.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {}
+                else if (style.right.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {
+                  dx2 = newRect.right - oldRect.right;
+                  dx1 = dx2;
+                }
+                else {
+                  dx2 = newRect.right - oldRect.right;
+                }
               }
               // 都在text左侧的不调整
             }
@@ -311,9 +318,19 @@ class Text extends Node {
               if (r.right <= oldRect.left) {
                 dx1 = dx2 = newRect.left - oldRect.left;
               }
-              // 部分在text左侧的只调整left，right不变
+              // 部分在text左侧的只调整left，right不变，需特殊处理固定尺寸位置
               else if (r.left <= oldRect.left) {
-                dx1 = newRect.left - oldRect.left;
+                if (style.left.u === StyleUnit.PX && style.right.u === StyleUnit.PX) {
+                  dx1 = newRect.left - oldRect.left;
+                }
+                else if (style.left.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {}
+                else if (style.right.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {
+                  dx1 = newRect.left - oldRect.left;
+                  dx2 = dx1;
+                }
+                else {
+                  dx1 = newRect.left - oldRect.left;
+                }
               }
               // 都在text右侧的不调整
             }
@@ -325,12 +342,43 @@ class Text extends Node {
               else if (r.right <= oldRect.left) {
                 dx1 = dx2 = newRect.left - oldRect.left;
               }
-              // 包含text的两侧收缩
+              // 包含text的两侧收缩，需特殊处理固定尺寸位置
               else if (r.left <= oldRect.left && r.right >= oldRect.right) {
-                dx1 = newRect.left - oldRect.left;
-                dx2 = newRect.right - oldRect.right;
+                if (style.left.u === StyleUnit.PX && style.right.u === StyleUnit.PX) {
+                  dx1 = newRect.left - oldRect.left;
+                  dx2 = newRect.right - oldRect.right;
+                }
+                else if (style.left.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {
+                  dx1 = newRect.left - oldRect.left;
+                  dx2 = dx1;
+                }
+                else if (style.right.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {
+                  dx2 = newRect.right - oldRect.right;
+                  dx1 = dx2;
+                }
+                else {
+                  dx1 = newRect.left - oldRect.left;
+                  dx2 = newRect.right - oldRect.right;
+                }
               }
-              // 部分在text左右的不调整
+              // 部分在text左右的
+              else if (r.left <= oldRect.left || r.right >= oldRect.right) {
+                if (style.left.u === StyleUnit.PX && style.right.u === StyleUnit.PX) {
+                  dx1 = newRect.left - oldRect.left;
+                  dx2 = newRect.right - oldRect.right;
+                }
+                else if (style.left.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {
+                  dx1 = newRect.left - oldRect.left;
+                  dx2 = dx1;
+                }
+                else if (style.right.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {
+                  dx2 = newRect.right - oldRect.right;
+                  dx1 = dx2;
+                }
+                else {
+                  dx1 = newRect.left - oldRect.left;
+                }
+              }
             }
             if (dx1 || dx2) {
               child.adjustPosAndSizeSelf(dx1, 0, dx2, 0);
