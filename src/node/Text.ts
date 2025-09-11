@@ -261,12 +261,21 @@ class Text extends Node {
         oldRect.left = computedStyle.left + calSize(style.translateX, oldWidth);
         oldRect.right = oldRect.left + oldWidth;
         // 智能布局情况下对齐优先度高于本身
-        if (computedStyle.textAlign === TEXT_ALIGN.LEFT || isInferredLayout && justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
+        let textAlign = computedStyle.textAlign;
+        if (isInferredLayout) {
+          if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
+            textAlign = TEXT_ALIGN.LEFT;
+          }
+          else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
+            textAlign = TEXT_ALIGN.CENTER;
+          }
+        }
+        if (textAlign === TEXT_ALIGN.LEFT) {
           const v = d * transformOrigin[0].v * 0.01;
           this.adjustPosAndSizeSelf(v, 0, v, 0);
           reset = true;
         }
-        else if (computedStyle.textAlign === TEXT_ALIGN.RIGHT || isInferredLayout && justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
+        else if (textAlign === TEXT_ALIGN.RIGHT) {
           const v = d * transformOrigin[0].v * 0.01;
           this.adjustPosAndSizeSelf(-v, 0, -v, 0);
           reset = true;
@@ -298,7 +307,6 @@ class Text extends Node {
               }
               // 都在text左侧的不调整
             }
-            else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {}
             else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
               // 整个在text左侧的兄弟需保持间距移动
               if (r.right <= oldRect.left) {
@@ -310,12 +318,25 @@ class Text extends Node {
               }
               // 都在text右侧的不调整
             }
+            else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
+              // 整个在text两侧的兄弟需保持间距移动
+              if (r.left >= oldRect.right) {
+                dx1 = dx2 = newRect.right - oldRect.right;
+              }
+              else if (r.right <= oldRect.left) {
+                dx1 = dx2 = newRect.left - oldRect.left;
+              }
+              // 包含text的两侧收缩
+              else if (r.left <= oldRect.left && r.right >= oldRect.right) {
+                dx1 = newRect.left - oldRect.left;
+                dx2 = newRect.right - oldRect.right;
+              }
+              // 部分在text左右的不调整
+            }
             if (dx1 || dx2) {
               child.adjustPosAndSizeSelf(dx1, 0, dx2, 0);
-              // 部分重叠时要考虑递归，比如shapeGroup，用reflow触发重新布局，完全重叠不用管
-              if (dx1 && dx2) {
-              }
-              else {
+              // 纯平移不用重新布局计算
+              if (dx1 !== dx2) {
                 child.refresh(RefreshLevel.REFLOW);
               }
             }
@@ -331,6 +352,12 @@ class Text extends Node {
               const n = newRect.left - oldRect.left;
               parent.adjustPosAndSizeSelf(n, 0, 0, 0);
               parent.adjustPosAndSizeChild(n, 0, 0, 0);
+            }
+            else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
+              const n1 = newRect.left - oldRect.left;
+              const n2 = newRect.right - oldRect.right;
+              parent.adjustPosAndSizeSelf(n1, 0, n2, 0);
+              parent.adjustPosAndSizeChild(n1, 0, n2, 0);
             }
           }
         }

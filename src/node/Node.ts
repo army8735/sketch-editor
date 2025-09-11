@@ -2072,8 +2072,8 @@ class Node extends Event {
       else if (width.u === StyleUnit.PERCENT) {
         width.v = (dx2 + this.width - dx1) * 100 / parent.width;
       }
+      this.width = computedStyle.width = parent.width - computedStyle.left - computedStyle.right;
     }
-    this.width = computedStyle.width = parent.width - computedStyle.left - computedStyle.right;
     // 可能调整right到了left的左边形成负值，此时交换它们
     if (this.width < 0) {
       this.width = computedStyle.width = -this.width;
@@ -2120,8 +2120,8 @@ class Node extends Event {
       else if (height.u === StyleUnit.PERCENT) {
         height.v = (dy2 + this.height - dy1) * 100 / parent.height;
       }
+      this.height = computedStyle.height = parent.height - computedStyle.top - computedStyle.bottom;
     }
-    this.height = computedStyle.height = parent.height - computedStyle.top - computedStyle.bottom;
     if (this.height < 0) {
       this.height = computedStyle.height = -this.height;
       const oldTop = computedStyle.top;
