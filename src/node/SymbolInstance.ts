@@ -5,7 +5,7 @@ import SymbolMaster from './SymbolMaster';
 import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import { color2gl } from '../style/color';
-import { DISPLAY, StyleUnit } from '../style/define';
+import { DISPLAY, FLEX_DIRECTION, StyleUnit } from '../style/define';
 import { LayoutData } from './layout';
 import { normalize } from '../style/css';
 import { RefreshLevel } from '../refresh/level';
@@ -32,27 +32,75 @@ class SymbolInstance extends AbstractFrame {
 
   override lay(data: LayoutData) {
     const style = this.style;
-    const { display } = style;
+    const { display, flexDirection, left, right, width, top, bottom, height } = style;
     // 第一次添加时如果是flex，使用sm的尺寸，sm一定都在page上，可以计算获得尺寸
     if (!this.isMounted && display.v === DISPLAY.BOX) {
       this.symbolMaster.calReflowStyle();
-      if (style.left.u !== StyleUnit.AUTO) {
-        style.right = { v: 0, u : StyleUnit.AUTO };
+      const { width: w, height: h } = this.symbolMaster;
+      // 使用原有单位换算
+      if (flexDirection.v === FLEX_DIRECTION.ROW) {
+        if (left.u !== StyleUnit.AUTO) {
+          let l = left.v;
+          if (left.u === StyleUnit.PERCENT) {
+            l = left.v * data.w * 0.01;
+          }
+          if (right.u === StyleUnit.PX) {
+            right.v = data.w - w - l;
+          }
+          else if (right.u === StyleUnit.PERCENT) {
+            right.v = (data.w - w - l) * 100 / data.w;
+          }
+          else if (width.u === StyleUnit.PX) {
+            width.v = w;
+          }
+          else if (width.u === StyleUnit.PERCENT) {
+            width.v = w * 100 / data.w;
+          }
+        }
+        else if (right.u !== StyleUnit.AUTO) {
+          if (width.u === StyleUnit.PX) {
+            width.v = w;
+          }
+          else if (width.u === StyleUnit.PERCENT) {
+            width.v = w * 100 / data.w;
+          }
+        }
       }
-      else if (style.right.u !== StyleUnit.AUTO) {
-        style.left = { v: 0, u : StyleUnit.AUTO };
+      else if (flexDirection.v === FLEX_DIRECTION.COLUMN) {
+        if (top.u !== StyleUnit.AUTO) {
+          let t = top.v;
+          if (top.u === StyleUnit.PERCENT) {
+            t = top.v * data.h * 0.01;
+          }
+          if (bottom.u === StyleUnit.PX) {
+            bottom.v = data.h - h - t;
+          }
+          else if (bottom.u === StyleUnit.PERCENT) {
+            bottom.v = (data.h - h - t) * 100 / data.h;
+          }
+          else if (height.u === StyleUnit.PX) {
+            height.v = h;
+          }
+          else if (height.u === StyleUnit.PERCENT) {
+            height.v = h * 100 / data.h;
+          }
+        }
+        else if (bottom.u !== StyleUnit.AUTO) {
+          if (height.u === StyleUnit.PX) {
+            height.v = h;
+          }
+          else if (height.u === StyleUnit.PERCENT) {
+            height.v = h * 100 / data.h;
+          }
+        }
       }
-      style.width = {
-        v: this.symbolMaster.width,
-        u: StyleUnit.PX,
-      };
     }
     super.lay(data);
   }
 
   override didMount() {
     super.didMount();
-    const { display } = this.style;
+    const { display, left, right, width, top, bottom, height } = this.style;
     const style = this.props.style;
     // 老版智能布局如果尺寸不一致再重新布局一次，一般是字体原因导致，直接child文字内容引发排版调整后再触发这里
     if (display.v === DISPLAY.BOX && style) {
@@ -64,8 +112,17 @@ class SymbolInstance extends AbstractFrame {
         bottom: style.bottom,
         height: style.height,
       });
-      Object.assign(this.style, source);
-      this.refresh(RefreshLevel.REFLOW);
+      // 有可能完全一致就不需要再次布局了
+      if (left.v !== source.left.v || left.u !== source.left.u
+        || right.v !== source.right.v || right.u !== source.right.u
+        || width.v !== source.width.v || width.u !== source.width.u
+        || top.v !== source.top.v || top.u !== source.top.u
+        || bottom.v !== source.bottom.v || bottom.u !== source.bottom.u
+        || height.v !== source.height.v || height.u !== source.height.u
+      ) {
+        Object.assign(this.style, source);
+        this.refresh(RefreshLevel.REFLOW);
+      }
     }
   }
 
