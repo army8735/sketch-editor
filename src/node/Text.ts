@@ -371,12 +371,15 @@ class Text extends Node {
                   dx1 = newRect.left - oldRect.left;
                   dx2 = dx1;
                 }
+                else if (style.left.u === StyleUnit.PX) {
+                  dx1 = newRect.left - oldRect.left;
+                }
                 else if (style.right.u === StyleUnit.PX && style.width.u === StyleUnit.PX) {
                   dx2 = newRect.right - oldRect.right;
                   dx1 = dx2;
                 }
-                else {
-                  dx1 = newRect.left - oldRect.left;
+                else if (style.right.u === StyleUnit.PX) {
+                  dx2 = newRect.right - oldRect.right;
                 }
               }
             }
@@ -462,9 +465,6 @@ class Text extends Node {
               return;
             }
             const style = child.style;
-            if (style.height.u === StyleUnit.PX || style.top.u === StyleUnit.PX && style.bottom.u === StyleUnit.PX) {
-              return;
-            }
             // 兄弟和调整前text对比，有包含、部分重叠、不重叠3种情况，还根据justifyContent对齐分别看左右调整
             const r = child.getOffsetRect();
             let dy1 = 0;
@@ -474,8 +474,19 @@ class Text extends Node {
               if (r.top >= oldRect.bottom) {
                 dy1 = dy2 = newRect.bottom - oldRect.bottom;
               }
-              // 部分在text下侧的只调整bottom，top不变
+              // 部分在text下侧的只调整bottom，top不变，需特殊处理固定尺寸位置
               else if (r.bottom >= oldRect.bottom) {
+                if (style.top.u === StyleUnit.PX && style.bottom.u === StyleUnit.PX) {
+                  dy2 = newRect.bottom - oldRect.bottom;
+                }
+                else if (style.top.u === StyleUnit.PX && style.height.u === StyleUnit.PX) {}
+                else if (style.bottom.u === StyleUnit.PX && style.height.u === StyleUnit.PX) {
+                  dy2 = newRect.bottom - oldRect.bottom;
+                  dy1 = dy2;
+                }
+                else {
+                  dy2 = newRect.bottom - oldRect.bottom;
+                }
                 dy2 = newRect.bottom - oldRect.bottom;
               }
               // 都在text上侧的不调整
@@ -485,9 +496,19 @@ class Text extends Node {
               if (r.bottom <= oldRect.top) {
                 dy1 = dy2 = newRect.top - oldRect.top;
               }
-              // 部分在text上侧的只调整top，bottom不变
+              // 部分在text上侧的只调整top，bottom不变，需特殊处理固定尺寸位置
               else if (r.top <= oldRect.top) {
-                dy1 = newRect.top - oldRect.top;
+                if (style.top.u === StyleUnit.PX && style.bottom.u === StyleUnit.PX) {
+                  dy1 = newRect.top - oldRect.top;
+                }
+                else if (style.top.u === StyleUnit.PX && style.height.u === StyleUnit.PX) {}
+                else if (style.bottom.u === StyleUnit.PX && style.height.u === StyleUnit.PX) {
+                  dy1 = newRect.top - oldRect.top;
+                  dy2 = dy1;
+                }
+                else {
+                  dy1 = newRect.top - oldRect.top;
+                }
               }
               // 都在text下侧的不调整
             }
@@ -499,12 +520,46 @@ class Text extends Node {
               else if (r.bottom <= oldRect.top) {
                 dy1 = dy2 = newRect.top - oldRect.top;
               }
-              // 包含text的两侧收缩
+              // 包含text的两侧收缩，需特殊处理固定尺寸位置
               else if (r.top <= oldRect.top && r.bottom >= oldRect.bottom) {
-                dy1 = newRect.top - oldRect.top;
-                dy2 = newRect.bottom - oldRect.bottom;
+                if (style.left.u === StyleUnit.PX && style.right.u === StyleUnit.PX) {
+                  dy1 = newRect.top - oldRect.top;
+                  dy2 = newRect.bottom - oldRect.bottom;
+                }
+                else if (style.left.u === StyleUnit.PX && style.height.u === StyleUnit.PX) {
+                  dy1 = newRect.top - oldRect.top;
+                  dy2 = dy1;
+                }
+                else if (style.right.u === StyleUnit.PX && style.height.u === StyleUnit.PX) {
+                  dy2 = newRect.bottom - oldRect.bottom;
+                  dy1 = dy2;
+                }
+                else {
+                  dy1 = newRect.top - oldRect.top;
+                  dy2 = newRect.bottom - oldRect.bottom;
+                }
               }
-              // 部分在text上下的不调整
+              // 部分在text上下的
+              else if (r.top <= oldRect.top || r.bottom >= oldRect.bottom) {
+                if (style.top.u === StyleUnit.PX && style.bottom.u === StyleUnit.PX) {
+                  dy1 = newRect.top - oldRect.top;
+                  dy2 = newRect.bottom - oldRect.bottom;
+                }
+                else if (style.top.u === StyleUnit.PX && style.height.u === StyleUnit.PX) {
+                  dy1 = newRect.top - oldRect.top;
+                  dy2 = dy1;
+                }
+                else if (style.top.u === StyleUnit.PX) {
+                  dy1 = newRect.top - oldRect.top;
+                }
+                else if (style.bottom.u === StyleUnit.PX && style.height.u === StyleUnit.PX) {
+                  dy2 = newRect.bottom - oldRect.bottom;
+                  dy1 = dy2;
+                }
+                else if (style.bottom.u === StyleUnit.PX) {
+                  dy2 = newRect.bottom - oldRect.bottom;
+                }
+              }
             }
             if (dy1 || dy2) {
               child.adjustPosAndSizeSelf(dy1, 0, dy2, 0);
