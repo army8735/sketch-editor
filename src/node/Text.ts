@@ -264,7 +264,7 @@ class Text extends Node {
         let textAlign = computedStyle.textAlign;
         if (isInferredLayout) {
           if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
-            textAlign = TEXT_ALIGN.LEFT;
+            textAlign = TEXT_ALIGN.RIGHT;
           }
           else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
             textAlign = TEXT_ALIGN.CENTER;
@@ -282,7 +282,6 @@ class Text extends Node {
         }
         if (isInferredLayout) {
           const newRect = this.getOffsetRect();
-          // console.log(oldRect, newRect);
           parent!.children.forEach(child => {
             // 跳过自己，以及固定尺寸的
             if (child === this) {
@@ -367,6 +366,7 @@ class Text extends Node {
         u: StyleUnit.AUTO,
       };
     }
+    // 垂直逻辑同上水平
     if ((textBehaviour === 'auto' || textBehaviour === 'autoH')
       && height.u !== StyleUnit.AUTO
       && (top.u === StyleUnit.AUTO || bottom.u === StyleUnit.AUTO)) {
@@ -378,15 +378,113 @@ class Text extends Node {
         d = this.height - height.v * 0.01 * parent!.height;
       }
       if (Math.abs(d) > EPS && transformOrigin[1].u === StyleUnit.PERCENT) {
-        if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.TOP) {
+        // 父有智能布局（旧版）还需调整兄弟节点，常见symbol的智能布局，先记录下来留待和兄弟对比
+        const isInferredLayout = parent!.style.display.v === DISPLAY.BOX && parent!.style.flexDirection.v === FLEX_DIRECTION.COLUMN;
+        const justifyContent = parent!.style.justifyContent;
+        const oldRect = this.getOffsetRect();
+        // 由于内容字体变更，rect也会变更，想获取原始的需手动计算，getOffsetRect()里computedStyle上尺寸和translate已经是新的了不对
+        const oldHeight = calSize(height, parent!.height);
+        oldRect.top = computedStyle.top + calSize(style.translateY, oldHeight);
+        oldRect.bottom = oldRect.top + oldHeight;
+        // 智能布局情况下对齐优先度高于本身
+        let textVerticalAlign = computedStyle.textVerticalAlign;
+        if (isInferredLayout) {
+          if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
+            textVerticalAlign = TEXT_VERTICAL_ALIGN.BOTTOM;
+          }
+          else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
+            textVerticalAlign = TEXT_VERTICAL_ALIGN.MIDDLE;
+          }
+        }
+        if (textVerticalAlign === TEXT_VERTICAL_ALIGN.TOP) {
           const v = d * transformOrigin[1].v * 0.01;
           this.adjustPosAndSizeSelf(0, v, 0, v);
           reset = true;
         }
-        else if (computedStyle.textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
+        else if (textVerticalAlign === TEXT_VERTICAL_ALIGN.BOTTOM) {
           const v = d * transformOrigin[1].v * 0.01;
           this.adjustPosAndSizeSelf(0, -v, 0, -v);
           reset = true;
+        }
+        if (isInferredLayout) {
+          const newRect = this.getOffsetRect();
+          parent!.children.forEach(child => {
+            // 跳过自己，以及固定尺寸的
+            if (child === this) {
+              return;
+            }
+            const style = child.style;
+            if (style.height.u === StyleUnit.PX || style.top.u === StyleUnit.PX && style.bottom.u === StyleUnit.PX) {
+              return;
+            }
+            // 兄弟和调整前text对比，有包含、部分重叠、不重叠3种情况，还根据justifyContent对齐分别看左右调整
+            const r = child.getOffsetRect();
+            let dy1 = 0;
+            let dy2 = 0;
+            if (justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
+              // 整个在text下侧的兄弟需保持间距移动
+              if (r.top >= oldRect.bottom) {
+                dy1 = dy2 = newRect.bottom - oldRect.bottom;
+              }
+              // 部分在text下侧的只调整bottom，top不变
+              else if (r.bottom >= oldRect.bottom) {
+                dy2 = newRect.bottom - oldRect.bottom;
+              }
+              // 都在text上侧的不调整
+            }
+            else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
+              // 整个在text上侧的兄弟需保持间距移动
+              if (r.bottom <= oldRect.top) {
+                dy1 = dy2 = newRect.top - oldRect.top;
+              }
+              // 部分在text上侧的只调整top，bottom不变
+              else if (r.top <= oldRect.top) {
+                dy1 = newRect.top - oldRect.top;
+              }
+              // 都在text下侧的不调整
+            }
+            else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
+              // 整个在text两侧的兄弟需保持间距移动
+              if (r.top >= oldRect.bottom) {
+                dy1 = dy2 = newRect.bottom - oldRect.bottom;
+              }
+              else if (r.bottom <= oldRect.top) {
+                dy1 = dy2 = newRect.top - oldRect.top;
+              }
+              // 包含text的两侧收缩
+              else if (r.top <= oldRect.top && r.bottom >= oldRect.bottom) {
+                dy1 = newRect.top - oldRect.top;
+                dy2 = newRect.bottom - oldRect.bottom;
+              }
+              // 部分在text上下的不调整
+            }
+            if (dy1 || dy2) {
+              child.adjustPosAndSizeSelf(dy1, 0, dy2, 0);
+              // 纯平移不用重新布局计算
+              if (dy1 !== dy2) {
+                child.refresh(RefreshLevel.REFLOW);
+              }
+            }
+            // 父级frame的话也要根据收缩情况调整尺寸，但这会影响children，所以二次调整children保持外观
+            if (parent instanceof AbstractFrame) {
+              if (justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
+                const n = newRect.bottom - oldRect.bottom;
+                parent.adjustPosAndSizeSelf(0, 0, 0, n);
+                parent.adjustPosAndSizeChild(0, 0, 0, n);
+              }
+              else if (justifyContent.v === JUSTIFY_CONTENT.FLEX_END) {
+                const n = newRect.top - oldRect.top;
+                parent.adjustPosAndSizeSelf(0, n, 0, 0);
+                parent.adjustPosAndSizeChild(0, n, 0, 0);
+              }
+              else if (justifyContent.v === JUSTIFY_CONTENT.CENTER) {
+                const n1 = newRect.top - oldRect.top;
+                const n2 = newRect.bottom - oldRect.bottom;
+                parent.adjustPosAndSizeSelf(0, n1, 0, n2);
+                parent.adjustPosAndSizeChild(0, n2, 0, n2);
+              }
+            }
+          });
         }
       }
       style.height = {
