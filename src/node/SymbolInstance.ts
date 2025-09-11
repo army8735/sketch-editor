@@ -100,29 +100,21 @@ class SymbolInstance extends AbstractFrame {
 
   override didMount() {
     super.didMount();
-    const { display, left, right, width, top, bottom, height } = this.style;
+    const { display, flexDirection } = this.style;
     const style = this.props.style;
     // 老版智能布局如果尺寸不一致再重新布局一次，一般是字体原因导致，直接child文字内容引发排版调整后再触发这里
     if (display.v === DISPLAY.BOX && style) {
-      const source = normalize({
+      const source = normalize(flexDirection.v === FLEX_DIRECTION.ROW ? {
         left: style.left,
         right: style.right,
         width: style.width,
+      } : {
         top: style.top,
         bottom: style.bottom,
         height: style.height,
       });
       // 有可能完全一致就不需要再次布局了
-      if (left.v !== source.left.v || left.u !== source.left.u
-        || right.v !== source.right.v || right.u !== source.right.u
-        || width.v !== source.width.v || width.u !== source.width.u
-        || top.v !== source.top.v || top.u !== source.top.u
-        || bottom.v !== source.bottom.v || bottom.u !== source.bottom.u
-        || height.v !== source.height.v || height.u !== source.height.u
-      ) {
-        Object.assign(this.style, source);
-        this.refresh(RefreshLevel.REFLOW);
-      }
+      this.updateFormatStyle(source);
     }
   }
 
