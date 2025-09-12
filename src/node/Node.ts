@@ -351,7 +351,7 @@ class Node extends Event {
   // 封装，布局后计算repaint和matrix的样式，清空包围盒等老数据，真的布局计算在lay()中，各子类覆盖实现
   layout(data: LayoutData) {
     if (this.isDestroyed) {
-      return;
+      // return;
     }
     this.lay(data);
     // repaint和matrix计算需要x/y/width/height
@@ -1416,7 +1416,7 @@ class Node extends Event {
       return;
     }
     parent?.deleteStruct(this);
-    root!.addUpdate(this, [], RefreshLevel.REFLOW, false, true, cb);
+    root?.addUpdate(this, [], RefreshLevel.REFLOW, false, true, cb);
   }
 
   destroy() {

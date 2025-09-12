@@ -307,8 +307,6 @@ class Root extends Container implements FrameCallback {
         visibility: 'hidden',
       });
     }
-    // 先置空，否则新页初始化添加DOM会触发事件到老页上
-    // this.lastPage = undefined;
     let newPage = this.lastPage = this.pageContainer.children[index];
     // 延迟初始化，第一次需要显示时才从json初始化Page对象
     newPage.initIfNot();
@@ -425,6 +423,10 @@ class Root extends Container implements FrameCallback {
         // 新增节点渲染前计算影响tile
         if (isTile && addDom) {
           this.tileRecord[node.uuid] = node;
+        }
+        // 需要重置，否则其layout()不执行
+        if (node instanceof SymbolMaster) {
+          node.hasLayout = false;
         }
       }
     }

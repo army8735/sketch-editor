@@ -5,8 +5,10 @@ import SymbolMaster from './SymbolMaster';
 import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import { color2gl } from '../style/color';
-import { DISPLAY, FLEX_DIRECTION, StyleUnit } from '../style/define';
+import { DISPLAY } from '../style/define';
 import { LayoutData } from './layout';
+import { PAGE_H, PAGE_W } from '../format/dft';
+import { RefreshLevel } from '../refresh/level';
 import { normalize } from '../style/css';
 
 class SymbolInstance extends AbstractFrame {
@@ -30,68 +32,18 @@ class SymbolInstance extends AbstractFrame {
   }
 
   override lay(data: LayoutData) {
-    const style = this.style;
-    const { display, flexDirection, left, right, width, top, bottom, height } = style;
     // 第一次添加时如果是box或子节点有box布局，使用sm的尺寸，sm一定都在page上，可以计算获得尺寸
-    if (!this.isMounted && (display.v === DISPLAY.BOX || this.hasChildBox())) {
-      this.symbolMaster.calReflowStyle();
-      const { width: w, height: h } = this.symbolMaster;
-      // 使用原有单位换算
-      if (flexDirection.v === FLEX_DIRECTION.ROW) {
-        if (left.u !== StyleUnit.AUTO) {
-          let l = left.v;
-          if (left.u === StyleUnit.PERCENT) {
-            l = left.v * data.w * 0.01;
-          }
-          if (right.u === StyleUnit.PX) {
-            right.v = data.w - w - l;
-          }
-          else if (right.u === StyleUnit.PERCENT) {
-            right.v = (data.w - w - l) * 100 / data.w;
-          }
-          else if (width.u === StyleUnit.PX) {
-            width.v = w;
-          }
-          else if (width.u === StyleUnit.PERCENT) {
-            width.v = w * 100 / data.w;
-          }
-        }
-        else if (right.u !== StyleUnit.AUTO) {
-          if (width.u === StyleUnit.PX) {
-            width.v = w;
-          }
-          else if (width.u === StyleUnit.PERCENT) {
-            width.v = w * 100 / data.w;
-          }
-        }
-      }
-      else if (flexDirection.v === FLEX_DIRECTION.COLUMN) {
-        if (top.u !== StyleUnit.AUTO) {
-          let t = top.v;
-          if (top.u === StyleUnit.PERCENT) {
-            t = top.v * data.h * 0.01;
-          }
-          if (bottom.u === StyleUnit.PX) {
-            bottom.v = data.h - h - t;
-          }
-          else if (bottom.u === StyleUnit.PERCENT) {
-            bottom.v = (data.h - h - t) * 100 / data.h;
-          }
-          else if (height.u === StyleUnit.PX) {
-            height.v = h;
-          }
-          else if (height.u === StyleUnit.PERCENT) {
-            height.v = h * 100 / data.h;
-          }
-        }
-        else if (bottom.u !== StyleUnit.AUTO) {
-          if (height.u === StyleUnit.PX) {
-            height.v = h;
-          }
-          else if (height.u === StyleUnit.PERCENT) {
-            height.v = h * 100 / data.h;
-          }
-        }
+    if (!this.isMounted) {
+      const symbolMaster = this.symbolMaster;
+      symbolMaster.layout({
+        w: PAGE_W,
+        h: PAGE_H,
+      });
+      const { width: w, height: h } = symbolMaster;
+      const { display } = this.style;
+      if (display.v === DISPLAY.BLOCK && this.hasChildBox()) {
+        this.resetLayH(data, w);
+        this.resetLayV(data, h);
       }
     }
     super.lay(data);
@@ -99,15 +51,15 @@ class SymbolInstance extends AbstractFrame {
 
   override didMount() {
     super.didMount();
-    const { display, flexDirection } = this.style;
+    const { display } = this.style;
     const style = this.props.style;
     // 老版智能布局如果尺寸不一致再重新布局一次，一般是字体原因导致，直接child文字内容引发排版调整后再触发这里
     if ((display.v === DISPLAY.BOX || this.hasChildBox()) && style) {
-      const source = normalize(flexDirection.v === FLEX_DIRECTION.ROW ? {
+      this.refresh(RefreshLevel.REFLOW)
+      const source = normalize({
         left: style.left,
         right: style.right,
         width: style.width,
-      } : {
         top: style.top,
         bottom: style.bottom,
         height: style.height,

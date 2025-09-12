@@ -7,7 +7,7 @@ import inject from '../util/inject';
 import { isNil } from '../util/type';
 import { LayoutData } from './layout';
 import { calRectPoints } from '../math/matrix';
-import { DISPLAY, StyleUnit } from '../style/define';
+import { DISPLAY, FLEX_DIRECTION, StyleUnit } from '../style/define';
 
 class Container<T extends Node = Node> extends Node {
   children: T[];
@@ -100,6 +100,87 @@ class Container<T extends Node = Node> extends Node {
       }
     }
     return false;
+  }
+
+  protected resetLayH(data: LayoutData, w: number) {
+    const { left, right, width, top, bottom, height } = this.style;
+    if (left.u !== StyleUnit.AUTO) {
+      let l = left.v;
+      if (left.u === StyleUnit.PERCENT) {
+        l = left.v * data.w * 0.01;
+      }
+      if (right.u === StyleUnit.PX) {
+        right.v = data.w - w - l;
+      }
+      else if (right.u === StyleUnit.PERCENT) {
+        right.v = (data.w - w - l) * 100 / data.w;
+      }
+      else if (width.u === StyleUnit.PX) {
+        width.v = w;
+      }
+      else if (width.u === StyleUnit.PERCENT) {
+        width.v = w * 100 / data.w;
+      }
+    }
+    else if (right.u !== StyleUnit.AUTO) {
+      if (width.u === StyleUnit.PX) {
+        width.v = w;
+      }
+      else if (width.u === StyleUnit.PERCENT) {
+        width.v = w * 100 / data.w;
+      }
+    }
+  }
+
+  protected resetLayV(data: LayoutData, h: number) {
+    const { top, bottom, height } = this.style;
+    if (top.u !== StyleUnit.AUTO) {
+      let t = top.v;
+      if (top.u === StyleUnit.PERCENT) {
+        t = top.v * data.h * 0.01;
+      }
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v = data.h - h - t;
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v = (data.h - h - t) * 100 / data.h;
+      }
+      else if (height.u === StyleUnit.PX) {
+        height.v = h;
+      }
+      else if (height.u === StyleUnit.PERCENT) {
+        height.v = h * 100 / data.h;
+      }
+    }
+    else if (bottom.u !== StyleUnit.AUTO) {
+      if (height.u === StyleUnit.PX) {
+        height.v = h;
+      }
+      else if (height.u === StyleUnit.PERCENT) {
+        height.v = h * 100 / data.h;
+      }
+    }
+  }
+
+  override lay(data: LayoutData) {
+    const { style, source } = this;
+    if (source) {
+      const { display, flexDirection } = style;
+      if (!this.isMounted && display.v === DISPLAY.BOX) {
+        const { width: w, height: h } = source;
+        // console.log('lay', this.name,display, source,w, h);
+        if (display.v === DISPLAY.BOX) {
+          // 使用原有单位换算
+          if (flexDirection.v === FLEX_DIRECTION.ROW) {
+            this.resetLayH(data, w);
+          }
+          else if (flexDirection.v === FLEX_DIRECTION.COLUMN) {
+            this.resetLayV(data, h);
+          }
+        }
+      }
+    }
+    super.lay(data);
   }
 
   override layout(data: LayoutData) {

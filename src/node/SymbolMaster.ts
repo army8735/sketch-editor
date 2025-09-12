@@ -5,10 +5,12 @@ import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import SymbolInstance from './SymbolInstance';
 import { RefreshLevel } from '../refresh/level';
+import { LayoutData } from './layout';
 
 class SymbolMaster extends AbstractFrame {
   includeBackgroundColorInInstance: boolean;
   symbolInstances: SymbolInstance[];
+  hasLayout: boolean;
 
   constructor(props: SymbolMasterProps, children: Array<Node>) {
     super(props, children);
@@ -18,6 +20,21 @@ class SymbolMaster extends AbstractFrame {
     // 会首先作为依赖出现，先计算自己是否有内容，这样symbolInstance里渲染时才有背景色
     this.calRepaintStyle(RefreshLevel.NONE);
     this.calContent();
+    this.hasLayout = false;
+  }
+
+  /**
+   * 特殊判断，因为智能布局si依赖sm的布局，sm可能不在page中或者是外部sm，或者sm在si后面还未布局，
+   * 所以si在布局前都会检测一遍让sm提前先布局，但可能出现多个si依赖同一个sm，或者sm在si前已经布局过了，
+   * 所以为了必要的提前布局且只布局一次不重复计算，hasLayout用在这里，另外addUpdate()更新时，
+   * 如果牵扯到布局，也需要将hasLayout置false
+   */
+  override layout(data: LayoutData) {
+    if (this.hasLayout) {
+      return;
+    }
+    this.hasLayout = true;
+    super.layout(data);
   }
 
   addSymbolInstance(item: SymbolInstance) {
