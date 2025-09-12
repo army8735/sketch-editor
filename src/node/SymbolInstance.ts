@@ -8,7 +8,6 @@ import { color2gl } from '../style/color';
 import { DISPLAY, FLEX_DIRECTION, StyleUnit } from '../style/define';
 import { LayoutData } from './layout';
 import { normalize } from '../style/css';
-import { RefreshLevel } from '../refresh/level';
 
 class SymbolInstance extends AbstractFrame {
   symbolMaster: SymbolMaster;
@@ -25,7 +24,7 @@ class SymbolInstance extends AbstractFrame {
     style.justifyContent = Object.assign({}, symbolMaster.style.justifyContent);
     style.overflow = Object.assign({}, symbolMaster.style.overflow);
     this.isSymbolInstance = true;
-    this.symbolMaster = symbolMaster;
+    this.source = this.symbolMaster = symbolMaster;
     this.scale = props.scale || 1;
     symbolMaster.addSymbolInstance(this);
   }

@@ -342,6 +342,7 @@ class ShapeGroup extends AbstractGroup {
       });
     }
     const res = new ShapeGroup(props, this.children.map(item => item.cloneAndLink(overrides)));
+    res.source = this;
     return res;
   }
 

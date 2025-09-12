@@ -869,6 +869,7 @@ class Bitmap extends Node {
       }
     }
     const res = new Bitmap(props);
+    res.source = this;
     return res;
   }
 

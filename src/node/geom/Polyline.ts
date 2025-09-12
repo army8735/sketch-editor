@@ -197,6 +197,7 @@ class Polyline extends Geom {
       });
     }
     const res = new Polyline(props);
+    res.source = this;
     return res;
   }
 

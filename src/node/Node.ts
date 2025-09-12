@@ -151,6 +151,7 @@ class Node extends Event {
   isExpanded: boolean;
   exportOptions: ExportOptions;
   loaders: Loader[];
+  source?: Node; // symbol-instance子节点中对symbol-master的引用
 
   constructor(props: Props) {
     super();
@@ -2639,6 +2640,7 @@ class Node extends Event {
   cloneAndLink(overrides?: Record<string, Override[]>) {
     const res = this.clone();
     if (overrides) {}
+    res.source = this;
     return res;
   }
 

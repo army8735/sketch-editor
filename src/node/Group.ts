@@ -53,6 +53,7 @@ class Group extends AbstractGroup {
   override cloneAndLink(overrides?: Record<string, Override[]>) {
     const props = this.cloneProps();
     const res = new Group(props, this.children.map(item => item.cloneAndLink(overrides)));
+    res.source = this;
     return res;
   }
 

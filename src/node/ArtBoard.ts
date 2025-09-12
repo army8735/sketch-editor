@@ -211,6 +211,7 @@ class ArtBoard extends Container {
   override cloneAndLink(overrides?: Record<string, Override[]>) {
     const props = this.cloneProps();
     const res = new ArtBoard(props, this.children.map(item => item.cloneAndLink(overrides)));
+    res.source = this;
     return res;
   }
 

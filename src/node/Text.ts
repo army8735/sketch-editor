@@ -3761,6 +3761,7 @@ class Text extends Node {
       props.rich.splice(1);
     }
     const res = new Text(props);
+    res.source = this;
     return res;
   }
 

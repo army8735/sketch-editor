@@ -443,6 +443,7 @@ class Container<T extends Node = Node> extends Node {
   override cloneAndLink(overrides?: Record<string, Override[]>) {
     const props = this.cloneProps();
     const res = new Container(props, this.children.map(item => item.cloneAndLink(overrides)));
+    res.source = this;
     if (overrides) {}
     return res;
   }

@@ -20,6 +20,7 @@ class Graphic extends AbstractFrame {
   override cloneAndLink(overrides?: Record<string, Override[]>) {
     const props = this.cloneProps();
     const res = new Graphic(props, this.children.map(item => item.cloneAndLink(overrides)));
+    res.source = this;
     return res;
   }
 
