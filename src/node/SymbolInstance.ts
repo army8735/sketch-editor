@@ -5,10 +5,9 @@ import SymbolMaster from './SymbolMaster';
 import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import { color2gl } from '../style/color';
-import { DISPLAY } from '../style/define';
+import { DISPLAY, FLEX_DIRECTION } from '../style/define';
 import { LayoutData } from './layout';
 import { PAGE_H, PAGE_W } from '../format/dft';
-import { RefreshLevel } from '../refresh/level';
 import { normalize } from '../style/css';
 
 class SymbolInstance extends AbstractFrame {
@@ -41,21 +40,22 @@ class SymbolInstance extends AbstractFrame {
       });
       const { width: w, height: h } = symbolMaster;
       const { display } = this.style;
+      // 自身没有box但子节点有的时候，按照sm尺寸布局后调整
       if (display.v === DISPLAY.BLOCK && this.hasChildBox()) {
         this.resetLayH(data, w);
         this.resetLayV(data, h);
       }
+      // 自身有box的情况，container中的lay()已实现按方向调整
     }
     super.lay(data);
   }
 
   override didMount() {
     super.didMount();
-    const { display } = this.style;
+    const { display, flexDirection } = this.style;
     const style = this.props.style;
     // 老版智能布局如果尺寸不一致再重新布局一次，一般是字体原因导致，直接child文字内容引发排版调整后再触发这里
-    if ((display.v === DISPLAY.BOX || this.hasChildBox()) && style) {
-      this.refresh(RefreshLevel.REFLOW)
+    if ((display.v === DISPLAY.BLOCK || this.hasChildBox()) && style) {
       const source = normalize({
         left: style.left,
         right: style.right,
@@ -65,6 +65,18 @@ class SymbolInstance extends AbstractFrame {
         height: style.height,
       });
       // 有可能完全一致就不需要再次布局了
+      this.updateFormatStyle(source);
+    }
+    else if (display.v === DISPLAY.BOX && style) {
+      const source = normalize(flexDirection.v === FLEX_DIRECTION.ROW ? {
+        left: style.left,
+        right: style.right,
+        width: style.width,
+      } : {
+        top: style.top,
+        bottom: style.bottom,
+        height: style.height,
+      });
       this.updateFormatStyle(source);
     }
   }

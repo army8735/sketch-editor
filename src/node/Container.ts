@@ -168,7 +168,6 @@ class Container<T extends Node = Node> extends Node {
       const { display, flexDirection } = style;
       if (!this.isMounted && display.v === DISPLAY.BOX) {
         const { width: w, height: h } = source;
-        // console.log('lay', this.name,display, source,w, h);
         if (display.v === DISPLAY.BOX) {
           // 使用原有单位换算
           if (flexDirection.v === FLEX_DIRECTION.ROW) {
