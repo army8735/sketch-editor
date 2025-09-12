@@ -17,7 +17,7 @@ import Polyline from '../node/geom/Polyline';
 import Listener from './Listener';
 import config from '../util/config';
 import state from './state';
-import { MASK, VISIBILITY } from '../style/define';
+import { DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, MASK, VISIBILITY } from '../style/define';
 import PositionCommand, { position } from '../history/PositionCommand';
 import { RefreshLevel } from '../refresh/level';
 
@@ -42,12 +42,13 @@ function genNodeTreeStr(node: Node, lv: number) {
     s += '<span class="mask"></span>';
   }
   // 特殊的矢量小标预览
+  const display = getNodeDisplay(node);
   if (node instanceof Geom || node instanceof ShapeGroup) {
     const svg = node.toSvg(12);
-    s += `<span class="type geom">` + svg + '</span>';
+    s += `<span class="type geom ${display}">` + svg + '</span>';
   }
   else {
-    s += `<span class="type ${type}"></span>`;
+    s += `<span class="type ${type} ${display}"></span>`;
   }
   s += `<span class="name" title="${node.name || ''}">${node.name || ''}</span>`;
   if (!(node instanceof ArtBoard)) {
@@ -106,6 +107,38 @@ function getNodeType(node: Node) {
     type = 'graphic';
   }
   return type;
+}
+
+function getNodeDisplay(node: Node) {
+  let res = '';
+  const { display, flexDirection, justifyContent } = node.computedStyle;
+  if (display === DISPLAY.BOX) {
+    if (justifyContent === JUSTIFY_CONTENT.FLEX_START) {
+      if (flexDirection === FLEX_DIRECTION.ROW) {
+        res = 'box row-start';
+      }
+      else if (flexDirection === FLEX_DIRECTION.COLUMN) {
+        res = 'box column-start';
+      }
+    }
+    else if (justifyContent === JUSTIFY_CONTENT.FLEX_END) {
+      if (flexDirection === FLEX_DIRECTION.ROW) {
+        res = 'box row-end';
+      }
+      else if (flexDirection === FLEX_DIRECTION.COLUMN) {
+        res = 'box column-end';
+      }
+    }
+    else if (justifyContent === JUSTIFY_CONTENT.CENTER) {
+      if (flexDirection === FLEX_DIRECTION.ROW) {
+        res = 'box row-center';
+      }
+      else if (flexDirection === FLEX_DIRECTION.COLUMN) {
+        res = 'box column-center';
+      }
+    }
+  }
+  return res;
 }
 
 export default class Tree {
