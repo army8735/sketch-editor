@@ -102,8 +102,8 @@ class Container<T extends Node = Node> extends Node {
     return false;
   }
 
-  override lay(data: LayoutData) {
-    super.lay(data);
+  override layout(data: LayoutData) {
+    super.layout(data);
     const { children } = this;
     // 递归下去布局
     for (let i = 0, len = children.length; i < len; i++) {
