@@ -396,6 +396,7 @@ class Text extends Node {
           // 父级si的话也要根据收缩情况调整尺寸，但这会影响children，所以二次调整children保持外观
           let p = parent;
           while (p && p.style.display.v === DISPLAY.BOX && p.style.flexDirection.v === FLEX_DIRECTION.ROW) {
+            console.log(p.name)
             if (justifyContent.v === JUSTIFY_CONTENT.FLEX_START) {
               const n = newRect.right - oldRect.right;
               p.adjustPosAndSizeSelf(0, 0, n, 0);
@@ -3130,14 +3131,10 @@ class Text extends Node {
     return Object.assign({}, this.cursor);
   }
 
-  updateRangeStyle(location: number, length: number, st: ModifyRichStyle, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
-    if (typeof cb === 'boolean') {
-      noRefresh = cb;
-      cb = undefined;
-    }
+  updateRangeStyle(location: number, length: number, st: ModifyRichStyle, cb?: ((sync: boolean) => void)) {
     const lv = this.updateRangeStyleData(location, length, st);
     if (lv) {
-      this.refresh(lv, cb, noRefresh);
+      this.refresh(lv, cb);
     }
     return lv;
   }

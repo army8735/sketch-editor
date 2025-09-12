@@ -59,11 +59,11 @@ class Geom extends Node {
     );
   }
 
-  override refresh(lv: RefreshLevel = RefreshLevel.REPAINT, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
+  override refresh(lv: RefreshLevel = RefreshLevel.REPAINT, cb?: ((sync: boolean) => void)) {
     if (lv >= RefreshLevel.REPAINT) {
       this.coords = undefined;
     }
-    super.refresh(lv, cb, noRefresh);
+    super.refresh(lv, cb);
   }
 
   toSvg(max: number, isClosed = false) {

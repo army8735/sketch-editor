@@ -15,8 +15,8 @@ class Group extends AbstractGroup {
     this.isGroup = true;
   }
 
-  override updateFormatStyle(style: Partial<Style>, cb?: ((sync: boolean) => void), noRefresh = false) {
-    const res = super.updateFormatStyle(style, cb, noRefresh);
+  override updateFormatStyle(style: Partial<Style>, cb?: ((sync: boolean) => void)) {
+    const res = super.updateFormatStyle(style, cb);
     const keys = res.keys;
     if (keys.includes('fill') || keys.includes('fillEnable') || keys.includes('fillOpacity')) {
       const root = this.root!;
