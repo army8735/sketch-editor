@@ -113,9 +113,9 @@ class OpacityPanel extends Panel {
         }
         if (isInput) {
           nexts.push(n * 0.01);
-          node.updateStyle({
+          node.updateStyleData({
             opacity: n * 0.01,
-          }, true);
+          });
           if (number.placeholder) {
             number.placeholder = '';
           }

@@ -305,7 +305,12 @@ class BlurPanel extends Panel {
           };
         }
         nexts.push(o!);
-        node.updateStyle(o!, isInput);
+        if (isInput) {
+          node.updateStyleData(o!);
+        }
+        else {
+          node.updateStyle(o!);
+        }
       });
       range.value = number.value || '0';
       if (!number.placeholder) {

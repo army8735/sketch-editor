@@ -102,7 +102,6 @@ export type ListenerOptions = {
     drag?: boolean; // 拖拽画布
     scale?: boolean; // 缩放画布
     editText?: boolean; // 进入编辑文字状态如双击
-    inputText?: boolean; // 编辑输入文字
     contextMenu?: boolean; // 右键菜单
     guides?: boolean; // 参考线功能
     editGeom?: boolean; // 编辑矢量
@@ -1410,9 +1409,6 @@ export default class Listener extends Event {
     else if (this.isMouseMove) {
       // 编辑文字检查是否选择了一段文本，普通则是移动选择节点
       if (this.state === state.EDIT_TEXT) {
-        if (this.options.disabled?.inputText) {
-          return;
-        }
         const text = selected[0] as Text;
         const multi = text.checkCursorMulti();
         // 可能框选的文字为空不是多选，需取消

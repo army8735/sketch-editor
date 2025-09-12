@@ -436,7 +436,7 @@ class StrokePanel extends Panel {
         const prev = prevs[i].strokeWidth[index];
         if (isInput) {
           o.strokeWidth[index] = n;
-          node.updateStyle(o, true);
+          node.updateStyleData(o);
           if (input.placeholder) {
             input.placeholder = '';
           }
