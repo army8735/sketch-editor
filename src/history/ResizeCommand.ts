@@ -102,7 +102,7 @@ class ResizeCommand extends AbstractCommand {
   }
 
   static updateStyle(node: Node, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number, controlType: CONTROL_TYPE,
-                     aspectRatio: boolean, fromCenter = false, widthAuto = false, heightAuto = false, noRefresh = false) {
+                     aspectRatio: boolean, fromCenter = false, widthAuto = false, heightAuto = false) {
     // 由于保持宽高比/中心点调整的存在，可能在调整过程中切换shift/alt键，所以初始化都是原始样式以便切换后恢复
     const next: ResizeStyle = {
       left: cssStyle.left,
@@ -162,12 +162,7 @@ class ResizeCommand extends AbstractCommand {
     if (heightAuto) {
       next.height = 'auto';
     }
-    if (noRefresh) {
-      node.updateStyleData(next);
-    }
-    else {
-      node.updateStyle(next);
-    }
+    node.updateStyle(next);
   }
 
   static updateStyleMultiAr(node: Node, computedStyle: ComputedStyle, cssStyle: JStyle, dx: number, dy: number, controlType: CONTROL_TYPE,

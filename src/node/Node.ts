@@ -152,6 +152,7 @@ class Node extends Event {
   exportOptions: ExportOptions;
   loaders: Loader[];
   source?: Node; // symbol-instance子节点中对symbol-master的引用
+  hasLayout: boolean;
 
   constructor(props: Props) {
     super();
@@ -209,6 +210,7 @@ class Node extends Event {
     this.tempIndex = 0;
     this.tileList = [];
     this.loaders = [];
+    this.hasLayout = false;
   }
 
   // 添加到dom后标记非销毁状态，和root引用

@@ -409,7 +409,7 @@ class FillPanel extends Panel {
           };
           nexts.push(o);
           o.fill[index] = value;
-          node.updateStyleData(o);
+          node.updateStyle(o, true);
         });
         input.placeholder = '';
         const b = line.querySelector('.picker-btn b') as HTMLElement;
@@ -439,7 +439,7 @@ class FillPanel extends Panel {
           const prev = prevs[i].fillOpacity[index] * 100;
           if (isInput) {
             o.fillOpacity[index] = n * 0.01;
-            node.updateStyleData(o);
+            node.updateStyle(o, true);
             if (input.placeholder) {
               input.placeholder = '';
             }

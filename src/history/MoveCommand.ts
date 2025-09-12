@@ -41,20 +41,12 @@ class MoveCommand extends AbstractCommand {
     });
   }
 
-  static update(node: Node, computedStyle: ComputedStyle, dx: number, dy: number, noRefresh = false) {
+  static update(node: Node, computedStyle: ComputedStyle, dx: number, dy: number) {
     const oldAb = node.artBoard;
-    if (noRefresh) {
-      node.updateStyleData({
-        translateX: computedStyle.translateX + dx,
-        translateY: computedStyle.translateY + dy,
-      });
-    }
-    else {
-      node.updateStyle({
-        translateX: computedStyle.translateX + dx,
-        translateY: computedStyle.translateY + dy,
-      });
-    }
+    node.updateStyle({
+      translateX: computedStyle.translateX + dx,
+      translateY: computedStyle.translateY + dy,
+    });
     const rect = node.getBoundingClientRect();
     // 检查移动后是否改变画板所属，优先看是否在老画板上
     if (oldAb) {

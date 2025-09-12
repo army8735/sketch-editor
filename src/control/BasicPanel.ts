@@ -265,16 +265,9 @@ class BasicPanel extends Panel {
           next = prev + d;
         }
         nextNumber.push(next);
-        if (isInput) {
-          node.updateStyleData({
-            rotateZ: computedStyle[i].rotateZ + d,
-          });
-        }
-        else {
-          node.updateStyle({
-            rotateZ: computedStyle[i].rotateZ + d,
-          });
-        }
+        node.updateStyle({
+          rotateZ: computedStyle[i].rotateZ + d,
+        }, isInput);
       });
       if (nodes.length) {
         listener.select.updateSelect(this.nodes);

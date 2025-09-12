@@ -250,7 +250,7 @@ class TintPanel extends Panel {
           };
           nexts.push(o);
           o.fill[0] = value;
-          node.updateStyleData(o);
+          node.updateStyle(o, true);
         });
         input.placeholder = '';
         const b = line.querySelector('.picker-btn b') as HTMLElement;
@@ -280,7 +280,7 @@ class TintPanel extends Panel {
           const prev = prevs[i].fillOpacity[0] * 100;
           if (isInput) {
             o.fillOpacity[0] = n * 0.01;
-            node.updateStyleData(o);
+            node.updateStyle(o, true);
             if (input.placeholder) {
               input.placeholder = '';
             }

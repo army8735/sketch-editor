@@ -343,7 +343,7 @@ class ShadowPanel extends Panel {
             const arr = o.shadow[index].split(' ');
             arr[type] = n.toString();
             o.shadow[index] = arr.join(' ');
-            node.updateStyleData(o);
+            node.updateStyle(o, true);
           }
           if (input.placeholder) {
             input.placeholder = '';
