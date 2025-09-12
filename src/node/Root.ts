@@ -338,6 +338,7 @@ class Root extends Container implements FrameCallback {
     addDom: boolean = false,
     removeDom: boolean = false,
     cb?: (sync: boolean) => void,
+    noRefresh = false,
   ) {
     if (this.isDestroyed) {
       return RefreshLevel.NONE;
@@ -373,7 +374,9 @@ class Root extends Container implements FrameCallback {
     }
     const res = this.calUpdate(node, lv, addDom, removeDom);
     if (res) {
-      this.asyncDraw(cb);
+      if (!noRefresh) {
+        this.asyncDraw(cb);
+      }
     }
     else {
       cb && cb(true);

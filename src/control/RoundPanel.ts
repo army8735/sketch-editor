@@ -248,9 +248,7 @@ function scan2(node: Node, value: number, polylines: Polyline[], nodes: Polyline
     node.points.forEach(point => {
       point.cornerRadius = value;
     });
-    if (refresh) {
-      node.refresh();
-    }
+    node.refresh(RefreshLevel.REPAINT, !refresh);
   }
   else if (node instanceof ShapeGroup) {
     node.children.forEach(child => {

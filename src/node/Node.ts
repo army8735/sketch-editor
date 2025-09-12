@@ -152,7 +152,6 @@ class Node extends Event {
   exportOptions: ExportOptions;
   loaders: Loader[];
   source?: Node; // symbol-instance子节点中对symbol-master的引用
-  hasLayout: boolean;
 
   constructor(props: Props) {
     super();
@@ -210,7 +209,6 @@ class Node extends Event {
     this.tempIndex = 0;
     this.tileList = [];
     this.loaders = [];
-    this.hasLayout = false;
   }
 
   // 添加到dom后标记非销毁状态，和root引用
@@ -1568,14 +1566,14 @@ class Node extends Event {
     return keys;
   }
 
-  updateFormatStyle(style: Partial<Style>, cb?: ((sync: boolean) => void)) {
+  updateFormatStyle(style: Partial<Style>, cb?: ((sync: boolean) => void), noRefresh = false) {
     const keys = this.updateFormatStyleData(style);
     // 无变更
     if (!keys.length) {
       cb && cb(true);
       return { keys, lv: RefreshLevel.NONE };
     }
-    const lv = this.root?.addUpdate(this, keys, undefined, false, false, cb);
+    const lv = this.root?.addUpdate(this, keys, undefined, false, false, cb, noRefresh);
     return { keys, lv };
   }
 
@@ -1585,9 +1583,13 @@ class Node extends Event {
     return this.updateFormatStyleData(formatStyle);
   }
 
-  updateStyle(style: Partial<JStyle>, cb?: ((sync: boolean) => void)) {
+  updateStyle(style: Partial<JStyle>, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
     const formatStyle = normalize(style);
-    return this.updateFormatStyle(formatStyle, cb);
+    if (typeof cb === 'boolean') {
+      noRefresh = cb;
+      cb = undefined;
+    }
+    return this.updateFormatStyle(formatStyle, cb, noRefresh);
   }
 
   updateProps(props: any, cb?: (sync: boolean) => void) {
@@ -1652,8 +1654,12 @@ class Node extends Event {
     return keys;
   }
 
-  refresh(data: RefreshLevel = RefreshLevel.REPAINT, cb?: ((sync: boolean) => void)) {
-    this.root?.addUpdate(this, [], data, false, false, cb);
+  refresh(data: RefreshLevel = RefreshLevel.REPAINT, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
+    if (typeof cb === 'boolean') {
+      noRefresh = cb;
+      cb = undefined;
+    }
+    this.root?.addUpdate(this, [], data, false, false, cb, noRefresh);
   }
 
   getStyle() {
