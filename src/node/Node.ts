@@ -2045,7 +2045,28 @@ class Node extends Event {
       left,
       width,
       height,
+      translateX,
+      translateY,
     } = style;
+    // 如果有%的tx，改变之前需要先转换掉，将其清空变成对应的left/right/width，否则会影响
+    const needConvertTx = (dx1 || dx2) && translateX.u === StyleUnit.PERCENT && translateX.v;
+    if (needConvertTx) {
+      const d = needConvertTx * 0.01 * this.width;
+      if (left.u === StyleUnit.PX) {
+        left.v += d;
+      }
+      else if (left.u === StyleUnit.PERCENT) {
+        left.v += d * 100 / pw;
+      }
+      computedStyle.left += d;
+      if (right.u === StyleUnit.PX) {
+        right.v -= d;
+      }
+      else if (right.u === StyleUnit.PERCENT) {
+        right.v -= d * 100 / pw;
+      }
+      computedStyle.right -= d;
+    }
     // 水平调整统一处理，固定此时无效
     if (dx1) {
       if (left.u === StyleUnit.PX) {
@@ -2095,7 +2116,43 @@ class Node extends Event {
         right.v = computedStyle.right * 100 / pw;
       }
     }
+    // 还原
+    if (needConvertTx) {
+      const d = needConvertTx * 0.01 * this.width;
+      if (left.u === StyleUnit.PX) {
+        left.v -= d;
+      }
+      else if (left.u === StyleUnit.PERCENT) {
+        left.v -= d * 100 / pw;
+      }
+      computedStyle.left -=d;
+      if (right.u === StyleUnit.PX) {
+        right.v += d;
+      }
+      else if (right.u === StyleUnit.PERCENT) {
+        right.v += d * 100 / pw;
+      }
+      computedStyle.right += d;
+    }
     // 垂直和水平一样
+    const needConvertTy = (dy1 || dy2) && translateY.u === StyleUnit.PERCENT && translateY.v;
+    if (needConvertTy) {
+      const d = needConvertTy * 0.01 * this.height;
+      if (top.u === StyleUnit.PX) {
+        top.v += d;
+      }
+      else if (top.u === StyleUnit.PERCENT) {
+        top.v += d * 100 / ph;
+      }
+      computedStyle.top += d;
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v -= d;
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v -= d * 100 / ph;
+      }
+      computedStyle.bottom -= d;
+    }
     if (dy1) {
       if (top.u === StyleUnit.PX) {
         top.v += dy1;
@@ -2141,6 +2198,23 @@ class Node extends Event {
       else if (bottom.u === StyleUnit.PERCENT) {
         bottom.v = computedStyle.bottom * 100 / ph;
       }
+    }
+    if (needConvertTy) {
+      const d = needConvertTy * 0.01 * this.height;
+      if (top.u === StyleUnit.PX) {
+        top.v -= d;
+      }
+      else if (top.u === StyleUnit.PERCENT) {
+        top.v -= d * 100 / ph;
+      }
+      computedStyle.top -=d;
+      if (bottom.u === StyleUnit.PX) {
+        bottom.v += d;
+      }
+      else if (bottom.u === StyleUnit.PERCENT) {
+        bottom.v += d * 100 / ph;
+      }
+      computedStyle.bottom += d;
     }
     // 影响matrix，这里不能用优化optimize计算，必须重新计算，因为最终值是left+translateX
     this.refreshLevel |= RefreshLevel.TRANSFORM;

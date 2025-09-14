@@ -33,7 +33,6 @@ abstract class AbstractGroup extends Container {
     if (this.fixedPosAndSize) {
       return false;
     }
-    const { children } = this;
     if (!rectC) {
       rectC = this.getChildrenRect();
     }
