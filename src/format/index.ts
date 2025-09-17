@@ -181,6 +181,10 @@ export type JStyle = {
   brightness: number | string;
   contrast: number | string;
   overflow: 'visible' | 'hidden';
+  borderTopLeftRadius: number,
+  borderTopRightRadius: number,
+  borderBottomLeftRadius: number,
+  borderBottomRightRadius: number,
 };
 
 export function getDefaultStyle(v?: Partial<JStyle>): JStyle {
