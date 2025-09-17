@@ -1,3 +1,5 @@
+import JSZip from 'jszip';
+import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JContainer, JNode, Override, Props } from '../format';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
@@ -531,6 +533,26 @@ class Container<T extends Node = Node> extends Node {
   override toJson(): JNode {
     const res = super.toJson() as JContainer;
     res.children = this.children.map(item => item.toJson());
+    return res;
+  }
+
+  override async toSketchJson(zip: JSZip, blobHash?: Record<string, string>) {
+    const res = await super.toSketchJson(zip, blobHash);
+    const { display, justifyContent, flexDirection } = this.computedStyle;
+    if (display === DISPLAY.BOX) {
+      // @ts-ignore
+      res.groupLayout = {
+        _class: SketchFormat.ClassValue.MSImmutableInferredGroupLayout,
+        axis: flexDirection === FLEX_DIRECTION.COLUMN
+          ? SketchFormat.InferredLayoutAxis.Vertical
+          : SketchFormat.InferredLayoutAxis.Horizontal,
+        layoutAnchor: [
+          SketchFormat.InferredLayoutAnchor.Min,
+          SketchFormat.InferredLayoutAnchor.Middle,
+          SketchFormat.InferredLayoutAnchor.Max,
+        ][justifyContent],
+      };
+    }
     return res;
   }
 }
