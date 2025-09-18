@@ -351,7 +351,7 @@ class Node extends Event {
   // 封装，布局后计算repaint和matrix的样式，清空包围盒等老数据，真的布局计算在lay()中，各子类覆盖实现
   layout(data: LayoutData) {
     if (this.isDestroyed) {
-      // return;
+      // return; symbol-instance需要未dom时布局，暂时这样
     }
     this.lay(data);
     // repaint和matrix计算需要x/y/width/height
