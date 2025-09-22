@@ -1428,7 +1428,7 @@ class Node extends Event {
     this.isMounted = false;
   }
 
-  structure(lv: number): Array<Struct> {
+  structure(lv: number) {
     const temp = this.struct;
     temp.lv = lv;
     return [temp];

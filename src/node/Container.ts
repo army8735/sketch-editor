@@ -454,7 +454,7 @@ class Container<T extends Node = Node> extends Node {
     super.destroy();
   }
 
-  override structure(lv: number): Array<Struct> {
+  override structure(lv: number) {
     let res = super.structure(lv);
     this.children.forEach((child) => {
       res = res.concat(child.structure(lv + 1));
