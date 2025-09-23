@@ -186,8 +186,6 @@ class Root extends Container implements FrameCallback {
     // 渲染前设置必要的父子兄弟关系和结构
     this.willMount();
     this.structs = this.structure(0);
-    // 刷新动画侦听，目前就一个Root
-    frame.addRoot(this);
     this.reLayout();
     // 先设置的page和index，再附加到canvas上，需刷新
     this.addUpdate(this, [], RefreshLevel.REFLOW, true);
@@ -638,7 +636,6 @@ class Root extends Container implements FrameCallback {
 
   override destroy() {
     super.destroy();
-    frame.removeRoot(this);
     this.task.splice(0);
     this.taskClone.splice(0);
     const { ctx: gl, programs } = this;

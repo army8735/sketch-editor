@@ -1,4 +1,3 @@
-import Root from '../node/Root';
 import inject from '../util/inject';
 import { isFunction } from '../util/type';
 
@@ -25,15 +24,11 @@ function traversalAfter(list: FrameCallback[], length: number, diff: number) {
 }
 
 export class Frame {
-  rootTask: FrameCallback[];
-  roots: Root[];
   task: FrameCallback[];
   now: number;
   id: number;
 
   constructor() {
-    this.rootTask = [];
-    this.roots = [];
     this.task = [];
     this.now = inject.now();
     this.id = 0;
@@ -138,17 +133,6 @@ export class Frame {
     if (isPause) {
       this.init();
       isPause = false;
-    }
-  }
-
-  addRoot(root: Root) {
-    this.roots.push(root);
-  }
-
-  removeRoot(root: Root) {
-    const i = this.roots.indexOf(root);
-    if (i > -1) {
-      this.roots.splice(i, 1);
     }
   }
 }

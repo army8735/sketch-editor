@@ -3,7 +3,6 @@ import SketchFormat from '@sketch-hq/sketch-file-format-ts';
 import { JContainer, JNode, Override, Props } from '../format';
 import Node from '../node/Node';
 import { RefreshLevel } from '../refresh/level';
-import { Struct } from '../refresh/struct';
 import Tile from '../refresh/Tile';
 import inject from '../util/inject';
 import { isNil } from '../util/type';
@@ -355,15 +354,13 @@ class Container<T extends Node = Node> extends Node {
     node.root = root;
     children.push(node);
     // 离屏情况，尚未添加到dom等
-    if (this.isDestroyed) {
+    if (!root || this.isDestroyed) {
       cb && cb(true);
       return;
     }
     node.willMount();
     this.insertStruct(node, len);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      cb && cb(sync);
-    });
+    root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   prependChild(node: T, cb?: (sync: boolean) => void) {
@@ -383,15 +380,13 @@ class Container<T extends Node = Node> extends Node {
     node.root = root;
     children.push(node);
     // 离屏情况，尚未添加到dom等
-    if (this.isDestroyed) {
+    if (!root || this.isDestroyed) {
       cb && cb(true);
       return;
     }
     node.willMount();
     this.insertStruct(node, 0);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      cb && cb(sync);
-    });
+    root.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   removeChild(node: Node, cb?: (sync: boolean) => void) {
