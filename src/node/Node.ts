@@ -359,6 +359,11 @@ class Node extends Event {
     // 轮廓的缓存一般仅在reflow时清除，因为不会因渲染改变，矢量则根据points变化自行覆写
     this.textureOutline.forEach((item) => item?.release());
     this._rect = undefined;
+    this._bbox = undefined;
+    this._bbox2 = undefined;
+    this._filterBbox = undefined;
+    this._filterBbox2 = undefined;
+    this.tempBbox = undefined;
   }
 
   // 插入node到自己后面
@@ -2978,7 +2983,7 @@ class Node extends Event {
   get bbox2() {
     let res = this._bbox2;
     if (!res) {
-      res = (this._bbox || this.bbox).slice(0);
+      res = this._bbox2 = (this._bbox || this.bbox).slice(0);
       res[0] = Math.floor(res[0]);
       res[1] = Math.floor(res[1]);
       res[2] = Math.ceil(res[2]);
@@ -2990,7 +2995,7 @@ class Node extends Event {
   get filterBbox2() {
     let res = this._filterBbox2;
     if (!res) {
-      res = (this._filterBbox || this.filterBbox).slice(0);
+      res = this._filterBbox2 = (this._filterBbox || this.filterBbox).slice(0);
       res[0] = Math.floor(res[0]);
       res[1] = Math.floor(res[1]);
       res[2] = Math.ceil(res[2]);

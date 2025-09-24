@@ -27,15 +27,15 @@ export enum RefreshLevel {
   FULL =             0b1111111111111111, // 65535
 }
 
-export function isReflow(lv: number): boolean {
+export function isReflow(lv: number) {
   return lv >= RefreshLevel.REFLOW;
 }
 
-export function isRepaint(lv: number): boolean {
-  return lv < RefreshLevel.REFLOW;
+export function isRepaint(lv: number) {
+  return lv < RefreshLevel.REFLOW && lv >= RefreshLevel.REPAINT;
 }
 
-export function isReflowKey(k: string): boolean {
+export function isReflowKey(k: string) {
   return (
     k === 'width' ||
     k === 'height' ||
@@ -55,7 +55,7 @@ export function isReflowKey(k: string): boolean {
   );
 }
 
-export function getLevel(k: string): RefreshLevel {
+export function getLevel(k: string) {
   if (k === 'pointerEvents' ||
     k === 'constrainProportions' ||
     k === 'isLocked' ||

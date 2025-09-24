@@ -91,7 +91,7 @@ class Bitmap extends Node {
     if (loader.loading && loader.url === this._src) {
       return;
     }
-    const { error, source } = loader;
+    const { source } = loader;
     loader.source = undefined;
     loader.error = false;
     if (!this.isDestroyed) {
@@ -106,7 +106,7 @@ class Bitmap extends Node {
         else {
           loader.error = true;
         }
-        this.root!.addUpdate(
+        root.addUpdate(
           this,
           [],
           RefreshLevel.REPAINT,
@@ -121,7 +121,7 @@ class Bitmap extends Node {
         root.imgLoadingCount++;
       }
       // 先置空图片，除非目前本身就是空的
-      if (error || source) {
+      if (source) {
         root.addUpdate(
           this,
           [],
@@ -142,29 +142,19 @@ class Bitmap extends Node {
             loader.source = data.source;
             loader.width = data.width;
             loader.height = data.height;
-            if (!this.isDestroyed) {
-              this.root!.addUpdate(
-                this,
-                [],
-                RefreshLevel.REPAINT,
-                false,
-                false,
-                undefined,
-              );
-            }
           }
           else {
             loader.error = true;
-            if (!this.isDestroyed) {
-              this.root!.addUpdate(
-                this,
-                [],
-                RefreshLevel.NONE,
-                false,
-                false,
-                undefined,
-              );
-            }
+          }
+          if (!this.isDestroyed) {
+            root.addUpdate(
+              this,
+              [],
+              RefreshLevel.NONE,
+              false,
+              false,
+              undefined,
+            );
           }
         }
       });

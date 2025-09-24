@@ -49,7 +49,6 @@ export class Frame {
         }
         let diff = now - last;
         diff = Math.max(diff, 0);
-        // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
         // 优先动画计算
         const clone = task.slice(0);

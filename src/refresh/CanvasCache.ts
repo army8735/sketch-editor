@@ -70,7 +70,7 @@ class CanvasCache {
     return HASH[url]?.count;
   }
 
-  static getInstance(w: number, h: number, dx: number = 0, dy: number = 0): CanvasCache {
+  static getInstance(w: number, h: number, dx: number = 0, dy: number = 0) {
     return new CanvasCache(w, h, dx, dy);
   }
 
