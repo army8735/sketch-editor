@@ -28,12 +28,12 @@ class TextureCache {
 
   constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache) {
     this.gl = gl;
-    this.available = true;
     this.bbox = bbox.slice(0);
     const maxX = bbox[2], maxY = bbox[3];
     this.list = [];
     // 从已有节点来的内容
     if (cache) {
+      this.available = true;
       const { list, w, h } = cache;
       const len = list.length;
       // 一般单个bbox就是总的bbox拆分开来1:1，但纯图片存在复用原始尺寸的因素要计算
