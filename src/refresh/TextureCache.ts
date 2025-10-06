@@ -59,6 +59,7 @@ class TextureCache {
     }
     // merge汇总产生的新空白内容外部自行控制，另外复用位图的自己控制
     else {
+      this.available = false;
     }
   }
 
