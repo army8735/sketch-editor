@@ -68,7 +68,6 @@ class TextureCache {
       return false;
     }
     this.available = false;
-    // this.gl.deleteTexture(this.texture);
     this.list.splice(0).forEach(item => {
       if (item.t) {
         this.gl.deleteTexture(item.t);
@@ -91,7 +90,6 @@ class TextureCache {
     if (!item.count) {
       // 此时无引用计数可清空且释放texture
       delete o[url];
-      // this.gl.deleteTexture(this.texture);
       this.list.splice(0).forEach(item => {
         if (item.t) {
           this.gl.deleteTexture(item.t);
@@ -102,7 +100,6 @@ class TextureCache {
   }
 
   static getInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, cache: CanvasCache, bbox: Float64Array) {
-    // const texture = createTexture(gl, 0, canvas);
     return new TextureCache(gl, bbox, cache);
   }
 
@@ -148,7 +145,9 @@ class TextureCache {
         return res;
       }
     }
-    // const texture = createTexture(gl, 0, canvas!);
+    if (!cache) {
+      throw new Error('Missing content');
+    }
     const item = HASH[id] = HASH[id] || {};
     const res = new TextureCache(gl, bbox, cache!);
     // 第一张图记录下原始位图的尺寸等信息供后续复用计算
@@ -170,10 +169,6 @@ class TextureCache {
   }
 
   static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array) {
-    // const texture = createTexture(gl, 0, undefined, (bbox[2] - bbox[0]) * scale, (bbox[3] - bbox[1]) * scale);
-    // const dx = bbox[0] * scale, dy = bbox[1] * scale;
-    // const w = bbox[2] * scale - dx, h = bbox[3] * scale - dy;
-    // const cache = CanvasCache.getInstance(w, h, dx, dy);
     return new TextureCache(gl, bbox);
   }
 }

@@ -5,7 +5,6 @@ const HASH: Record<string, { value: CanvasCache, count: number }> = {};
 
 class CanvasCache {
   available: boolean;
-  // offscreen: OffScreen;
   dx: number; // 离屏都是0, 0开始，和原始对象x, y有个偏移值
   dy: number;
   w: number; // 实际显示对象尺寸
@@ -20,7 +19,6 @@ class CanvasCache {
 
   constructor(w: number, h: number, dx: number = 0, dy: number = 0) {
     this.available = false;
-    // this.offscreen = inject.getOffscreenCanvas(w, h);
     this.w = w;
     this.h = h;
     this.dx = dx;
@@ -47,7 +45,6 @@ class CanvasCache {
       return;
     }
     this.available = false;
-    // this.offscreen.release();
     this.list.splice(0).forEach(item => item.os.release());
   }
 
@@ -61,7 +58,6 @@ class CanvasCache {
     if (!o.count) {
       // 此时无引用计数可清空且释放离屏canvas
       delete HASH[url];
-      // this.offscreen.release();
       this.list.splice(0).forEach(item => item.os.release());
     }
   }
