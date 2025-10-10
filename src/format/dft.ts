@@ -12,7 +12,7 @@ export const DEFAULT_STYLE = {
   width: 'auto',
   height: 'auto',
   lineHeight: 'normal',
-  fontFamily: 'arial',
+  fontFamily: 'Arial',
   fontSize: 16,
   fontWeight: 400,
   fontStyle: 'normal',
