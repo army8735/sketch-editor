@@ -555,6 +555,7 @@ function genTotal(
   const w2 = w * scale,
     h2 = h * scale;
   const res = TextureCache.getEmptyInstance(gl, bbox);
+  res.available = true;
   const list = res.list;
   let frameBuffer: WebGLFramebuffer | undefined;
   const UNIT = config.maxTextureSize;
@@ -1203,6 +1204,7 @@ function genGaussBlur(
   const programs = root.programs;
   const program = programs.program;
   const temp = TextureCache.getEmptyInstance(gl, bboxR);
+  temp.available = true;
   const listT = temp.list;
   // 由于存在扩展，原本的位置全部偏移，需要重算
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
@@ -1211,6 +1213,7 @@ function genGaussBlur(
   const boxes = boxesForGauss(sigma2 * Math.pow(0.5, dualTimes));
   // 生成模糊，先不考虑多块情况下的边界问题，各个块的边界各自为政
   const res = TextureCache.getEmptyInstance(gl, bboxR);
+  res.available = true;
   const listR = res.list;
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
@@ -1410,6 +1413,7 @@ function genMotionBlur(
   const programs = root.programs;
   const program = programs.program;
   const temp = TextureCache.getEmptyInstance(gl, bboxR);
+  temp.available = true;
   const listT = temp.list;
   // 由于存在扩展，原本的位置全部偏移，需要重算
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
@@ -1419,6 +1423,7 @@ function genMotionBlur(
   const programMotion = programs.motionProgram;
   gl.useProgram(programMotion);
   const res = TextureCache.getEmptyInstance(gl, bboxR);
+  res.available = true;
   const listR = res.list;
   for (let i = 0, len = listT.length; i < len; i++) {
     const { bbox, w, h, t } = listT[i];
@@ -1536,6 +1541,7 @@ function genRadialBlur(
   const programs = root.programs;
   const program = programs.program;
   const temp = TextureCache.getEmptyInstance(gl, bboxR);
+  temp.available = true;
   const listT = temp.list;
   // 由于存在扩展，原本的位置全部偏移，需要重算
   const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
@@ -1543,6 +1549,7 @@ function genRadialBlur(
   const programRadial = programs.radialProgram;
   gl.useProgram(programRadial);
   const res = TextureCache.getEmptyInstance(gl, bboxR);
+  res.available = true;
   const listR = res.list;
   const cx0 = cx + left,
     cy0 = cy + top;
@@ -1770,6 +1777,7 @@ function genColorByMatrix(
   frameBuffer?: WebGLFramebuffer,
 ) {
   const res = TextureCache.getEmptyInstance(gl, old.bbox);
+  res.available = true;
   const list = old.list;
   const listR = res.list;
   for (let i = 0, len = list.length; i < len; i++) {
@@ -1831,6 +1839,7 @@ function genTint(
   const tintProgram = programs.tintProgram;
   gl.useProgram(tintProgram);
   const res = TextureCache.getEmptyInstance(gl, bbox);
+  res.available = true;
   const listR = res.list;
   let frameBuffer: WebGLFramebuffer | undefined;
   for (let i = 0, len = list.length; i < len; i++) {
@@ -1913,6 +1922,7 @@ function genShadow(
   const dropShadowProgram = programs.dropShadowProgram;
   // 先生成最终的尺寸结果，空白即可，后面的shadow依次绘入，最上层是图像本身
   const res2 = TextureCache.getEmptyInstance(gl, bboxR2);
+  res2.available = true;
   const listR2 = res2.list;
   const UNIT = config.maxTextureSize;
   for (let i = 0, len = Math.ceil(h2 / UNIT); i < len; i++) {
@@ -1976,10 +1986,12 @@ function genShadow(
     const w2 = w * scale,
       h2 = h * scale;
     const temp = TextureCache.getEmptyInstance(gl, bboxR);
+    temp.available = true;
     const listT = temp.list;
     // 由于存在扩展，原本的位置全部偏移，需要重算
     const frameBuffer = drawInSpreadBbox(gl, program, textureTarget, temp, x, y, scale, w2, h2);
     let res = TextureCache.getEmptyInstance(gl, bboxR);
+    res.available = true;
     let listR = res.list;
     gl.useProgram(dropShadowProgram);
     // 使用这个尺寸的纹理，遍历shadow，仅生成shadow部分
@@ -2020,6 +2032,7 @@ function genShadow(
       // const programGauss = genGaussShader(gl, programs, sigma2, d2);
       gl.useProgram(programBox);
       const temp = TextureCache.getEmptyInstance(gl, bboxR);
+      temp.available = true;
       const listT = temp.list;
       for (let i = 0, len = listR.length; i < len; i++) {
         const { bbox, w, h, t } = listR[i];
@@ -2218,6 +2231,7 @@ function genMask(
   const w2 = w * scale,
     h2 = h * scale;
   const summary = TextureCache.getEmptyInstance(gl, bbox);
+  summary.available = true;
   const listS = summary.list;
   let frameBuffer: WebGLFramebuffer | undefined;
   const UNIT = config.maxTextureSize;
@@ -2457,6 +2471,7 @@ function genMask(
     }
   }
   const res = TextureCache.getEmptyInstance(gl, bbox);
+  res.available = true;
   const listR = res.list;
   // 轮廓遮罩需收集轮廓
   let listO;
@@ -2727,6 +2742,7 @@ export function genBgBlurRoot(
   // 可能存在的饱和度
   if (blur.saturation !== undefined && blur.saturation !== 1) {
     const temp = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, W, H]));
+    temp.available = true;
     temp.list.push({
       bbox: new Float64Array([0, 0, W, H]),
       w: W,
