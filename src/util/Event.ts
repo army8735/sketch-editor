@@ -1,7 +1,7 @@
 import { isFunction } from './type';
 
 class Event {
-  __eHash: any;
+  protected readonly __eHash: any;
 
   constructor() {
     this.__eHash = {};
@@ -27,12 +27,11 @@ class Event {
         i++
       ) {
         if (item[i] === handle) {
-          return this;
+          return;
         }
       }
       this.__eHash[id].push(handle);
     }
-    return this;
   }
 
   once(id: string | string[], handle: (...p: any[]) => void) {
@@ -61,7 +60,6 @@ class Event {
         this.on(id, cb);
       }
     }
-    return this;
   }
 
   off(id: string | string[], handle: (...p: any[]) => void) {
@@ -89,7 +87,6 @@ class Event {
         delete this.__eHash[id];
       }
     }
-    return this;
   }
 
   emit(id: string | string[], ...data: any) {
@@ -110,7 +107,6 @@ class Event {
         }
       }
     });
-    return this;
   }
 
   static REFRESH = 'REFRESH';
