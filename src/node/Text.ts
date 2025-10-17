@@ -37,7 +37,6 @@ import inject, { OffScreen } from '../util/inject';
 import { clone, equal } from '../util/type';
 import { LayoutData } from './layout';
 import LineBox from './LineBox';
-import AbstractFrame from './AbstractFrame';
 import Node from './Node';
 import TextBox from './TextBox';
 import { getConic, getLinear, getRadial } from '../style/gradient';
