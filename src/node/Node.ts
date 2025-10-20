@@ -389,9 +389,7 @@ class Node extends Event {
     }
     node.willMount();
     parent.insertStruct(node, i + 1);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      cb && cb(sync);
-    });
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   // 插入node到自己前面
@@ -422,9 +420,7 @@ class Node extends Event {
     }
     node.willMount();
     parent.insertStruct(node, i);
-    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, (sync) => {
-      cb && cb(sync);
-    });
+    root!.addUpdate(node, [], RefreshLevel.REFLOW, true, false, cb);
   }
 
   // 布局前计算需要在布局阶段知道的样式，且必须是最终像素值之类，不能是百分比等原始值
