@@ -143,7 +143,7 @@ function measure(
   }
   // 查看是否有换行，防止字符串过长indexOf无效查找
   for (let i = start, len = start + hypotheticalNum; i < len; i++) {
-    if (content.charAt(i) === '\n') {
+    if (content.charAt(i) === '\n' || content.charAt(i) === ' ') {
       hypotheticalNum = i - start; // 遇到换行数量变化，不包含换行，强制newLine为false，换行在主循环
       rw = ctx.measureText(content.slice(start, start + hypotheticalNum)).width;
       newLine = false;
@@ -163,7 +163,7 @@ function measure(
     }
   }
   // 下一个字符是回车，强制忽略换行，外层循环识别
-  if (content.charAt(start + hypotheticalNum) === '\n') {
+  if (content.charAt(start + hypotheticalNum) === '\n' || content.charAt(start + hypotheticalNum) === ' ') {
     newLine = false;
   }
   return { hypotheticalNum, rw, newLine };
@@ -778,7 +778,7 @@ class Text extends Node {
         ctx.letterSpacing = letterSpacing + 'px';
       }
       // \n，行开头会遇到，需跳过
-      if (content.charAt(i) === '\n') {
+      if (content.charAt(i) === '\n' || content.charAt(i) === ' ') {
         i++;
         x = 0;
         y += lineBox.height + paragraphSpacing;
@@ -3340,7 +3340,7 @@ class Text extends Node {
       const item = rich[i];
       // 用<=start防止开头0时无法命中，另外\n换行点行首也会命中；>=start则命中交界处的前一个
       if (item.location <= start && item.location + item.length >= start) {
-        if (start === item.location + item.length && content.charAt(start - 1) === '\n') {
+        if (start === item.location + item.length && (content.charAt(start - 1) === '\n' || content.charAt(start - 1) === ' ')) {
           continue;
         }
         item.length += length;
@@ -3506,14 +3506,14 @@ class Text extends Node {
         'textDecoration',
         'paragraphSpacing',
       ])) {
-        if (a.textAlign === b.textAlign || content.charAt(b.location - 1) !== '\n') {
+        if (a.textAlign === b.textAlign || content.charAt(b.location - 1) !== '\n' && content.charAt(b.location - 1) !== ' ') {
           a.length += b.length;
           rich.splice(i + 1, 1);
           hasMerge = true;
         }
       }
       // 如果\n单独形成样式，合并它（操作\n前后字符情况下会出现），因为它无意义
-      else if (b.length === 1 && content.charAt(b.location) === '\n') {
+      else if (b.length === 1 && (content.charAt(b.location) === '\n' || content.charAt(b.location) === ' ')) {
         a.length += b.length;
         rich.splice(i + 1, 1);
         hasMerge = true;
