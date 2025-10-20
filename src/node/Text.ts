@@ -196,7 +196,6 @@ class Text extends Node {
   tempCursorX: number; // 上一次手动指定的光标x相对坐标，键盘上下移动时保持定位
   currentCursorX: number; // 当前光标x相对坐标，滚动画布时需要获取这个缓存
   cursor: Cursor; // 光标信息
-  asyncRefresh: boolean;
   loaders: Loader[];
   inputStyle?: ModifyRichStyle; // 编辑状态时未选择文字，改变样式临时存储，在输入时使用此样式
   editStyle?: EditStyle; // 进入编辑时改变布局置空translate防止位置变化，固定宽高也要显示全文本
@@ -220,7 +219,6 @@ class Text extends Node {
       start: 0,
       end: 0,
     };
-    this.asyncRefresh = false;
     this.loaders = [];
   }
 
@@ -656,10 +654,10 @@ class Text extends Node {
     let fontFamily: string;
     let fontSize: number;
     let color: string;
-    let textDecoration: TEXT_DECORATION[] = [];
+    let textDecoration: TEXT_DECORATION[];
     let maxW = 0;
-    let x = 0,
-      y = 0;
+    let x = 0;
+    let y = 0;
     // 初始数据合并校验
     this.mergeRich();
     // 富文本每串不同的需要设置字体测量，这个索引记录每个rich块首字符的start索引，在遍历时到这个字符则重设
@@ -678,28 +676,14 @@ class Text extends Node {
               if (!item.loaded && item.url) {
                 inject.loadFont(family, item.url, (cache: any) => {
                   item.loaded = true;
-                  // 加载成功后再次判断是否是这个字体，防止多次连续变更，rich中可能会很多重复，用异步刷新
+                  // 加载成功后再次判断是否是这个字体，防止多次连续变更
                   if (
                     cache.success &&
                     rich &&
                     rich[i] &&
                     rich[i].fontFamily === family
                   ) {
-                    if (this.asyncRefresh) {
-                      return;
-                    }
-                    this.asyncRefresh = true;
-                    inject.requestAnimationFrame(() => {
-                      if (
-                        cache.success &&
-                        rich &&
-                        rich[i] &&
-                        rich[i].fontFamily === family
-                      ) {
-                        this.asyncRefresh = false;
-                        this.refresh(RefreshLevel.REFLOW);
-                      }
-                    });
+                    this.refresh(RefreshLevel.REFLOW);
                   }
                 });
               }
@@ -774,7 +758,6 @@ class Text extends Node {
     lineBoxList.push(lineBox);
     // 布局考虑几种情况，是否自动宽和自动高，目前暂无自动宽+固定高
     const W = autoW ? Number.MAX_SAFE_INTEGER : this.width;
-    // const H = autoH ? Number.MAX_SAFE_INTEGER : this.height;
     while (i < length) {
       const setFontIndex = SET_FONT_INDEX[i];
       // 每串富文本重置font测量

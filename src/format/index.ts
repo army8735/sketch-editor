@@ -271,7 +271,7 @@ export type Rich = {
   length: number;
   fontFamily: string;
   fontSize: number;
-  fontWeight: number | string; // 用不到，只会改postscriptName
+  fontWeight: number; // 用不到，只会改postscriptName
   fontStyle: string; // 同
   lineHeight: number;
   textAlign: TEXT_ALIGN;
