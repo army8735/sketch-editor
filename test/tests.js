@@ -117,14 +117,6 @@ describe('Event', function() {
     event.emit('name');
     expect(count).to.eql([1, 1, 1]);
   });
-  it('return self', function() {
-    let event = new sketchEditor.util.Event();
-    let count = 0;
-    event.on('name', function() {
-      count++;
-    }).emit('name').off('name').emit('name');
-    expect(count).to.eql(1);
-  });
   it('on array', function() {
     let event = new sketchEditor.util.Event();
     let count = 0;

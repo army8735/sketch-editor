@@ -120,6 +120,7 @@ class TextureCache {
         const item = o[url];
         item.count++;
         const res = new TextureCache(gl, bbox);
+        res.available = true;
         const w2 = bbox[2] - bbox[0];
         const h2 = bbox[3] - bbox[1];
         const r1 = w2 / item.w;
