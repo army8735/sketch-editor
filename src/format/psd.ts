@@ -335,7 +335,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
     const textStyle = {
       fontFamily,
       fontSize: fontSize * transform[0],
-      fontWeight: fauxBold ? 'bold' : 'normal',
+      fontWeight: fauxBold ? 700 : 400,
       fontStyle: fauxItalic ? 'italic' : 'normal',
       letterSpacing: autoKerning ? 0 : kerning,
       textAlign: justification ? justification : 'left',
@@ -436,7 +436,7 @@ async function convertItem(layer: Layer, w: number, h: number) {
             res.fontFamily = style.font.name;
           }
           if (style.fauxBold !== undefined) {
-            res.fontWeight = style.fauxBold ? 'bold': 'normal';
+            res.fontWeight = style.fauxBold ? 700: 400;
           }
           if (style.fauxItalic !== undefined) {
             res.fontStyle = style.fauxItalic ? 'italic': 'normal';
