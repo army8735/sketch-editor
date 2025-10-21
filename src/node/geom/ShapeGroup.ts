@@ -4,12 +4,7 @@ import { Override, ShapeGroupProps, TAG_NAME } from '../../format';
 import bo from '../../math/bo';
 import { calPoint, isE } from '../../math/matrix';
 import { svgPolygon } from '../../refresh/paint';
-import {
-  BOOLEAN_OPERATION,
-  FILL_RULE,
-  STROKE_POSITION,
-  VISIBILITY,
-} from '../../style/define';
+import { BOOLEAN_OPERATION, FILL_RULE, STROKE_POSITION, VISIBILITY, } from '../../style/define';
 import { LayoutData } from '../layout';
 import Node from '../Node';
 import Polyline from './Polyline';
@@ -91,7 +86,12 @@ class ShapeGroup extends AbstractGroup {
     this.coords = undefined;
     this._rect = undefined;
     this._bbox = undefined;
+    this._bbox2 = undefined;
+    this._filterBbox = undefined;
+    this._filterBbox2 = undefined;
+    this.tempBbox = undefined;
     this.clearCache(true);
+    this.refreshLevel |= RefreshLevel.REPAINT;
   }
 
   clearPointsUpward() {
