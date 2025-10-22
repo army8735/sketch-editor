@@ -1437,9 +1437,9 @@ export default class Listener extends Event {
         const { dx, dy } = this;
         const data: MoveData[] = [];
         selected.forEach((node, i) => {
-          // 还原最初的translate/TRBL值，就算没移动也要还原，因为可能是移动后恢复原位，或者translate单位改变
-          node.endPosChange(this.originStyle[i], dx, dy);
           if (dx || dy) {
+            // 还原最初的translate/TRBL值，就算没移动也要还原，因为可能是移动后恢复原位，或者translate单位改变
+            node.endPosChange(this.originStyle[i], dx, dy);
             node.checkPosSizeUpward();
             data.push({ dx, dy });
           }
@@ -2259,7 +2259,7 @@ export default class Listener extends Event {
     }
     // 移动，普通的节点移动和矢量顶点侦听，文字光标是特殊的聚焦input框侦听
     else if (keyCode >= 37 && keyCode <= 40 || ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(code)) {
-      if (target && !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName.toUpperCase())) {
+      if (target && !isInput) {
         e.preventDefault();
         let x = 0;
         let y = 0;

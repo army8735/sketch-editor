@@ -2814,7 +2814,7 @@ class Node extends Event {
   }
 
   // 可能在布局后异步渲染前被访问，此时没有这个数据，刷新后就有缓存，变更transform或者reflow无缓存
-  get matrixWorld(): Float64Array {
+  get matrixWorld() {
     const root = this.root;
     let m = this._matrixWorld;
     if (!root) {

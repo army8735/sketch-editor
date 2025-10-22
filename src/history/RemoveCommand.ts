@@ -2,7 +2,7 @@ import AbstractCommand from './AbstractCommand';
 import Node from '../node/Node';
 import Container from '../node/Container';
 import Group from '../node/Group';
-import { appendWithPosAndSize} from '../tool/container';
+import { appendWithPosAndSize } from '../tool/container';
 
 export type RemoveData = {
   x: number; // 位置即computedStyle的left/top，但删除节点会使得parent组的尺寸变化，left/top会不准确，记录时需修正
