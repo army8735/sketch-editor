@@ -1170,25 +1170,27 @@ export default class Listener extends Event {
     selected.forEach(node => {
       this.toggleGroup(node, false);
     });
+    const { dx, dy } = this;
     if (this.isControl) {
       this.isControl = false;
       if (this.isRotate) {
         this.isRotate = false;
         const node = selected[0];
-        this.history.addCommand(new RotateCommand([node], [{
-          prev: {
-            rotateZ: this.computedStyle[0].rotateZ,
-          },
-          next: {
-            rotateZ: node.computedStyle.rotateZ,
-          },
-        }]), true);
+        if (dx || dy) {
+          this.history.addCommand(new RotateCommand([node], [{
+            prev: {
+              rotateZ: this.computedStyle[0].rotateZ,
+            },
+            next: {
+              rotateZ: node.computedStyle.rotateZ,
+            },
+          }]), true);
+        }
         if (!(this.metaKey || isWin && this.ctrlKey)) {
           this.select.metaKey(false);
         }
       }
       else {
-        const { dx, dy } = this;
         // 还原artBoard的children为初始值，只有操作画板时才有，普通节点是空[]
         this.abcStyle.forEach((item, i) => {
           if (item.length) {
