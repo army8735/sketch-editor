@@ -1130,6 +1130,7 @@ export function resizeBottomMultiArOperate(node: Node, originComputedStyle: Comp
     }
     resizeHorizontalAspectRatioMultiAr(next, node, originComputedStyle, dx);
   }
+  // 主轴的偏移和位置比例相关
   let dy = 0;
   if (fromCenter) {
     dy = d * (clientRect.y + clientRect.h * 0.5 - selectRect.y - selectRect.h * 0.5) * 2 / selectRect.h;
@@ -1137,8 +1138,6 @@ export function resizeBottomMultiArOperate(node: Node, originComputedStyle: Comp
   else {
     dy = d * (clientRect.y - selectRect.y) / selectRect.h;
   }
-  // 主轴的偏移和位置比例相关
-  const p = (clientRect.y - selectRect.y) / selectRect.h;
   resizeVerticalAspectRatioMultiAr(next, node, originComputedStyle, dy);
   return next;
 }
