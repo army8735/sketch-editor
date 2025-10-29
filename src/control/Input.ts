@@ -3,7 +3,6 @@ import Root from '../node/Root';
 import Listener from './Listener';
 import state from './state';
 import TextCommand from '../history/TextCommand';
-import picker from './picker';
 
 export default class Input {
   root: Root;
