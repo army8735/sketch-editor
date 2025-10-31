@@ -3488,13 +3488,13 @@ class Text extends Node {
             length: b.location - pn,
             ...dft,
           });
-          i += 2;
+          // i += 2;
         }
         else {
           const d = a.location + a.length - b.location;
-          b.location -= d;
+          b.location += d;
           b.length -= d;
-          i++;
+          // i++;
         }
         hasMerge = true;
         continue;
