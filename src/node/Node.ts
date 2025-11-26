@@ -1709,6 +1709,7 @@ class Node extends Event {
     res.opacity = style.opacity.v;
     res.visibility = style.visibility.v === VISIBILITY.VISIBLE ? 'visible' : 'hidden';
     res.color = color2rgbaStr(style.color.v);
+    res.fontFamily = style.fontFamily.v;
     res.backgroundColor = color2rgbaStr(style.backgroundColor.v);
     res.fontStyle = ['normal', 'italic', 'oblique'][style.fontStyle.v];
     res.textAlign = ['left', 'right', 'center', 'justify'][style.textAlign.v];

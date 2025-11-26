@@ -1,6 +1,6 @@
 {
   "name": "sketch-editor",
-  "version": "0.23.1",
+  "version": "0.23.2",
   "maintainers": [
     {
       "name": "army8735",
@@ -37,7 +37,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/uuid": "^9.0.8",
-    "chromedriver": "^140.0.4",
+    "chromedriver": "^142.0.3",
     "expect.js": "^0.3.1",
     "less": "^4.4.0",
     "mocha": "^10.4.0",
