@@ -1,16 +1,13 @@
 import JSZip from 'jszip';
 import SketchFormat from '@sketch-hq/sketch-file-format-ts';
-import {
-  JPage,
-  PageProps,
-  TAG_NAME,
-} from '../format/';
+import { JPage, PageProps, TAG_NAME, } from '../format/';
 import { calPoint, inverse4 } from '../math/matrix';
 import { normalize } from '../style/css';
 import { calMatrix } from '../style/transform';
 import Container from './Container';
 import Node from './Node';
 import { parse } from './parser';
+import { RefreshLevel } from '../refresh/level';
 
 class Page extends Container {
   json?: JPage;
@@ -46,11 +43,11 @@ class Page extends Container {
         scaleX: scale,
         scaleY: scale,
       });
-      return;
+      return { keys: [], lv: RefreshLevel.NONE };
     }
     const { translateX, translateY, scaleX } = this.getComputedStyle();
     if (scaleX === scale) {
-      return;
+      return { keys: [], lv: RefreshLevel.NONE };
     }
     const i = inverse4(this.matrixWorld);
     const { width, height, dpi } = this.root;
@@ -74,7 +71,7 @@ class Page extends Container {
     // 差值是需要调整的距离
     const dx = pt2.x - pt.x / dpi;
     const dy = pt2.y - pt.y / dpi;
-    this.updateStyle({
+    return this.updateStyle({
       translateX: translateX - dx,
       translateY: translateY - dy,
       scaleX: scale,

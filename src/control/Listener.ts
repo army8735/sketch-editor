@@ -1708,12 +1708,14 @@ export default class Listener extends Event {
     if (!page) {
       return;
     }
-    page.zoomTo(scale, cx, cy);
-    this.updateSelected();
-    this.updateInput();
-    this.updateGradient();
-    this.updateGeom();
-    this.emit(Listener.ZOOM_PAGE, scale);
+    const { lv } = page.zoomTo(scale, cx, cy);
+    if (lv) {
+      this.updateSelected();
+      this.updateInput();
+      this.updateGradient();
+      this.updateGeom();
+      this.emit(Listener.ZOOM_PAGE, scale);
+    }
   }
 
   zoomActual() {
