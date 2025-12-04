@@ -1743,6 +1743,26 @@ export default class Listener extends Event {
     this.active(res);
   }
 
+  move(nodes = this.selected, data: {
+    dx: number, dy: number,
+  }[]) {
+    if (nodes.length !== data.length) {
+      throw new Error('Missing params: ' + nodes.length + ', ' + data.length);
+    }
+    const moveNodes: Node[] = [];
+    const moveData: MoveData[] = [];
+    nodes.forEach((node, i) => {
+      const o = Object.assign({}, data[i]);
+      const computedStyle = node.getComputedStyle();
+      MoveCommand.update(node, computedStyle, o.dx, o.dy, false);
+      moveNodes.push(node);
+      moveData.push(o);
+    });
+    this.history.addCommand(new MoveCommand(moveNodes, moveData));
+    this.updateActive();
+    this.emit(Listener.MOVE_NODE, nodes.slice(0));
+  }
+
   resize(nodes = this.selected, data: {
     dx: number, dy: number, controlType?: CONTROL_TYPE,
     aspectRatio?: boolean, fromCenter?: boolean,
@@ -1785,9 +1805,8 @@ export default class Listener extends Event {
       } as ResizeData;
       resizeData.push(rd);
     });
-    if (nodes.length && data.length) {
-      this.history.addCommand(new ResizeCommand(resizeNodes, resizeData));
-    }
+    this.history.addCommand(new ResizeCommand(resizeNodes, resizeData));
+    this.updateActive();
     this.emit(Listener.RESIZE_NODE, nodes.slice(0));
   }
 
