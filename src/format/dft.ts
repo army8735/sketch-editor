@@ -33,7 +33,7 @@ export const DEFAULT_STYLE = {
   strokeDasharray: [],
   strokeLinecap: 'butt',
   strokeLinejoin: 'miter',
-  strokeMiterlimit: 0,
+  strokeMiterlimit: 4,
   letterSpacing: 0,
   paragraphSpacing: 0,
   textAlign: 'left',

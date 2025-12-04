@@ -575,9 +575,11 @@ export function normalize(style: any): Style {
     const v = reg.blur.exec(blur);
     if (v) {
       const t = v[1].toLowerCase();
+      let n = parseFloat(v[2]);
+      n = Math.max(n, 0);
       if (t === 'gauss') {
         res.blur = {
-          v: { t: BLUR.GAUSSIAN, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX } },
+          v: { t: BLUR.GAUSSIAN, radius: { v: n, u: StyleUnit.PX } },
           u: StyleUnit.BLUR,
         };
       }
@@ -590,7 +592,7 @@ export function normalize(style: any): Style {
         res.blur = {
           v: {
             t: BLUR.BACKGROUND,
-            radius: { v: parseInt(v[2]) || 0, u: StyleUnit.PX },
+            radius: { v: n, u: StyleUnit.PX },
             saturation: { v: saturation, u: StyleUnit.PERCENT },
           },
           u: StyleUnit.BLUR,
@@ -613,7 +615,7 @@ export function normalize(style: any): Style {
           }
         }
         res.blur = {
-          v: { t: BLUR.RADIAL, radius: { v: parseFloat(v[2]) || 0, u: StyleUnit.PX }, center },
+          v: { t: BLUR.RADIAL, radius: { v: n, u: StyleUnit.PX }, center },
           u: StyleUnit.BLUR
         };
       }

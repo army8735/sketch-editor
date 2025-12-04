@@ -1743,6 +1743,54 @@ export default class Listener extends Event {
     this.active(res);
   }
 
+  resize(nodes = this.selected, data: {
+    dx: number, dy: number, controlType?: CONTROL_TYPE,
+    aspectRatio?: boolean, fromCenter?: boolean,
+    widthToAuto?: boolean, heightToAuto?: boolean,
+    widthFromAuto?: boolean, heightFromAuto?: boolean,
+    flipX?: boolean, flipY?: boolean,
+  }[]) {
+    if (nodes.length !== data.length) {
+      throw new Error('Missing params: ' + nodes.length + ', ' + data.length);
+    }
+    const resizeNodes: Node[] = [];
+    const resizeData: ResizeData[] = [];
+    nodes.forEach((node, i) => {
+      const o = Object.assign({}, data[i]);
+      node.startSizeChange();
+      const style = node.getStyle();
+      const computedStyle = node.getComputedStyle();
+      const cssStyle = node.getCssStyle();
+      if (o.controlType === undefined) {
+        o.controlType = CONTROL_TYPE.BR;
+      }
+      ResizeCommand.updateStyle(node, computedStyle, cssStyle,
+        o.dx || 0, o.dy || 0, o.controlType!,
+        o.aspectRatio, o.fromCenter, o.widthToAuto, o.heightToAuto);
+      node.endSizeChange(style);
+      node.checkPosSizeUpward();
+      resizeNodes.push(node);
+      const rd = {
+        dx: o.dx,
+        dy: o.dy,
+        controlType: o.controlType,
+        aspectRatio: !!o.aspectRatio,
+        fromCenter: !!o.fromCenter,
+        widthFromAuto: !!o.widthFromAuto,
+        heightFromAuto: !!o.heightFromAuto,
+        widthToAuto: !!o.widthToAuto,
+        heightToAuto: !!o.heightToAuto,
+        flipX: !!o.flipX,
+        flipY: !!o.flipY,
+      } as ResizeData;
+      resizeData.push(rd);
+    });
+    if (nodes.length && data.length) {
+      this.history.addCommand(new ResizeCommand(resizeNodes, resizeData));
+    }
+    this.emit(Listener.RESIZE_NODE, nodes.slice(0));
+  }
+
   group(nodes = this.selected) {
     if (nodes.length) {
       const { data, group } = GroupCommand.operate(nodes);
