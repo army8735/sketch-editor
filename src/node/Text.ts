@@ -3510,7 +3510,7 @@ class Text extends Node {
         'textDecoration',
         'paragraphSpacing',
       ])) {
-        if (a.textAlign === b.textAlign || isLine(content.charAt(b.location - 1))) {
+        if (a.textAlign === b.textAlign || !isLine(content.charAt(b.location - 1))) {
           a.length += b.length;
           rich.splice(i + 1, 1);
           hasMerge = true;

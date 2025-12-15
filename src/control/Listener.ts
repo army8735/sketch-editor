@@ -2840,6 +2840,7 @@ export default class Listener extends Event {
             }
           }
         }
+        this.emit(this.shiftKey ? Listener.REDO : Listener.UNDO);
       }
     }
     // toolbar上的快捷键
@@ -3081,4 +3082,6 @@ export default class Listener extends Event {
   static STATE_CHANGE = 'STATE_CHANGE';
   static SHORTCUT_KEY = 'SHORTCUT_KEY';
   static CANCEL_ADD_ESC = 'CANCEL_ADD_ESC';
+  static UNDO = 'UNDO';
+  static REDO = 'REDO';
 }
