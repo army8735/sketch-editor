@@ -31,11 +31,6 @@ class Geom extends Node {
     super.calRepaintStyle(lv);
     this.coords = undefined;
     this._rect = undefined;
-    this._bbox = undefined;
-    this._bbox2 = undefined;
-    this._filterBbox = undefined;
-    this._filterBbox2 = undefined;
-    this.tempBbox = undefined;
   }
 
   buildPoints() {

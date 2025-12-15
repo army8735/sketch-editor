@@ -1991,8 +1991,8 @@ export default class Listener extends Event {
       if (nodes.filter(item => item.symbolInstance && !(item instanceof SymbolInstance)).length > 0) {
         return;
       }
-      const sel = nodes.slice(0);
-      const nodes2 = nodes.splice(0).map(item => {
+      const sel = nodes.splice(0).filter(item => !item.isLocked);
+      const nodes2 = sel.map(item => {
         let p = item;
         while (p) {
           if (p.parent && p.parent.isGroup && p.parent instanceof Group && p.parent.children.length === 1) {

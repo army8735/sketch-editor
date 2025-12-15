@@ -3131,46 +3131,6 @@ class Text extends Node {
   // 传入location/length，修改范围内的Rich的样式，一般来源是TextPanel中改如颜色
   updateRangeStyleData(location: number, length: number, st: ModifyRichStyle) {
     let lv = RefreshLevel.NONE;
-    // 开头同时更新节点本身默认样式
-    if (location === 0) {
-      const { style, computedStyle } = this;
-      if (st.fontFamily !== undefined) {
-        style.fontFamily.v = computedStyle.fontFamily = st.fontFamily;
-      }
-      if (st.fontSize !== undefined) {
-        style.fontSize.v = computedStyle.fontSize = st.fontSize;
-      }
-      if (st.color !== undefined) {
-        style.color.v = computedStyle.color = color2rgbaInt(st.color);
-      }
-      if (st.letterSpacing !== undefined) {
-        style.letterSpacing.v = computedStyle.letterSpacing = st.letterSpacing;
-      }
-      if (st.lineHeight !== undefined) {
-        if (st.lineHeight === 0) {
-          style.lineHeight.v = 0;
-          style.lineHeight.u = StyleUnit.AUTO;
-          computedStyle.lineHeight = calNormalLineHeight(computedStyle);
-        }
-        else {
-          style.lineHeight.v = computedStyle.lineHeight = st.lineHeight;
-          style.lineHeight.u = StyleUnit.PX;
-        }
-      }
-      if (st.paragraphSpacing !== undefined) {
-        style.paragraphSpacing.v = computedStyle.paragraphSpacing = st.paragraphSpacing;
-      }
-      if (st.textAlign !== undefined) {
-        style.textAlign.v = computedStyle.textAlign = st.textAlign;
-      }
-      if (st.textDecoration !== undefined) {
-        style.textDecoration = st.textDecoration.map(item => ({
-          v: item,
-          u: StyleUnit.NUMBER,
-        }));
-        computedStyle.textDecoration = st.textDecoration.slice(0);
-      }
-    }
     const rich = this.rich;
     for (let i = 0, len = rich.length; i < len; i++) {
       if (length < 1) {
@@ -3214,6 +3174,46 @@ class Text extends Node {
       }
     }
     this.mergeRich();
+    // 开头同时更新节点本身默认样式
+    if (location === 0) {
+      const { style, computedStyle } = this;
+      if (st.fontFamily !== undefined) {
+        style.fontFamily.v = computedStyle.fontFamily = st.fontFamily;
+      }
+      if (st.fontSize !== undefined) {
+        style.fontSize.v = computedStyle.fontSize = st.fontSize;
+      }
+      if (st.color !== undefined) {
+        style.color.v = computedStyle.color = color2rgbaInt(st.color);
+      }
+      if (st.letterSpacing !== undefined) {
+        style.letterSpacing.v = computedStyle.letterSpacing = st.letterSpacing;
+      }
+      if (st.lineHeight !== undefined) {
+        if (st.lineHeight === 0) {
+          style.lineHeight.v = 0;
+          style.lineHeight.u = StyleUnit.AUTO;
+          computedStyle.lineHeight = calNormalLineHeight(computedStyle);
+        }
+        else {
+          style.lineHeight.v = computedStyle.lineHeight = st.lineHeight;
+          style.lineHeight.u = StyleUnit.PX;
+        }
+      }
+      if (st.paragraphSpacing !== undefined) {
+        style.paragraphSpacing.v = computedStyle.paragraphSpacing = st.paragraphSpacing;
+      }
+      if (st.textAlign !== undefined) {
+        style.textAlign.v = computedStyle.textAlign = st.textAlign;
+      }
+      if (st.textDecoration !== undefined) {
+        style.textDecoration = st.textDecoration.map(item => ({
+          v: item,
+          u: StyleUnit.NUMBER,
+        }));
+        computedStyle.textDecoration = st.textDecoration.slice(0);
+      }
+    }
     return lv;
   }
 
