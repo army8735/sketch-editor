@@ -476,8 +476,8 @@ function genNextCount(
       node.struct.next = i - index - total - 1;
       break;
     }
-    else if (i === len || (computedStyle.breakMask && lv === lv2)) {
-      node.struct.next = i - index - total - 1;
+    else if (i === (len - 1) || (computedStyle.breakMask && lv === lv2)) {
+      node.struct.next = i - index - total;
       break;
     }
   }
