@@ -2840,7 +2840,7 @@ export default class Listener extends Event {
             }
           }
         }
-        this.emit(this.shiftKey ? Listener.REDO : Listener.UNDO);
+        this.emit(this.shiftKey ? Listener.REDO : Listener.UNDO, c);
       }
     }
     // toolbar上的快捷键
