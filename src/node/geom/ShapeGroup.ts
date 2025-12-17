@@ -27,7 +27,7 @@ function scaleDown(points: number[][]) {
   });
 }
 
-function applyMatrixPoints(points: number[][], m: Float64Array) {
+function applyMatrixPoints(points: number[][], m: Float32Array) {
   if (m && !isE(m)) {
     const a1 = m[0],
       b1 = m[1];
@@ -220,7 +220,7 @@ class ShapeGroup extends AbstractGroup {
     this.buildPoints();
     const computedStyle = this.computedStyle;
     const coords = this.coords || [];
-    const matrix = new Float64Array(this.matrixWorld);
+    const matrix = new Float32Array(this.matrixWorld);
     const absCoords: number[][][] = [];
     let minX = 0, minY = 0, maxX = 0, maxY = 0;
     let isFirst = true;
@@ -394,10 +394,10 @@ class ShapeGroup extends AbstractGroup {
     }
   }
 
-  override get rect(): Float64Array {
+  override get rect(): Float32Array {
     let res = this._rect;
     if (!res) {
-      res = this._rect = new Float64Array(4);
+      res = this._rect = new Float32Array(4);
       this.buildPoints();
       // 子元素可能因为编辑模式临时超过范围
       const coords = this.coords;
@@ -408,7 +408,7 @@ class ShapeGroup extends AbstractGroup {
     return res;
   }
 
-  override get bbox(): Float64Array {
+  override get bbox(): Float32Array {
     let res = this._bbox;
     if (!res) {
       const rect = this._rect || this.rect;

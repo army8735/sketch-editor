@@ -3887,7 +3887,7 @@ class Text extends Node {
     }
   }
 
-  override get bbox(): Float64Array {
+  override get bbox(): Float32Array {
     let res = this._bbox;
     if (!res) {
       const rect = this._rect || this.rect;

@@ -11,11 +11,11 @@ import {
 import { Style } from './define';
 import { calSize } from './css';
 
-export function calRotateZ(t: Float64Array, v: number) {
+export function calRotateZ(t: Float32Array, v: number) {
   return calRotateZRadian(t, d2r(v));
 }
 
-export function calRotateZRadian(t: Float64Array, v: number) {
+export function calRotateZRadian(t: Float32Array, v: number) {
   const sin = Math.sin(v);
   const cos = Math.cos(v);
   t[0] = t[5] = cos;
@@ -25,8 +25,8 @@ export function calRotateZRadian(t: Float64Array, v: number) {
 }
 
 // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
-export function calMatrixByOrigin(m: Float64Array, ox: number, oy: number) {
-  let res = m.slice(0) as Float64Array;
+export function calMatrixByOrigin(m: Float32Array, ox: number, oy: number) {
+  let res = m.slice(0) as Float32Array;
   if (ox === 0 && oy === 0 || isE(m)) {
     return res;
   }
@@ -67,8 +67,8 @@ export function calMatrix(style: Style, width = 0, height = 0) {
   return transform;
 }
 
-export function calTransformByMatrixAndOrigin(matrix: Float64Array, x: number, y: number) {
-  let res = matrix.slice(0) as Float64Array;
+export function calTransformByMatrixAndOrigin(matrix: Float32Array, x: number, y: number) {
+  let res = matrix.slice(0) as Float32Array;
   res = multiplyTfo(res, x, y);
   res = tfoMultiply(-x, -y, res);
   return res;

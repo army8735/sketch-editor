@@ -428,7 +428,7 @@ export type Radial = {
   tx: number;
   ty: number;
   ellipseLength: number;
-  matrix?: Float64Array;
+  matrix?: Float32Array;
   total: number;
   stop: { color: number[]; offset: number }[];
 };
@@ -448,7 +448,7 @@ export function getRadial(
   const ellipseLength = d[4]; // 缩放比，另一轴和目标轴垂直
   const total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
   const stop = getColorStop(stops, total, false);
-  let matrix: Float64Array | undefined;
+  let matrix: Float32Array | undefined;
   // 以目标轴为基准视作圆，缩放另一轴和旋转
   if (ellipseLength && ellipseLength !== 1) {
     matrix = identity();

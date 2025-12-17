@@ -85,7 +85,7 @@ export function pointInConvexPolygon(x: number, y: number, vertexes: Array<{ x: 
 
 // 判断点是否在一个矩形，比如事件发生是否在节点上
 export function pointInRect(x: number, y: number, x1: number, y1: number, x2: number, y2: number,
-                            matrix?: Float64Array, includeIntersect = false) {
+                            matrix?: Float32Array, includeIntersect = false) {
   if (x1 >= x2) {
     [x1, x2] = [x2, x1];
   }

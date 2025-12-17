@@ -2,7 +2,7 @@ import { createTexture } from '../gl/webgl';
 import CanvasCache from './CanvasCache';
 
 export type SubTexture = {
-  bbox: Float64Array;
+  bbox: Float32Array;
   w: number;
   h: number;
   t?: WebGLTexture;
@@ -23,10 +23,10 @@ const HASH: Record<string, Record<string, {
 class TextureCache {
   gl: WebGL2RenderingContext | WebGLRenderingContext;
   available: boolean;
-  bbox: Float64Array;
+  bbox: Float32Array;
   list: SubTexture[];
 
-  constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array, cache?: CanvasCache) {
+  constructor(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float32Array, cache?: CanvasCache) {
     this.gl = gl;
     this.bbox = bbox.slice(0);
     const maxX = bbox[2], maxY = bbox[3];
@@ -45,7 +45,7 @@ class TextureCache {
         const item = list[i];
         const t = createTexture(gl, 0, item.os.canvas);
         this.list.push({
-          bbox: new Float64Array([
+          bbox: new Float32Array([
             item.x * r1, // 允许小数
             item.y * r2,
             Math.min(maxX, (item.x + item.w) * r1), // 精度问题保底
@@ -99,7 +99,7 @@ class TextureCache {
     return true;
   }
 
-  static getInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, cache: CanvasCache, bbox: Float64Array) {
+  static getInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, cache: CanvasCache, bbox: Float32Array) {
     return new TextureCache(gl, bbox, cache);
   }
 
@@ -113,7 +113,7 @@ class TextureCache {
     return false;
   }
 
-  static getImgInstance(id: string, gl: WebGL2RenderingContext | WebGLRenderingContext, url: string, bbox: Float64Array, cache?: CanvasCache) {
+  static getImgInstance(id: string, gl: WebGL2RenderingContext | WebGLRenderingContext, url: string, bbox: Float32Array, cache?: CanvasCache) {
     if (HASH.hasOwnProperty(id)) {
       const o = HASH[id];
       if (o.hasOwnProperty(url)) {
@@ -132,7 +132,7 @@ class TextureCache {
         for (let i = 0; i < len; i++) {
           const item = value[i];
           res.list.push({
-            bbox: new Float64Array([
+            bbox: new Float32Array([
               item.x * r1, // 允许小数，只有图片有小数
               item.y * r2,
               Math.min(maxX, (item.x + item.w) * r1), // 精度问题保底，防止最后一个超过
@@ -169,7 +169,7 @@ class TextureCache {
     return res;
   }
 
-  static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float64Array) {
+  static getEmptyInstance(gl: WebGL2RenderingContext | WebGLRenderingContext, bbox: Float32Array) {
     return new TextureCache(gl, bbox);
   }
 }

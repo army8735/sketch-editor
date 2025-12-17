@@ -145,7 +145,7 @@ export type JStyle = {
   transformOrigin:
     | Array<number | 'left' | 'right' | 'top' | 'bottom' | 'center'>
     | string;
-  matrix?: Float64Array | number[];
+  matrix?: Float32Array | number[];
   booleanOperation: 'none' | 'union' | 'subtract' | 'intersect' | 'xor';
   mixBlendMode:
     | 'normal'

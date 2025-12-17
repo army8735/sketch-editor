@@ -149,7 +149,7 @@ export function getRotateOnPage(node: Node, flip?: { x: number, y: number }) {
   return getRotateOnPageByMF(m, flip || getFlipOnPage(node));
 }
 
-export function getRotateOnPageByMF(matrix: Float64Array, flip: { x: number, y: number }) {// flipXY等同于无flip+180°
+export function getRotateOnPageByMF(matrix: Float32Array, flip: { x: number, y: number }) {// flipXY等同于无flip+180°
   if (flip.x === -1 && flip.y === -1) {
     if (matrix[1] < 0) {
       return Math.PI - Math.acos(matrix[0]);

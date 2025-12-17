@@ -65,7 +65,7 @@ class Geom extends Node {
     this.buildPoints();
     const computedStyle = this.computedStyle;
     const coords = this.coords || [];
-    const matrix = new Float64Array(this.matrixWorld);
+    const matrix = new Float32Array(this.matrixWorld);
     const absCoords: number[][] = [];
     let minX = 0, minY = 0, maxX = 0, maxY = 0;
     let isFirst = true;
@@ -161,7 +161,7 @@ class Geom extends Node {
   override get rect() {
     let res = this._rect;
     if (!res) {
-      res = this._rect = new Float64Array(4);
+      res = this._rect = new Float32Array(4);
       // 可能不存在
       this.buildPoints();
       // 可能矢量编辑过程中超过或不足原本尺寸范围

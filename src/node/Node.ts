@@ -103,17 +103,17 @@ class Node extends Event {
   hasCacheOp: boolean; // 是否计算过世界opacity
   localOpId: number; // 同下面的matrix
   parentOpId: number;
-  transform: Float64Array; // 不包含transformOrigin
-  matrix: Float64Array; // 包含transformOrigin
-  _matrixWorld: Float64Array; // 世界transform
+  transform: Float32Array; // 不包含transformOrigin
+  matrix: Float32Array; // 包含transformOrigin
+  _matrixWorld: Float32Array; // 世界transform
   hasCacheMw: boolean; // 是否计算过世界matrix
   localMwId: number; // 当前计算后的世界matrix的id，每次改变自增
   parentMwId: number; // 父级的id副本，用以对比确认父级是否变动过
-  _rect?: Float64Array; // 真实内容组成的内容框，group/geom特殊计算
-  _bbox?: Float64Array; // 以rect为基础，包含边框包围盒
-  _filterBbox?: Float64Array; // 包含filter/阴影内内容外的包围盒
-  _bbox2?: Float64Array; // 扩大取整的bbox
-  _filterBbox2?: Float64Array; // 扩大取整的filterBbox
+  _rect?: Float32Array; // 真实内容组成的内容框，group/geom特殊计算
+  _bbox?: Float32Array; // 以rect为基础，包含边框包围盒
+  _filterBbox?: Float32Array; // 包含filter/阴影内内容外的包围盒
+  _bbox2?: Float32Array; // 扩大取整的bbox
+  _filterBbox2?: Float32Array; // 扩大取整的filterBbox
   hasContent: boolean;
   canvasCache?: CanvasCache; // 先渲染到2d上作为缓存
   textureCache: Array<TextureCache | undefined>; // 从canvasCache生成的纹理缓存
@@ -124,8 +124,8 @@ class Node extends Event {
   textureTarget: Array<TextureCache | undefined>; // 指向自身所有缓存中最优先的那个
   textureOutline: Array<TextureCache | undefined>; // 轮廓mask特殊使用
   tempOpacity: number; // 局部根节点merge汇总临时用到的2个
-  tempMatrix: Float64Array;
-  tempBbox?: Float64Array; // 这个比较特殊，在可视范围外的merge没有变化会一直保存，防止重复计算
+  tempMatrix: Float32Array;
+  tempBbox?: Float32Array; // 这个比较特殊，在可视范围外的merge没有变化会一直保存，防止重复计算
   tempIndex: number;
   isGroup = false; // Group对象和Container基本一致，多了自适应尺寸和选择区别
   isArtBoard = false;
@@ -601,7 +601,7 @@ class Node extends Event {
     }
   }
 
-  calMatrix(lv: RefreshLevel): Float64Array {
+  calMatrix(lv: RefreshLevel): Float32Array {
     const { style, computedStyle, matrix, transform } = this;
     // 每次更新标识且id++，获取matrixWorld或者每帧渲染会置true，首次0时强制进入，虽然布局过程中会调用，防止手动调用不可预期
     if (this.hasCacheMw || !this.localMwId) {
@@ -2888,7 +2888,7 @@ class Node extends Event {
   get rect() {
     let res = this._rect;
     if (!res) {
-      res = this._rect = new Float64Array(4);
+      res = this._rect = new Float32Array(4);
       res[0] = 0;
       res[1] = 0;
       res[2] = this.width;

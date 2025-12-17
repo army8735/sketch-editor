@@ -472,7 +472,6 @@ class Root extends Container implements FrameCallback {
         }
         let cleared = false;
         if (lv & RefreshLevel.MASK) {
-          computedStyle.maskMode = style.maskMode.v;
           node.clearMask(true);
           cleared = true;
           node.checkPosSizeUpward();

@@ -3,7 +3,7 @@ import { crossProduct } from '../../math/vector';
 import { intersectLineLine } from '../../math/isec';
 import { bezierSlope } from '../../math/bezier';
 
-export function lineCap(bbox: Float64Array, width: number, points: number[][], cap: STROKE_LINE_CAP) {
+export function lineCap(bbox: Float32Array, width: number, points: number[][], cap: STROKE_LINE_CAP) {
   const res = bbox.slice(0);
   // 圆角最简单，已知圆心和半径，直接取范围
   if (cap === STROKE_LINE_CAP.ROUND) {
@@ -60,7 +60,7 @@ export function lineCap(bbox: Float64Array, width: number, points: number[][], c
   return res;
 }
 
-export function lineJoin(bbox: Float64Array, width: number, points: number[][], join: STROKE_LINE_JOIN, miterLimit: number) {
+export function lineJoin(bbox: Float32Array, width: number, points: number[][], join: STROKE_LINE_JOIN, miterLimit: number) {
   const res = bbox.slice(0);
   // 圆角最简单，已知圆心和半径，直接取范围
   if (join === STROKE_LINE_JOIN.ROUND) {

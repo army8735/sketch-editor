@@ -218,11 +218,11 @@ export type ComputedShadow = {
 };
 
 export type StyleMatrixValue = {
-  v: Float64Array;
+  v: Float32Array;
   u: StyleUnit.MATRIX;
 };
 
-export type ComputedMatrix = Float64Array;
+export type ComputedMatrix = Float32Array;
 
 export type Style = {
   display: StyleDisplayValue;

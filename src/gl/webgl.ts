@@ -146,8 +146,8 @@ export function bindTexture(
 
 export type DrawData = {
   opacity: number;
-  matrix?: Float64Array;
-  bbox: Float64Array;
+  matrix?: Float32Array;
+  bbox: Float32Array;
   coords?: { // 手动传入提前计算好的坐标，tile时复用数据
     t1: { x: number, y: number },
     t2: { x: number, y: number },
@@ -698,13 +698,13 @@ export function convertCoords2Gl(
  * dx/dy不参与matrix计算
  */
 export function bbox2Coords(
-  bbox: Float64Array,
+  bbox: Float32Array,
   cx: number,
   cy: number,
   dx = 0,
   dy = 0,
   flipY = true,
-  matrix?: Float64Array,
+  matrix?: Float32Array,
 ) {
   const t = calRectPoints(
     bbox[0],

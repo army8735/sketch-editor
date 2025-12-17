@@ -1,9 +1,9 @@
 export function identity() {
-  return new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]) as Float64Array;
+  return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]) as Float32Array;
 }
 
 // 16位单位矩阵判断，空也认为是
-export function isE(m: Float64Array | undefined) {
+export function isE(m: Float32Array | undefined) {
   if (!m || !m.length) {
     return true;
   }
@@ -28,12 +28,12 @@ export function isE(m: Float64Array | undefined) {
 }
 
 // 矩阵a*b，固定两个matrix都是长度16
-export function multiply(a: Float64Array, b: Float64Array): Float64Array {
+export function multiply(a: Float32Array, b: Float32Array): Float32Array {
   if (isE(a)) {
-    return new Float64Array(b);
+    return new Float32Array(b);
   }
   if (isE(b)) {
-    return new Float64Array(a);
+    return new Float32Array(a);
   }
   const c = identity();
   for (let i = 0; i < 4; i++) {
@@ -50,7 +50,7 @@ export function multiply(a: Float64Array, b: Float64Array): Float64Array {
 }
 
 // 同引用更改b数据
-export function multiplyRef(a: Float64Array, b: Float64Array): Float64Array {
+export function multiplyRef(a: Float32Array, b: Float32Array): Float32Array {
   if (isE(a)) {
     return b;
   }
@@ -87,7 +87,7 @@ export function multiplyRef(a: Float64Array, b: Float64Array): Float64Array {
   return b;
 }
 
-export function toE(m: Float64Array) {
+export function toE(m: Float32Array) {
   m[0] = 1;
   m[1] = 0;
   m[2] = 0;
@@ -125,11 +125,11 @@ export function toE(m: Float64Array) {
  * @returns {number[]}
  */
 
-export function inverse4(m: Float64Array) {
+export function inverse4(m: Float32Array) {
   if (isE(m)) {
     return identity();
   }
-  const inv = new Float64Array(16);
+  const inv = new Float32Array(16);
 
   inv[0] =
     m[5] * m[10] * m[15] -
@@ -253,14 +253,14 @@ export function inverse4(m: Float64Array) {
   }
 
   det = 1 / det;
-  const d = new Float64Array(16);
+  const d = new Float32Array(16);
   for (let i = 0; i < 16; i++) {
     d[i] = inv[i] * det;
   }
   return d;
 }
 
-export function assignMatrix(t: Float64Array, v: Float64Array) {
+export function assignMatrix(t: Float32Array, v: Float32Array) {
   if (t && v) {
     t[0] = v[0];
     t[1] = v[1];
@@ -282,7 +282,7 @@ export function assignMatrix(t: Float64Array, v: Float64Array) {
   return t;
 }
 
-export function multiplyTfo(m: Float64Array, x: number, y: number) {
+export function multiplyTfo(m: Float32Array, x: number, y: number) {
   if (!x && !y) {
     return m;
   }
@@ -293,7 +293,7 @@ export function multiplyTfo(m: Float64Array, x: number, y: number) {
   return m;
 }
 
-export function tfoMultiply(x: number, y: number, m: Float64Array) {
+export function tfoMultiply(x: number, y: number, m: Float32Array) {
   if (!x && !y) {
     return m;
   }
@@ -313,7 +313,7 @@ export function tfoMultiply(x: number, y: number, m: Float64Array) {
 }
 
 // 几种特殊的transform变换优化
-export function multiplyTranslateX(m: Float64Array, v: number) {
+export function multiplyTranslateX(m: Float32Array, v: number) {
   if (!v) {
     return m;
   }
@@ -324,7 +324,7 @@ export function multiplyTranslateX(m: Float64Array, v: number) {
   return m;
 }
 
-export function multiplyTranslateY(m: Float64Array, v: number) {
+export function multiplyTranslateY(m: Float32Array, v: number) {
   if (!v) {
     return m;
   }
@@ -335,7 +335,7 @@ export function multiplyTranslateY(m: Float64Array, v: number) {
   return m;
 }
 
-export function multiplyTranslate(m: Float64Array, x: number, y: number) {
+export function multiplyTranslate(m: Float32Array, x: number, y: number) {
   if (!x && !y) {
     return m;
   }
@@ -346,7 +346,7 @@ export function multiplyTranslate(m: Float64Array, x: number, y: number) {
   return m;
 }
 
-export function multiplyRotateZ(m: Float64Array, v: number) {
+export function multiplyRotateZ(m: Float32Array, v: number) {
   if (!v) {
     return m;
   }
@@ -371,7 +371,7 @@ export function multiplyRotateZ(m: Float64Array, v: number) {
   return m;
 }
 
-export function multiplyScaleX(m: Float64Array, v: number) {
+export function multiplyScaleX(m: Float32Array, v: number) {
   if (v === 1) {
     return m;
   }
@@ -382,7 +382,7 @@ export function multiplyScaleX(m: Float64Array, v: number) {
   return m;
 }
 
-export function multiplyScaleY(m: Float64Array, v: number) {
+export function multiplyScaleY(m: Float32Array, v: number) {
   if (v === 1) {
     return m;
   }
@@ -393,7 +393,7 @@ export function multiplyScaleY(m: Float64Array, v: number) {
   return m;
 }
 
-export function multiplyScale(m: Float64Array, v: number) {
+export function multiplyScale(m: Float32Array, v: number) {
   if (v === 1) {
     return m;
   }
@@ -408,7 +408,7 @@ export function multiplyScale(m: Float64Array, v: number) {
   return m;
 }
 
-export function calPoint(point: { x: number; y: number }, m?: Float64Array) {
+export function calPoint(point: { x: number; y: number }, m?: Float32Array) {
   if (m && !isE(m)) {
     const { x, y } = point;
     const a1 = m[0],
@@ -429,7 +429,7 @@ export function calPoint(point: { x: number; y: number }, m?: Float64Array) {
  * 初等行变换求3*3特定css的matrix方阵，一维6长度
  * https://blog.csdn.net/iloveas2014/article/details/82930946
  */
-export function inverse(m: Float64Array) {
+export function inverse(m: Float32Array) {
   if (m.length === 16) {
     return inverse4(m);
   }
@@ -446,7 +446,7 @@ export function inverse(m: Float64Array) {
   if (divisor === 0) {
     return m;
   }
-  return new Float64Array([
+  return new Float32Array([
     d / divisor,
     -b / divisor,
     -c / divisor,
@@ -461,7 +461,7 @@ export function calRectPoints(
   ya: number,
   xb: number,
   yb: number,
-  matrix?: Float64Array,
+  matrix?: Float32Array,
 ) {
   let { x: x1, y: y1 } = calPoint({ x: xa, y: ya }, matrix);
   let { x: x3, y: y3 } = calPoint({ x: xb, y: yb }, matrix);

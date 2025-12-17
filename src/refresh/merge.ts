@@ -257,7 +257,7 @@ export function genMerge(
   }
   let firstMerge = true;
   let breakMerge: Merge[] | undefined;
-  const mergeRecord: { bbox: Float64Array, m: Float64Array }[] = [];
+  const mergeRecord: { bbox: Float32Array, m: Float32Array }[] = [];
   // 最后一遍循环根据可视范围内valid标记产生真正的merge汇总
   for (let j = 0, len = mergeList.length; j < len; j++) {
     const { i, lv, total, node, valid, isNew, tint } = mergeList[j];
@@ -425,8 +425,8 @@ function genBboxTotal(
 }
 
 export function checkInScreen(
-  bbox: Float64Array,
-  matrix: Float64Array | undefined,
+  bbox: Float32Array,
+  matrix: Float32Array | undefined,
   width: number,
   height: number,
 ) {
@@ -434,8 +434,8 @@ export function checkInScreen(
 }
 
 export function checkInRect(
-  bbox: Float64Array,
-  matrix: Float64Array | undefined,
+  bbox: Float32Array,
+  matrix: Float32Array | undefined,
   x: number,
   y: number,
   width: number,
@@ -568,7 +568,7 @@ function genTotal(
         y0 = y + i * UNIT / scale;
       const w0 = width / scale,
         h0 = height / scale;
-      const bbox = new Float64Array([
+      const bbox = new Float32Array([
         x0,
         y0,
         x0 + w0,
@@ -610,7 +610,7 @@ function genTotal(
     if (node2.isBitmap && (node2 as Bitmap).checkLoader()) {
       root.imgLoadList.push(node2 as Bitmap);
     }
-    let opacity: number, matrix: Float64Array;
+    let opacity: number, matrix: Float32Array;
     // 首个节点即局部根节点，需要考虑scale放大
     if (i === index) {
       opacity = node2.tempOpacity = 1;
@@ -936,7 +936,7 @@ function drawInSpreadBbox(
         y0 = y + i * UNIT / scale;
       const w0 = width / scale,
         h0 = height / scale;
-      const bbox = new Float64Array([
+      const bbox = new Float32Array([
         x0,
         y0,
         x0 + w0,
@@ -975,7 +975,7 @@ function drawInSpreadBbox(
             [
               {
                 opacity: 1,
-                bbox: new Float64Array([
+                bbox: new Float32Array([
                   bbox2[0] * scale,
                   bbox2[1] * scale,
                   bbox2[2] * scale,
@@ -1010,7 +1010,7 @@ function createInOverlay(
   const UNIT = config.maxTextureSize;
   const unit = UNIT - spread * scale * 2; // 去除spread的单位
   const listO: {
-    bbox: Float64Array,
+    bbox: Float32Array,
     w: number, h: number,
     x1: number, y1: number, x2: number, y2: number, // 中间覆盖渲染的部分
     t: WebGLTexture,
@@ -1025,7 +1025,7 @@ function createInOverlay(
         y1 = Math.max(bboxR[1], y + i * unit / scale - spread);
       let x2 = Math.min(bboxR[2], x1 + spread * 4),
         y2 = Math.min(bboxR[3], y1 + unit / scale + spread * 2);
-      const bbox = new Float64Array([x1, y1, x2, y2]);
+      const bbox = new Float32Array([x1, y1, x2, y2]);
       if (x1 > bboxR[2] - spread * 2) {
         x1 = bbox[0] = Math.max(bboxR[0], bboxR[2] - spread * 2);
         x2 = bbox[2] = bboxR[2];
@@ -1056,7 +1056,7 @@ function createInOverlay(
         y1 = Math.max(bboxR[1], y + i * UNIT / scale - spread * 2);
       let x2 = Math.min(bboxR[2], x1 + unit / scale + spread * 2),
         y2 = Math.min(bboxR[3], y1 + spread * 4);
-      const bbox = new Float64Array([x1, y1, x2, y2]);
+      const bbox = new Float32Array([x1, y1, x2, y2]);
       if (x1 > bboxR[2] - spread * 2) {
         x1 = bbox[0] = Math.max(bboxR[0], bboxR[2] - spread * 2);
         x2 = bbox[2] = bboxR[2];
@@ -1089,12 +1089,12 @@ function drawInOverlay(
   scale: number,
   res: TextureCache,
   listO: {
-    bbox: Float64Array,
+    bbox: Float32Array,
     w: number, h: number,
     x1: number, y1: number, x2: number, y2: number,
     t: WebGLTexture,
   }[],
-  bboxR: Float64Array,
+  bboxR: Float32Array,
   spread: number,
 ) {
   gl.useProgram(program);
@@ -1140,7 +1140,7 @@ function drawInOverlay(
           [
             {
               opacity: 1,
-              bbox: new Float64Array([
+              bbox: new Float32Array([
                 bbox3[0] * scale,
                 bbox3[1] * scale,
                 bbox3[2] * scale,
@@ -1256,7 +1256,7 @@ function genGaussBlur(
             [
               {
                 opacity: 1,
-                bbox: new Float64Array([
+                bbox: new Float32Array([
                   bbox2[0] * scale,
                   bbox2[1] * scale,
                   bbox2[2] * scale,
@@ -1467,7 +1467,7 @@ function genMotionBlur(
             [
               {
                 opacity: 1,
-                bbox: new Float64Array([
+                bbox: new Float32Array([
                   bbox2[0] * scale,
                   bbox2[1] * scale,
                   bbox2[2] * scale,
@@ -1605,7 +1605,7 @@ function genRadialBlur(
             [
               {
                 opacity: 1,
-                bbox: new Float64Array([
+                bbox: new Float32Array([
                   bbox2[0] * scale,
                   bbox2[1] * scale,
                   bbox2[2] * scale,
@@ -1658,7 +1658,7 @@ function genColorMatrix(
     const rotation = d2r(hueRotate % 360);
     const cosR = Math.cos(rotation);
     const sinR = Math.sin(rotation);
-    const mh = hueRotate ? new Float64Array([
+    const mh = hueRotate ? new Float32Array([
       0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0,
       0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0,
       0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0,
@@ -1671,7 +1671,7 @@ function genColorMatrix(
     const sr = (1 - s) * lr;
     const sg = (1 - s) * lg;
     const sb = (1 - s) * lb;
-    const ms = saturate !== 1 ? new Float64Array([
+    const ms = saturate !== 1 ? new Float32Array([
       sr + s, sg, sb, 0,
       sr, sg + s, sb, 0,
       sr, sg, sb + s, 0,
@@ -1893,7 +1893,7 @@ function genShadow(
       if (isEmpty) {
         continue;
       }
-      const bbox = new Float64Array([
+      const bbox = new Float32Array([
         x0,
         y0,
         x0 + w0,
@@ -1909,7 +1909,7 @@ function genShadow(
     }
   }
   // 高清/scale
-  let matrix: Float64Array | undefined;
+  let matrix: Float32Array | undefined;
   if (scale !== 1) {
     matrix = identity();
     multiplyScale(matrix, scale);
@@ -2205,7 +2205,7 @@ function genMask(
         y0 = y + i * UNIT / scale;
       const w0 = width / scale,
         h0 = height / scale;
-      const bbox = new Float64Array([
+      const bbox = new Float32Array([
         x0,
         y0,
         x0 + w0,
@@ -2247,7 +2247,7 @@ function genMask(
           [
             {
               opacity: 1,
-              bbox: new Float64Array([0, 0, width, height]),
+              bbox: new Float32Array([0, 0, width, height]),
               texture: t,
             },
           ],
@@ -2286,7 +2286,7 @@ function genMask(
           root.imgLoadList.push(node2 as Bitmap);
         }
         let opacity: number,
-          matrix: Float64Array;
+          matrix: Float32Array;
         if (isFirst) {
           // 同层级的next作为特殊的局部根节点
           if (lv === lv2) {
@@ -2499,7 +2499,7 @@ function genMask(
           [
             {
               opacity: 1,
-              bbox: new Float64Array([0, 0, w, h]),
+              bbox: new Float32Array([0, 0, w, h]),
               texture: listM[i].t!,
             },
           ],
@@ -2611,7 +2611,7 @@ export function genBgBlurRoot(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
   texture: WebGLTexture, // 画布
-  matrix: Float64Array | undefined, // outline相对于target的
+  matrix: Float32Array | undefined, // outline相对于target的
   outline: TextureCache,
   blur: ComputedBlur,
   programs: Record<string, WebGLProgram>,
@@ -2688,10 +2688,10 @@ export function genBgBlurRoot(
   // texture2Blob(gl, W, H, 'm');
   // 可能存在的饱和度
   if (blur.saturation !== undefined && blur.saturation !== 1) {
-    const temp = TextureCache.getEmptyInstance(gl, new Float64Array([0, 0, W, H]));
+    const temp = TextureCache.getEmptyInstance(gl, new Float32Array([0, 0, W, H]));
     temp.available = true;
     temp.list.push({
-      bbox: new Float64Array([0, 0, W, H]),
+      bbox: new Float32Array([0, 0, W, H]),
       w: W,
       h: H,
       t: m,
@@ -2740,7 +2740,7 @@ export function genBgBlurRoot(
     [
       {
         opacity: 1,
-        bbox: new Float64Array([0, 0, W, H]),
+        bbox: new Float32Array([0, 0, W, H]),
         texture: m,
       },
     ],
@@ -2770,7 +2770,7 @@ export function genBgBlur(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   root: Root,
   target: TextureCache, // 画布/背景
-  matrix: Float64Array | undefined, // outline相对于target的
+  matrix: Float32Array | undefined, // outline相对于target的
   outline: TextureCache,
   blur: ComputedBlur,
   programs: Record<string, WebGLProgram>,
@@ -3018,7 +3018,7 @@ export function genOutline(
   structs: Struct[],
   index: number,
   total: number,
-  bbox: Float64Array,
+  bbox: Float32Array,
   scale: number,
 ) {
   // 缓存仍然还在直接返回，无需重新生成
@@ -3044,7 +3044,7 @@ export function genOutline(
     // 这里循环收集这个作为轮廓mask的节点的所有轮廓，用普通canvas模式填充白色到内容区域
     for (let i = index, len = index + total + 1; i < len; i++) {
       const { node, total, next } = structs[i];
-      let matrix: Float64Array;
+      let matrix: Float32Array;
       if (i === index) {
         matrix = toE(node.tempMatrix);
       }

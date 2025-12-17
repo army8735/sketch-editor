@@ -4,19 +4,19 @@ import { calPoint, identity, isE, multiply } from './matrix';
 import Node from '../node/Node';
 
 export function mergeBbox(
-  bbox: Float64Array,
-  a: number | Float64Array, // target
-  b: number | Float64Array, // matrix
+  bbox: Float32Array,
+  a: number | Float32Array, // target
+  b: number | Float32Array, // matrix
   c?: number,
   d?: number,
 ) {
   if (arguments.length === 3) {
-    let [x1, y1, x2, y2] = a as Float64Array;
-    if (!isE(b as Float64Array)) {
-      const t1 = calPoint({ x: x1, y: y1 }, b as Float64Array);
-      const t2 = calPoint({ x: x1, y: y2 }, b as Float64Array);
-      const t3 = calPoint({ x: x2, y: y1 }, b as Float64Array);
-      const t4 = calPoint({ x: x2, y: y2 }, b as Float64Array);
+    let [x1, y1, x2, y2] = a as Float32Array;
+    if (!isE(b as Float32Array)) {
+      const t1 = calPoint({ x: x1, y: y1 }, b as Float32Array);
+      const t2 = calPoint({ x: x1, y: y2 }, b as Float32Array);
+      const t3 = calPoint({ x: x2, y: y1 }, b as Float32Array);
+      const t4 = calPoint({ x: x2, y: y2 }, b as Float32Array);
       x1 = Math.min(t1.x, t2.x, t3.x, t4.x);
       y1 = Math.min(t1.y, t2.y, t3.y, t4.y);
       x2 = Math.max(t1.x, t2.x, t3.x, t4.x);
@@ -28,10 +28,10 @@ export function mergeBbox(
     bbox[3] = Math.max(bbox[3], y2);
   }
   else if (arguments.length === 2) {
-    bbox[0] = Math.min(bbox[0], (a as Float64Array)[0]);
-    bbox[1] = Math.min(bbox[1], (a as Float64Array)[1]);
-    bbox[2] = Math.max(bbox[2], (a as Float64Array)[2]);
-    bbox[3] = Math.max(bbox[3], (a as Float64Array)[3]);
+    bbox[0] = Math.min(bbox[0], (a as Float32Array)[0]);
+    bbox[1] = Math.min(bbox[1], (a as Float32Array)[1]);
+    bbox[2] = Math.max(bbox[2], (a as Float32Array)[2]);
+    bbox[3] = Math.max(bbox[3], (a as Float32Array)[3]);
   }
   else if (arguments.length === 5) {
     bbox[0] = Math.min(bbox[0], a as number);
@@ -41,7 +41,7 @@ export function mergeBbox(
   }
 }
 
-function mergeFirst(item: number[], res: Float64Array) {
+function mergeFirst(item: number[], res: Float32Array) {
   let x: number, y: number;
   if (item.length === 6) {
     x = item[4];
@@ -66,7 +66,7 @@ function mergeFirst(item: number[], res: Float64Array) {
   return { x, y };
 }
 
-function mergeNotFirst(item: number[], x2: number, y2: number, res: Float64Array) {
+function mergeNotFirst(item: number[], x2: number, y2: number, res: Float32Array) {
   let x: number, y: number;
   if (item.length === 4) {
     x = item[2];
@@ -101,9 +101,9 @@ function mergeNotFirst(item: number[], x2: number, y2: number, res: Float64Array
   return { x, y };
 }
 
-export function getPointsRect(points: number[][], res?: Float64Array) {
+export function getPointsRect(points: number[][], res?: Float32Array) {
   let isFirst = true;
-  res = res || new Float64Array(4);
+  res = res || new Float32Array(4);
   let x = 0, y = 0;
   for (let i = 0, len = points.length; i < len; i++) {
     const item = points[i];
@@ -130,9 +130,9 @@ export function getPointsRect(points: number[][], res?: Float64Array) {
   return res;
 }
 
-export function getShapeGroupRect(points: number[][][], res?: Float64Array) {
+export function getShapeGroupRect(points: number[][][], res?: Float32Array) {
   let isFirst = true;
-  res = res || new Float64Array(4);
+  res = res || new Float32Array(4);
   let x = 0, y = 0;
   for (let i = 0, len = points.length; i < len; i++) {
     const list = points[i];
