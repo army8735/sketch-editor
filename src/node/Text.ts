@@ -3124,6 +3124,13 @@ class Text extends Node {
     const lv = this.updateRangeStyleData(location, length, st);
     if (lv) {
       this.refresh(lv, cb, noRefresh);
+      if (lv & RefreshLevel.REFLOW) {
+        const { isMulti, start, end } = this.getSortedCursor();
+        if (isMulti) {
+          this.setCursorByIndex(start, false);
+          this.setCursorByIndex(end, true);
+        }
+      }
     }
     return lv;
   }
@@ -3681,6 +3688,17 @@ class Text extends Node {
     }
     else {
       return 'fixed';
+    }
+  }
+
+  override refresh(data: RefreshLevel = RefreshLevel.REPAINT, cb?: ((sync: boolean) => void) | boolean, noRefresh = false) {
+    super.refresh(data, cb, noRefresh);
+    if (data & RefreshLevel.REFLOW) {
+      const { isMulti, start, end } = this.getSortedCursor();
+      if (isMulti) {
+        this.setCursorByIndex(start, false);
+        this.setCursorByIndex(end, true);
+      }
     }
   }
 
