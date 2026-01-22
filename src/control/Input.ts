@@ -190,8 +190,6 @@ export default class Input {
         // 如果不是focus的需要处理blur
         const node = this.node!;
         listener.cancelEditText();
-        node.resetCursor();
-        node.afterEdit();
         node.inputStyle = undefined;
       }
     };
