@@ -203,6 +203,7 @@ class Text extends Node {
   loaders: Loader[];
   inputStyle?: ModifyRichStyle; // 编辑状态时未选择文字，改变样式临时存储，在输入时使用此样式
   editStyle?: EditStyle; // 进入编辑时改变布局置空translate防止位置变化，固定宽高也要显示全文本
+  isEdit: boolean;
 
   constructor(props: TextProps) {
     super(props);
@@ -224,6 +225,7 @@ class Text extends Node {
       end: 0,
     };
     this.loaders = [];
+    this.isEdit = false;
   }
 
   override didMount() {
@@ -1730,6 +1732,7 @@ class Text extends Node {
    * 首要考虑textAlign，它的优先级高于对应方位的布局信息（比如居右对齐即便left是px都忽略，强制右侧对齐，视觉不懂css布局）。
    */
   beforeEdit() {
+    this.isEdit = true;
     const {
       style,
       computedStyle,
@@ -2037,9 +2040,10 @@ class Text extends Node {
 
   // 和beforeEdit()对应，可能prev为空即无需关心样式还原问题。
   afterEdit() {
-    if (!this.editStyle) {
+    if (!this.editStyle || !this.isEdit) {
       return;
     }
+    this.isEdit = false;
     const {
       isLeft,
       isCenter,
