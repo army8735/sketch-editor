@@ -1732,7 +1732,6 @@ class Text extends Node {
    * 首要考虑textAlign，它的优先级高于对应方位的布局信息（比如居右对齐即便left是px都忽略，强制右侧对齐，视觉不懂css布局）。
    */
   beforeEdit() {
-    this.isEdit = true;
     const {
       style,
       computedStyle,
@@ -1744,6 +1743,7 @@ class Text extends Node {
     if (isDestroyed || !parent) {
       throw new Error('Can not edit a destroyed Text');
     }
+    this.isEdit = true;
     const prev = this.getStyle();
     const {
       left,
