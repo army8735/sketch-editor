@@ -1,6 +1,6 @@
 {
   "name": "sketch-editor",
-  "version": "0.23.6",
+  "version": "0.23.7",
   "maintainers": [
     {
       "name": "army8735",
@@ -51,7 +51,7 @@
     "rollup-plugin-postcss": "^4.0.2",
     "selenium-server": "^3.141.59",
     "tslib": "^2.8.1",
-    "typescript": "^5.9.2",
+    "typescript": "^5.9.3",
     "webstorm-disable-index": "^1.2.0"
   },
   "main": "dist/index.js",
