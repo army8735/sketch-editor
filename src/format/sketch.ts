@@ -1646,7 +1646,7 @@ async function readFontFile(filename: string, zipFile: JSZip) {
     return;
   }
   const ab = await file.async('arraybuffer');
-  font.registerAb(ab);
+  await font.registerAb(ab);
 }
 
 async function readNetFont(url: string, postscriptName: string) {

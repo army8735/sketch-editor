@@ -1,6 +1,6 @@
 {
   "name": "sketch-editor",
-  "version": "0.23.7",
+  "version": "0.23.8",
   "maintainers": [
     {
       "name": "army8735",
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@sketch-hq/sketch-file-format-ts": "^6.5.0",
-    "ag-psd": "^28.4.1",
+    "ag-psd": "^30.1.0",
     "jszip": "^3.10.1",
     "uuid": "^9.0.1"
   },
@@ -37,7 +37,7 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/uuid": "^9.0.8",
-    "chromedriver": "^145.0.0",
+    "chromedriver": "^146.0.1",
     "expect.js": "^0.3.1",
     "less": "^4.4.0",
     "mocha": "^10.4.0",
