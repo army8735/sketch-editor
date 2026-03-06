@@ -108,7 +108,7 @@ const o = {
     }
     this.updateLocalStorage();
   },
-  registerAb(ab: ArrayBuffer) {
+  async registerAb(ab: ArrayBuffer) {
     const o: any = {};
     const f: any = opentype.parse(ab);
     if (f && f.name) {
@@ -133,7 +133,7 @@ const o = {
       info[family] = data[family] = o;
     }
     this._register(family, style, postscriptName, true);
-    inject.addArrayBufferFont(postscriptName, ab);
+    await inject.addArrayBufferFont(postscriptName, ab);
     return this.data[family];
   },
   _cal(family: string, f: { ascent: number, descent: number, lineGap: number, emSquare: number }) {

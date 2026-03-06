@@ -1654,8 +1654,8 @@ async function readNetFont(url: string, postscriptName: string) {
     return;
   }
   return new Promise<void>((resolve, reject) => {
-    fetch(url).then((res) => res.arrayBuffer()).then(ab => {
-      font.registerAb(ab);
+    fetch(url).then((res) => res.arrayBuffer()).then(async ab => {
+      await font.registerAb(ab);
       resolve();
     }).catch(() => {
       reject();

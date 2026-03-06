@@ -313,9 +313,10 @@ const inject = {
       load(fontFamily, url as string, cache);
     }
   },
-  addArrayBufferFont(postscriptName: string, ab: ArrayBuffer) {
+  async addArrayBufferFont(postscriptName: string, ab: ArrayBuffer) {
     if (typeof document !== 'undefined' && typeof FontFace !== 'undefined') {
       const ff = new FontFace(postscriptName, ab);
+      await ff.load();
       document.fonts.add(ff);
     }
   },
