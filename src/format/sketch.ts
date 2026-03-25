@@ -39,12 +39,12 @@ export enum ResizingConstraint {
   TOP    = 0b100000, // 32
 }
 
-export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer) {
+export async function openAndConvertSketchBuffer(arrayBuffer: ArrayBuffer, ignoreFont = false) {
   const zipFile = await JSZip.loadAsync(arrayBuffer);
-  return openAndConvertSketchZip(zipFile);
+  return openAndConvertSketchZip(zipFile, ignoreFont);
 }
 
-export async function openAndConvertSketchZip(zipFile: JSZip) {
+export async function openAndConvertSketchZip(zipFile: JSZip, ignoreFont = false) {
   const document: SketchFormat.Document = await readJsonFile(
     zipFile,
     'document.json',
@@ -65,6 +65,7 @@ export async function openAndConvertSketchZip(zipFile: JSZip) {
       user,
     },
     zipFile,
+    ignoreFont,
   );
 }
 
@@ -82,7 +83,7 @@ type Opt = {
   imgSrcRecord: Record<string, string>;
 };
 
-export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> {
+export async function convertSketch(json: any, zipFile?: JSZip, ignoreFont = false): Promise<JFile> {
   // sketch自带的字体，有fontData的才算，没有的只是个使用声明；有可能这个字体本地已经有了，但以sketch为准，因为可能会修改
   const fontReferences = (json.document?.fontReferences || []).filter((item: SketchFormat.FontRef) => {
     if (!item.fontData || !item.fontData._ref) {
@@ -91,7 +92,7 @@ export async function convertSketch(json: any, zipFile?: JSZip): Promise<JFile> 
     const postscriptName = item.postscriptNames[0];
     return !!postscriptName;
   });
-  if (fontReferences.length) {
+  if (fontReferences.length && !ignoreFont) {
     await Promise.all(
       fontReferences.map((item: SketchFormat.FontRef) => {
         if (item.fontData._ref_class === 'MSFontData' && zipFile) {
