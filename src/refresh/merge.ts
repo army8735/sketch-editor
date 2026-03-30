@@ -2236,7 +2236,7 @@ function genMask(
       const cx = width * 0.5,
         cy = height * 0.5;
       // outline/alpha-with如果可见先将自身绘制在底层后再收集后续节点，因为其参与bgBlur效果
-      if ([MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
+      if ([MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode) && computedStyle.visibility === VISIBILITY.VISIBLE && computedStyle.opacity > 0 && textureTarget.available) {
         const index = i * len2 + j; // 和绘制对象完全对应，求出第几个区块即可，但img可能不是因为使用原始位图尺寸
         const t = listM[index]?.t;
         t && drawTextureCache(
@@ -2344,8 +2344,8 @@ function genMask(
                */
               if (mixBlendMode !== MIX_BLEND_MODE.NORMAL
                 && (
-                  i > index + total + 1 && [MASK.OUTLINE, MASK.ALPHA, MASK.GRAY].includes(maskMode)
-                  || i > index + total && [MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode)
+                  i > index + total + 1 && [MASK.ALPHA, MASK.GRAY].includes(maskMode)
+                  || i > index + total && [MASK.OUTLINE, MASK.ALPHA_WITH, MASK.GRAY_WITH].includes(maskMode)
                 )
               ) {
                 tex = createTexture(gl, 0, undefined, width, height);
